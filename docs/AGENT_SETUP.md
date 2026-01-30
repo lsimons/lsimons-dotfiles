@@ -4,6 +4,8 @@ A guide to running AI coding agents in a controlled, sandboxed macOS environment
 
 This describes how I've set up [lsimons-bot](https://lsimonsbot.wordpress.com).
 
+![](./ai-vm-green-goodness.png)
+
 ## Why?
 
 When using autonomous coding agents (especially in YOLO mode), you want:
@@ -114,11 +116,18 @@ Configure for usability and to distinguish from your main environment:
 
 This is the key security control — you'll see and approve every network connection the agent tries to make.
 
-### 4. Install dotfiles
+### 4. Install Pareto Security (Security Checks)
+
+Free security auditing for macOS:
+1. Install from [https://paretosecurity.com/mac](https://paretosecurity.com/mac)
+2. Disable checks that don't apply (Time Machine, user-is-admin)
+3. Run all checks, follow remediation steps, rerun until green
+
+### 5. Install dotfiles
 
 Follow instructions from [README.md](../README.md).
 
-### 5. Configure Browser and Accounts
+### 6. Configure Browser and Accounts
 
 1. Make Brave the default browser and configure its settings
 2. Sign into your bot 1Password account at https://my.1password.eu/
@@ -147,20 +156,9 @@ gh repo clone <your-repos>
 3. Run `git pull` to verify the model can talk to GitHub
 4. Configure allow rules in Little Snitch as needed
 5. Switch Little Snitch to **alert mode**
-6. Verify alerts appear when the agent tries network access
+6. Verify alerts appear when the agent tries network access:
 
-![](./little-snitch-agent-vm.jpg)
-
-## Additional Security Tools
-
-### Pareto Security (Security Checks)
-
-Free security auditing for macOS:
-1. Install from https://paretosecurity.com/mac
-2. Disable checks that don't apply (Time Machine, user-is-admin)
-3. Run all checks, follow remediation steps, rerun until green
-
-This replaces central device management for the sandbox VM.
+![](./ai-vm-little-snitch-deny-network.png)
 
 ## References
 

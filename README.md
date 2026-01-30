@@ -114,7 +114,7 @@ Secrets are loaded from 1Password at shell startup, not stored in git.
 
 2. Add secret references (get these from 1Password app: right-click field, "Copy Secret Reference"):
    ```bash
-   echo "GITHUB_TOKEN=op://AI/GitHub/personal_access_token/password" > 1password/.env.1password
+   echo "GITHUB_TOKEN=op://AI/GitHub/personal_access_token/password" >> 1password/.env.1password
    ```
 
 ### Usage
