@@ -101,29 +101,34 @@ main() {
   # Find all .symlink files and link them
   info "Linking dotfiles..."
   
+  # Enable globstar for recursive glob
+  shopt -s globstar
+  
+  # Get XDG_CONFIG_HOME once
+  local XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+  
   for src in "$DOTFILES_ROOT"/**/*.symlink; do
     if [ -f "$src" ]; then
       # Determine destination
       local basename="$(basename "$src" .symlink)"
+      local dst
       
       # Special handling for specific files
       case "$basename" in
         zshrc)
-          local dst="$HOME/.zshrc"
+          dst="$HOME/.zshrc"
           ;;
         gitconfig)
-          local XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-          local dst="$XDG_CONFIG_HOME/git/config"
+          dst="$XDG_CONFIG_HOME/git/config"
           mkdir -p "$XDG_CONFIG_HOME/git"
           ;;
         pythonrc)
-          local XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-          local dst="$XDG_CONFIG_HOME/python/pythonrc"
+          dst="$XDG_CONFIG_HOME/python/pythonrc"
           mkdir -p "$XDG_CONFIG_HOME/python"
           ;;
         *)
           # Default: link to home directory with a dot prefix
-          local dst="$HOME/.$basename"
+          dst="$HOME/.$basename"
           ;;
       esac
       

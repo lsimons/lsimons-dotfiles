@@ -102,7 +102,8 @@ The repository is organized by topics:
 - `*.zsh` - ZSH configuration files, automatically sourced
 - `path.zsh` - Loaded first, for PATH configuration
 - `completion.zsh` - Loaded last, for completion configuration
-- `install.sh` - Topic-specific installation script
+- `install.py` - Topic-specific installation script (preferred)
+- `install.sh` - Legacy bash installation script (deprecated, use install.py instead)
 
 ## XDG Base Directory Compliance
 

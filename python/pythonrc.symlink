@@ -2,7 +2,6 @@
 # This file is loaded when starting an interactive Python session
 
 import os
-import sys
 import readline
 import rlcompleter
 

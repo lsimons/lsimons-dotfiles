@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
-# Install script for lsimons-dotfiles
+# Legacy install script for lsimons-dotfiles (deprecated)
 # Runs all install.sh scripts found in topic directories
+# 
+# NOTE: This is deprecated in favor of the Python-based install.py script.
+# Use ./script/install.py instead for new installations.
+#
 # This script is safe to run multiple times (idempotent)
 
 set -e

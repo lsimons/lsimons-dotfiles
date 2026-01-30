@@ -54,6 +54,7 @@ if command -v op &> /dev/null; then
       fi
     done < "$HOME/.dotfiles/1password/.env.1password"
   fi
-else
-  echo "1Password CLI not installed. Install from: https://developer.1password.com/docs/cli/get-started/" >&2
 fi
+
+# Note: 1Password CLI not found. Install from: https://developer.1password.com/docs/cli/get-started/
+# Set WARN_1PASSWORD=1 to see this message on shell startup

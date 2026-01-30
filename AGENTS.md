@@ -1,6 +1,12 @@
 # Agent Instructions for lsimons-dotfiles
 
-This document provides guidance for AI coding agents (GitHub Copilot, Claude Code, etc.) working on this repository.
+This document provides instructions for AI code-generation agents (GitHub Copilot, Claude Code, etc.) to ensure consistent and high-quality contributions to this repository.
+
+## Response Style
+
+- Be concise in responses - avoid over-explaining changes.
+- Focus on the specific task requested rather than extensive commentary.
+- Keep explanations brief and to the point.
 
 ## Repository Overview
 
@@ -12,6 +18,16 @@ This is a personal dotfiles repository for managing shell configuration, environ
 - 1Password CLI integration for secrets
 - Python-based installation system
 - Safe, idempotent installation scripts
+
+## Building and Running
+
+- **Installation**: `./script/install.py`
+  - Installs Homebrew (if needed)
+  - Installs Python via Homebrew (if needed)
+  - Runs topic-specific installers
+- **Bootstrap**: `./script/bootstrap`
+  - Symlinks dotfiles to appropriate locations
+- **Testing**: Test scripts manually after changes (no automated test suite yet)
 
 ## Architecture & Design Principles
 
@@ -53,6 +69,15 @@ All configuration must respect XDG Base Directory specification:
 6. User sources `~/.zshrc` to load configuration
 
 ## Development Guidelines
+
+### Minimal Changes Philosophy
+
+When making changes:
+- Keep modifications minimal and surgical
+- Don't refactor working code without good reason
+- Maintain backward compatibility when possible
+- Test thoroughly before committing
+- Focus on the specific task requested
 
 ### Adding New Configuration Topics
 
@@ -248,14 +273,6 @@ ls -la ~/.zshrc
 
 This repository is designed for **macOS only**. While the structure could work on Linux, installation scripts specifically target macOS with Homebrew.
 
-### Minimal Changes Philosophy
-
-When making changes:
-- Keep modifications minimal and surgical
-- Don't refactor working code without good reason
-- Maintain backward compatibility when possible
-- Test thoroughly before committing
-
 ### Dependencies
 
 Core dependencies:
@@ -283,6 +300,43 @@ When uncertain about a change:
 3. Keep changes minimal and focused
 4. Test thoroughly before committing
 5. Document significant changes in commit messages
+
+## If Unsure
+
+1. Re-read this AGENTS.md document
+2. Look at existing similar configurations or scripts
+3. Keep the changes small and focused
+4. Propose incremental improvements rather than large refactors
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, complete all steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **Run quality gates** (if code changed):
+   - Test bootstrap script: `./script/bootstrap`
+   - Test install script: `./script/install.py` (if safe to run)
+   - Verify ZSH syntax: `bash -n script/bootstrap`
+   - Verify Python syntax: `python3 -m py_compile script/install.py`
+   - Check for secrets: `git diff` (ensure no secrets are being committed)
+
+2. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+
+3. **Verify** - All changes committed AND pushed
+
+4. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
 
 ---
 
