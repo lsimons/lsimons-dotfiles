@@ -114,24 +114,9 @@ Configure for usability and to distinguish from your main environment:
 
 This is the key security control — you'll see and approve every network connection the agent tries to make.
 
-### 4. Install Development Tools
+### 4. Install dotfiles
 
-Install Homebrew and clone this dotfiles repository:
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install git
-mkdir -p ~/git && cd ~/git
-git clone https://github.com/lsimons/lsimons-dotfiles.git
-cd lsimons-dotfiles
-./script/install.py
-```
-
-This installs all development tools automatically:
-- 1Password CLI, GitHub CLI, tmux
-- Brave Browser, Ghostty terminal, Zed editor
-- Oh My Zsh, nvm with Node.js LTS
-- pi-coding-agent
-- topgrade (for automated updates)
+Follow instructions from [README.md](../README.md).
 
 ### 5. Configure Browser and Accounts
 

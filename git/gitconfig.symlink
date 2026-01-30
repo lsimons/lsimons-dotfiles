@@ -1,6 +1,20 @@
 # Git global configuration
 # This file will be symlinked to XDG_CONFIG_HOME/git/config
 
+[gpg]
+    format = ssh
+
+[gpg "ssh"]
+    program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+
+[commit]
+    gpgsign = false
+
+[user]
+    signingkey =
+    name = Leo-Bot Simons
+    email = bot@leosimons.com
+
 [core]
 	editor = vim
 	autocrlf = input
