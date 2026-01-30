@@ -25,7 +25,7 @@ This is a personal dotfiles repository for managing shell configuration, environ
   - Installs Homebrew (if needed)
   - Installs Python via Homebrew (if needed)
   - Runs topic-specific installers
-- **Bootstrap**: `./script/bootstrap`
+- **Bootstrap**: `./script/bootstrap.py`
   - Symlinks dotfiles to appropriate locations
 - **Testing**: Test scripts manually after changes (no automated test suite yet)
 
@@ -65,7 +65,7 @@ All configuration must respect XDG Base Directory specification:
 2. Script installs Homebrew (if not present)
 3. Script installs Python via Homebrew (if not present)
 4. Script runs topic-specific `install.py` scripts using Homebrew Python
-5. User runs `./script/bootstrap` to symlink dotfiles
+5. User runs `./script/bootstrap.py` to symlink dotfiles
 6. User sources `~/.zshrc` to load configuration
 
 ## Development Guidelines
@@ -175,7 +175,7 @@ Before committing:
 
 1. **Test bootstrap script:**
    ```bash
-   ./script/bootstrap
+   ./script/bootstrap.py
    ```
    Verify symlinks are created correctly.
 
@@ -315,10 +315,9 @@ When uncertain about a change:
 **MANDATORY WORKFLOW:**
 
 1. **Run quality gates** (if code changed):
-   - Test bootstrap script: `./script/bootstrap`
+   - Test bootstrap script: `./script/bootstrap.py`
    - Test install script: `./script/install.py` (if safe to run)
-   - Verify ZSH syntax: `bash -n script/bootstrap`
-   - Verify Python syntax: `python3 -m py_compile script/install.py`
+   - Verify Python syntax: `python3 -m py_compile script/install.py script/bootstrap.py`
    - Check for secrets: `git diff` (ensure no secrets are being committed)
 
 2. **PUSH TO REMOTE** - This is MANDATORY:
