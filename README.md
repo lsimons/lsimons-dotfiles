@@ -6,115 +6,87 @@ A modular dotfiles configuration for macOS, featuring ZSH and Python support, XD
 
 ## Features
 
-- 🗂️ **Modular topic-based structure** - Inspired by [holman/dotfiles](https://github.com/holman/dotfiles)
-- 📁 **XDG Base Directory compliant** - Follows the [freedesktop.org specification](https://specifications.freedesktop.org/basedir-spec/latest/)
-- 🔐 **1Password integration** - Load secrets securely without storing them in git
-- 🐚 **ZSH configuration** - Clean, modular ZSH setup
-- 🐍 **Python-based installation** - Uses Python for installation automation
-- 🍺 **Homebrew integration** - Automatically installs and uses Homebrew
-- 🔄 **Idempotent installation** - Safe to run multiple times
-- 💾 **Automatic backups** - Backs up existing files before making changes
+- **Modular topic-based structure** - Inspired by [holman/dotfiles](https://github.com/holman/dotfiles)
+- **XDG Base Directory compliant** - Follows the [freedesktop.org specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+- **1Password integration** - Load secrets securely without storing them in git
+- **ZSH configuration** - Clean, modular ZSH setup with Oh My Zsh
+- **Python-based installation** - Idempotent installation automation
+- **Homebrew integration** - Automatically installs packages via Homebrew
+- **Development tools** - Includes editors, terminals, CLI tools, and coding agents
 
-## Prerequisites
+## Quick Start
 
-Before installation, ensure you have:
+For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./AGENT_SETUP.md) first.
 
-1. **macOS** (tested on macOS)
-2. **ZSH** as your shell (default on modern macOS)
-3. **Git** installed
-4. **Internet connection** (for downloading Homebrew and Python)
+On an existing macOS system with Homebrew:
 
-**Note:** The installation script will automatically install Homebrew and Python if not present. 1Password CLI is optional for secret management.
+```bash
+mkdir -p ~/git && cd ~/git
+git clone https://github.com/lsimons/lsimons-dotfiles.git
+cd lsimons-dotfiles
+./script/install.py
+source ~/.zshrc
+```
+
+## What Gets Installed
+
+The installation script (`./script/install.py`) will:
+
+1. **Install Homebrew** (if not present)
+2. **Install Python** via Homebrew (if not present)
+3. **Create `~/.dotfiles` symlink** pointing to this repository
+4. **Set up XDG directories** (`~/.config`, `~/.local/share`, `~/.cache`, `~/.local/state`)
+5. **Symlink dotfiles** to appropriate locations
+6. **Run topic installers** for development tools:
+
+| Topic | Installs |
+|-------|----------|
+| `1password/` | 1Password CLI (`op`) |
+| `brave/` | Brave Browser |
+| `gh/` | GitHub CLI |
+| `ghostty/` | Ghostty terminal |
+| `node/` | nvm and Node.js LTS |
+| `pi-coding-agent/` | pi-coding-agent |
+| `tmux/` | tmux |
+| `topgrade/` | topgrade (automated updates) |
+| `zed/` | Zed editor |
+| `zsh/` | Oh My Zsh |
 
 ## For AI Agents
 
 If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this repository, please read [AGENTS.md](AGENTS.md) for detailed instructions and guidelines.
 
-## Installation
-
-This installation follows after the manual setup steps described in the [agent setup documentation](./AGENT_SETUP.md).
-
-### Quick Start
-
-```bash
-# Create directory for repositories
-mkdir -p ~/git/lsimons
-
-# Clone the repository
-git clone https://github.com/lsimons/lsimons-dotfiles.git ~/git/lsimons/lsimons-dotfiles
-cd ~/git/lsimons/lsimons-dotfiles
-
-# Run the installation script (installs Homebrew, Python, dependencies, and creates ~/.dotfiles symlink)
-./script/install.py
-
-# Run the bootstrap script to symlink dotfiles
-./script/bootstrap
-
-# Reload your shell
-source ~/.zshrc
-```
-
-### What Gets Installed
-
-The installation process will:
-
-1. **Install Homebrew** (if not already installed)
-   - The macOS package manager
-
-2. **Install Python via Homebrew** (if not already installed)
-   - Python 3.x from Homebrew
-   - Used for running installation scripts
-
-3. **Create ~/.dotfiles symlink**
-   - Creates a symlink at `~/.dotfiles` pointing to `~/git/lsimons/lsimons-dotfiles`
-   - This allows existing configurations and scripts to continue working
-
-4. **Run topic-specific installers** (if any exist)
-   - Each topic can have its own `install.py` script
-
-The bootstrap script will then:
-
-1. Create XDG Base Directory structure:
-   - `~/.config` (XDG_CONFIG_HOME)
-   - `~/.local/share` (XDG_DATA_HOME)
-   - `~/.cache` (XDG_CACHE_HOME)
-   - `~/.local/state` (XDG_STATE_HOME)
-
-2. Symlink configuration files:
-   - `~/.zshrc` → ZSH configuration
-   - `~/.config/git/config` → Git configuration
-   - `~/.config/python/pythonrc` → Python startup
-
-3. Backup any existing files to `~/.dotfiles-backup/`
-
 ## Structure
-
-The repository is organized by topics:
 
 ```
 .
-├── 1password/         # 1Password CLI integration
+├── 1password/        # 1Password CLI integration
+├── brave/            # Brave browser installer
+├── gh/               # GitHub CLI installer
+├── ghostty/          # Ghostty terminal installer
 ├── git/              # Git configuration
+├── node/             # nvm and Node.js
+├── pi-coding-agent/  # Coding agent installer
 ├── python/           # Python configuration
-├── zsh/              # ZSH configuration
-├── script/           # Installation scripts
-│   ├── bootstrap     # Symlink dotfiles
-│   └── install       # Run topic installers
-└── bin/              # Custom executables
+├── tmux/             # tmux installer
+├── topgrade/         # topgrade installer
+├── zed/              # Zed editor installer
+├── zsh/              # ZSH configuration and Oh My Zsh
+└── script/           # Installation scripts
+    └── install.py    # Main installer
 ```
 
 ### File Naming Convention
 
-- `*.symlink` - Files that will be symlinked to your home directory or XDG directories
+- `*.symlink` - Files symlinked to home directory or XDG directories
 - `*.zsh` - ZSH configuration files, automatically sourced
 - `path.zsh` - Loaded first, for PATH configuration
 - `completion.zsh` - Loaded last, for completion configuration
-- `install.py` - Topic-specific installation script (preferred)
-- `install.sh` - Legacy bash installation script (deprecated, use install.py instead)
+- `install.py` - Topic-specific installation script
 
 ## XDG Base Directory Compliance
 
-This setup follows the XDG Base Directory specification to keep your home directory organized:
+This setup follows the XDG Base Directory specification:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
@@ -124,44 +96,36 @@ This setup follows the XDG Base Directory specification to keep your home direct
 | XDG_STATE_HOME | ~/.local/state | State files (logs, history) |
 
 All tools are configured to respect these directories:
-- ZSH history → `~/.local/state/zsh/history`
-- Python history → `~/.local/state/python/history`
-- Git config → `~/.config/git/config`
-- Completion cache → `~/.cache/zsh/`
+- ZSH history: `~/.local/state/zsh/history`
+- Python history: `~/.local/state/python/history`
+- Git config: `~/.config/git/config`
+- nvm: `~/.local/share/nvm`
 
 ## 1Password Integration
 
-Secrets are loaded from 1Password, not stored in git.
+Secrets are loaded from 1Password at shell startup, not stored in git.
 
 ### Setup
 
-1. Install 1Password CLI:
-   ```bash
-   brew install 1password-cli
-   ```
-
-2. Authenticate:
+1. Authenticate with 1Password CLI:
    ```bash
    op signin
    ```
 
-3. Create a secrets configuration file:
+2. Create a secrets configuration file:
    ```bash
-   cp ~/git/lsimons/lsimons-dotfiles/1password/.env.1password.example ~/git/lsimons/lsimons-dotfiles/1password/.env.1password
-   # Or using the symlink:
    cp ~/.dotfiles/1password/.env.1password.example ~/.dotfiles/1password/.env.1password
    ```
 
-4. Add your secret references:
+3. Add your secret references (get these from 1Password app: right-click field, "Copy Secret Reference"):
    ```bash
-   # Example content of .env.1password
    GITHUB_TOKEN=op://Development/GitHub/personal_access_token
    AWS_ACCESS_KEY_ID=op://Development/AWS/access_key_id
    ```
 
 ### Usage
 
-Secrets are automatically loaded when you start a new shell session. You can also use the helper functions:
+Secrets are automatically loaded when you start a new shell. Helper functions:
 
 ```bash
 # Load a single secret
@@ -171,96 +135,47 @@ op_load_secret "op://Development/GitHub/token"
 op_export GITHUB_TOKEN "op://Development/GitHub/token"
 ```
 
-### Getting Secret References
-
-1. Open 1Password desktop app
-2. Find your item
-3. Right-click on a field → **Copy Secret Reference**
-4. Paste into `.env.1password`
-
 ## Customization
 
 ### Adding a New Topic
 
-1. Create a directory for your topic:
+1. Create a directory:
    ```bash
-   mkdir ~/git/lsimons/lsimons-dotfiles/mytopic
-   # Or using the symlink:
    mkdir ~/.dotfiles/mytopic
    ```
 
-2. Add configuration files:
+2. Add files:
    - `mytopic.zsh` - Shell configuration (auto-loaded)
    - `mytopic.symlink` - File to symlink
-   - `install.sh` - Installation script (optional)
+   - `install.py` - Installation script (optional)
 
-3. (Optional) Run topic-specific installers:
+3. Re-run installer:
    ```bash
-   ~/git/lsimons/lsimons-dotfiles/script/install.py
-   # Or using the symlink:
    ~/.dotfiles/script/install.py
-   ```
-
-### Modifying Existing Configuration
-
-Simply edit the files in the topic directories and reload your shell:
-
-```bash
-source ~/.zshrc
-```
-
-## Uninstallation
-
-To uninstall:
-
-1. Remove symlinks:
-   ```bash
-   rm ~/.zshrc
-   rm -rf ~/.config/git/config
-   rm -rf ~/.config/python/pythonrc
-   ```
-
-2. Restore from backup if needed:
-   ```bash
-   ls ~/.dotfiles-backup/
-   ```
-
-3. Remove the repository and symlink:
-   ```bash
-   rm ~/.dotfiles  # Remove symlink
-   rm -rf ~/git/lsimons/lsimons-dotfiles
    ```
 
 ## Troubleshooting
 
 ### ZSH not loading configuration
 
-Ensure `~/.zshrc` is properly symlinked:
+Check symlink:
 ```bash
 ls -la ~/.zshrc
+# Should show: ~/.zshrc -> ~/.dotfiles/zsh/zshrc.symlink
 ```
-
-Should show: `~/.zshrc -> /Users/yourusername/.dotfiles/zsh/zshrc.symlink` (where `~/.dotfiles` is a symlink to `~/git/lsimons/lsimons-dotfiles`)
 
 ### 1Password secrets not loading
 
-1. Check 1Password CLI is installed: `which op`
+1. Check CLI is installed: `which op`
 2. Check authentication: `op account list`
-3. Verify secret reference format: `op://vault-name/item-name/field-name`
-4. Test manually: `op read "op://vault/item/field"`
+3. Test manually: `op read "op://vault/item/field"`
 
 ### XDG directories not created
 
-Run bootstrap again:
+Re-run installer:
 ```bash
-~/git/lsimons/lsimons-dotfiles/script/bootstrap
-# Or using the symlink:
-~/.dotfiles/script/bootstrap
+~/.dotfiles/script/install.py
 ```
-
-## Contributing
-
-This is a personal dotfiles repository, but suggestions are welcome via issues.
 
 ## License
 
@@ -270,5 +185,4 @@ See [LICENSE](LICENSE) file.
 
 - [holman/dotfiles](https://github.com/holman/dotfiles)
 - [iheitlager/dotfiles](https://github.com/iheitlager/dotfiles)
-- [dotfiles.github.io](https://dotfiles.github.io/)
 - [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/)
