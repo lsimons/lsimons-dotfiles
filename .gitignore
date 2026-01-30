@@ -32,3 +32,6 @@ __pycache__/
 # Local customizations (user-specific, not in git)
 local/
 *.local
+
+# Python cache
+__pycache__/
