@@ -24,9 +24,10 @@ This is a personal dotfiles repository for managing shell configuration, environ
 - **Installation**: `./script/install.py`
   - Installs Homebrew (if needed)
   - Installs Python via Homebrew (if needed)
-  - Runs topic-specific installers
-- **Bootstrap**: `./script/bootstrap.py`
+  - Creates ~/.dotfiles symlink
+  - Sets up XDG directories
   - Symlinks dotfiles to appropriate locations
+  - Runs topic-specific installers
 - **Testing**: Test scripts manually after changes (no automated test suite yet)
 
 ## Architecture & Design Principles
@@ -38,7 +39,7 @@ Each configuration topic lives in its own directory:
 - `python/` - Python environment configuration
 - `git/` - Git configuration
 - `1password/` - Secret management with 1Password CLI
-- `script/` - Installation and bootstrap scripts
+- `script/` - Installation scripts
 
 ### File Naming Conventions
 
@@ -64,9 +65,10 @@ All configuration must respect XDG Base Directory specification:
 1. User runs `./script/install.py` (Python-based installer)
 2. Script installs Homebrew (if not present)
 3. Script installs Python via Homebrew (if not present)
-4. Script runs topic-specific `install.py` scripts using Homebrew Python
-5. User runs `./script/bootstrap.py` to symlink dotfiles
-6. User sources `~/.zshrc` to load configuration
+4. Script creates `~/.dotfiles` symlink and sets up XDG directories
+5. Script symlinks dotfiles to appropriate locations
+6. Script runs topic-specific `install.py` scripts using Homebrew Python
+7. User sources `~/.zshrc` to load configuration
 
 ## Development Guidelines
 
@@ -173,28 +175,22 @@ echo $GITHUB_TOKEN  # Contains actual secret value
 
 Before committing:
 
-1. **Test bootstrap script:**
-   ```bash
-   ./script/bootstrap.py
-   ```
-   Verify symlinks are created correctly.
-
-2. **Test installation script:**
+1. **Test installation script:**
    ```bash
    ./script/install.py
    ```
-   Verify Homebrew and Python setup works.
+   Verify Homebrew, Python setup, and symlinks work correctly.
 
-3. **Test ZSH configuration:**
+2. **Test ZSH configuration:**
    ```bash
    zsh -c 'source ~/.zshrc && echo "Success"'
    ```
    Verify no errors loading configuration.
 
-4. **Verify XDG compliance:**
+3. **Verify XDG compliance:**
    Check that no new dot-files are created in `$HOME` unnecessarily.
 
-5. **Check for secrets:**
+4. **Check for secrets:**
    ```bash
    git diff
    ```
@@ -246,7 +242,7 @@ fi
 
 ### Symlink Already Exists
 
-The bootstrap script backs up existing files to `~/.dotfiles-backup/` before creating new symlinks. Note that `~/.dotfiles` is a symlink to `~/git/lsimons/lsimons-dotfiles`.
+The install script backs up existing files to `~/.dotfiles-backup/` before creating new symlinks. Note that `~/.dotfiles` is a symlink to the dotfiles repository.
 
 ### Homebrew Not Found
 
@@ -315,9 +311,8 @@ When uncertain about a change:
 **MANDATORY WORKFLOW:**
 
 1. **Run quality gates** (if code changed):
-   - Test bootstrap script: `./script/bootstrap.py`
-   - Test install script: `./script/install.py` (if safe to run)
-   - Verify Python syntax: `python3 -m py_compile script/install.py script/bootstrap.py`
+   - Test install script: `./script/install.py`
+   - Verify Python syntax: `python3 -m py_compile script/install.py`
    - Check for secrets: `git diff` (ensure no secrets are being committed)
 
 2. **PUSH TO REMOTE** - This is MANDATORY:
