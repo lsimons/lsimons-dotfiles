@@ -10,10 +10,10 @@ if command -v op &> /dev/null; then
       echo "Usage: op_load_secret <secret-reference>" >&2
       return 1
     fi
-    
+
     op read "$1" 2>/dev/null
   }
-  
+
   # Function to set environment variable from 1Password
   # Usage: op_export VAR_NAME "op://vault/item/field"
   op_export() {
@@ -21,11 +21,11 @@ if command -v op &> /dev/null; then
       echo "Usage: op_export VAR_NAME <secret-reference>" >&2
       return 1
     fi
-    
+
     local var_name="$1"
     local secret_ref="$2"
     local value
-    
+
     if value=$(op read "$secret_ref" 2>/dev/null) && [ -n "$value" ]; then
       export "$var_name"="$value"
       return 0
@@ -34,7 +34,7 @@ if command -v op &> /dev/null; then
       return 1
     fi
   }
-  
+
   # Load secrets from .env.1password if it exists
   # This file should contain secret references, not actual secrets
   # Format: VAR_NAME=op://vault/item/field
@@ -43,10 +43,10 @@ if command -v op &> /dev/null; then
       # Skip comments and empty lines
       [[ "$key" =~ ^#.*$ ]] && continue
       [ -z "$key" ] && continue
-      
+
       # Remove any quotes around the value
       value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
-      
+
       # Check if value is a 1Password reference
       if [[ "$value" =~ ^op:// ]]; then
         op_export "$key" "$value" || true
@@ -54,6 +54,3 @@ if command -v op &> /dev/null; then
     done < "$HOME/.dotfiles/1password/.env.1password"
   fi
 fi
-
-# Note: 1Password CLI not found. Install from: https://developer.1password.com/docs/cli/get-started/
-# Set WARN_1PASSWORD=1 to see this message on shell startup

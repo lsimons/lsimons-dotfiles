@@ -1,8 +1,5 @@
 # Dotfiles .gitignore
 
-# Never commit actual secrets
-1password/.env.1password
-
 # Backup directory (created during installation)
 .dotfiles-backup/
 

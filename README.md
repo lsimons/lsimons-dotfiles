@@ -16,12 +16,12 @@ A modular dotfiles configuration for macOS, featuring ZSH and Python support, XD
 
 ## Quick Start
 
-For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./AGENT_SETUP.md) first.
+For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./docs/AGENT_SETUP.md) first.
 
 On an existing macOS system with Homebrew:
 
 ```bash
-mkdir -p ~/git && cd ~/git
+mkdir -p ~/git/lsimons && cd ~/git/lsimons
 git clone https://github.com/lsimons/lsimons-dotfiles.git
 cd lsimons-dotfiles
 ./script/install.py
@@ -60,6 +60,8 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 
 ```
 .
+└── script/           # Installation scripts
+    └── install.py    # Main installer
 ├── 1password/        # 1Password CLI integration
 ├── brave/            # Brave browser installer
 ├── gh/               # GitHub CLI installer
@@ -72,8 +74,6 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ├── topgrade/         # topgrade installer
 ├── zed/              # Zed editor installer
 ├── zsh/              # ZSH configuration and Oh My Zsh
-└── script/           # Installation scripts
-    └── install.py    # Main installer
 ```
 
 ### File Naming Convention
@@ -112,15 +112,9 @@ Secrets are loaded from 1Password at shell startup, not stored in git.
    op signin
    ```
 
-2. Create a secrets configuration file:
+2. Add secret references (get these from 1Password app: right-click field, "Copy Secret Reference"):
    ```bash
-   cp ~/.dotfiles/1password/.env.1password.example ~/.dotfiles/1password/.env.1password
-   ```
-
-3. Add your secret references (get these from 1Password app: right-click field, "Copy Secret Reference"):
-   ```bash
-   GITHUB_TOKEN=op://Development/GitHub/personal_access_token
-   AWS_ACCESS_KEY_ID=op://Development/AWS/access_key_id
+   echo "GITHUB_TOKEN=op://AI/GitHub/personal_access_token/password" > 1password/.env.1password
    ```
 
 ### Usage
@@ -129,10 +123,10 @@ Secrets are automatically loaded when you start a new shell. Helper functions:
 
 ```bash
 # Load a single secret
-op_load_secret "op://Development/GitHub/token"
+op_load_secret "op://AI/GitHub/personal_access_token/password"
 
 # Export a secret as an environment variable
-op_export GITHUB_TOKEN "op://Development/GitHub/token"
+op_export GITHUB_TOKEN "op://AI/GitHub/personal_access_token/password"
 ```
 
 ## Customization
@@ -168,7 +162,7 @@ ls -la ~/.zshrc
 
 1. Check CLI is installed: `which op`
 2. Check authentication: `op account list`
-3. Test manually: `op read "op://vault/item/field"`
+3. Test manually: `op read "op://AI/Example Service/password"`
 
 ### XDG directories not created
 
@@ -179,7 +173,7 @@ Re-run installer:
 
 ## License
 
-See [LICENSE](LICENSE) file.
+See [LICENSE.md](./LICENSE.md) file.
 
 ## Inspiration
 
