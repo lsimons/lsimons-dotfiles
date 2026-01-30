@@ -246,7 +246,7 @@ fi
 
 ### Symlink Already Exists
 
-The bootstrap script backs up existing files to `~/.dotfiles-backup/` before creating new symlinks.
+The bootstrap script backs up existing files to `~/.dotfiles-backup/` before creating new symlinks. Note that `~/.dotfiles` is a symlink to `~/git/lsimons/lsimons-dotfiles`.
 
 ### Homebrew Not Found
 

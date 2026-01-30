@@ -220,6 +220,44 @@ def run_topic_installers(dotfiles_root, python_path):
     return True
 
 
+def create_dotfiles_symlink(dotfiles_root):
+    """Create ~/.dotfiles symlink if it doesn't already exist"""
+    home = Path.home()
+    symlink_path = home / '.dotfiles'
+    
+    info("Setting up ~/.dotfiles symlink...")
+    
+    # Check if symlink already exists and points to the correct location
+    if symlink_path.is_symlink():
+        current_target = symlink_path.resolve()
+        if current_target == dotfiles_root:
+            success("~/.dotfiles symlink already points to correct location")
+            return True
+        else:
+            warn(f"~/.dotfiles exists but points to: {current_target}")
+            warn(f"Expected: {dotfiles_root}")
+            response = input("Remove and recreate symlink? (y/N): ")
+            if response.lower() != 'y':
+                info("Skipping symlink creation")
+                return True
+            symlink_path.unlink()
+    
+    # Check if a regular directory exists at ~/.dotfiles
+    elif symlink_path.exists():
+        error(f"~/.dotfiles exists as a directory or file, not a symlink")
+        error(f"Please move or remove {symlink_path} manually")
+        return False
+    
+    # Create the symlink
+    try:
+        symlink_path.symlink_to(dotfiles_root)
+        success(f"Created symlink: ~/.dotfiles -> {dotfiles_root}")
+        return True
+    except Exception as e:
+        error(f"Failed to create symlink: {e}")
+        return False
+
+
 def main():
     """Main installation flow"""
     info("Starting lsimons-dotfiles installation")
@@ -247,7 +285,13 @@ def main():
     python_path = get_homebrew_python()
     success(f"Using Python: {python_path}")
     
-    # Step 5: Run topic installers
+    # Step 5: Create ~/.dotfiles symlink
+    info("=" * 50)
+    if not create_dotfiles_symlink(dotfiles_root):
+        error("Failed to create ~/.dotfiles symlink")
+        sys.exit(1)
+    
+    # Step 6: Run topic installers
     info("=" * 50)
     if not run_topic_installers(dotfiles_root, python_path):
         error("Some topic installations failed")

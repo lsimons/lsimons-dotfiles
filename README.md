@@ -37,11 +37,14 @@ This installation follows after the manual setup steps described in the [agent s
 ### Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/lsimons/lsimons-dotfiles.git ~/.dotfiles
-cd ~/.dotfiles
+# Create directory for repositories
+mkdir -p ~/git/lsimons
 
-# Run the installation script (installs Homebrew, Python, and dependencies)
+# Clone the repository
+git clone https://github.com/lsimons/lsimons-dotfiles.git ~/git/lsimons/lsimons-dotfiles
+cd ~/git/lsimons/lsimons-dotfiles
+
+# Run the installation script (installs Homebrew, Python, dependencies, and creates ~/.dotfiles symlink)
 ./script/install.py
 
 # Run the bootstrap script to symlink dotfiles
@@ -62,7 +65,11 @@ The installation process will:
    - Python 3.x from Homebrew
    - Used for running installation scripts
 
-3. **Run topic-specific installers** (if any exist)
+3. **Create ~/.dotfiles symlink**
+   - Creates a symlink at `~/.dotfiles` pointing to `~/git/lsimons/lsimons-dotfiles`
+   - This allows existing configurations and scripts to continue working
+
+4. **Run topic-specific installers** (if any exist)
    - Each topic can have its own `install.py` script
 
 The bootstrap script will then:
@@ -140,6 +147,8 @@ Secrets are loaded from 1Password, not stored in git.
 
 3. Create a secrets configuration file:
    ```bash
+   cp ~/git/lsimons/lsimons-dotfiles/1password/.env.1password.example ~/git/lsimons/lsimons-dotfiles/1password/.env.1password
+   # Or using the symlink:
    cp ~/.dotfiles/1password/.env.1password.example ~/.dotfiles/1password/.env.1password
    ```
 
@@ -175,6 +184,8 @@ op_export GITHUB_TOKEN "op://Development/GitHub/token"
 
 1. Create a directory for your topic:
    ```bash
+   mkdir ~/git/lsimons/lsimons-dotfiles/mytopic
+   # Or using the symlink:
    mkdir ~/.dotfiles/mytopic
    ```
 
@@ -185,6 +196,8 @@ op_export GITHUB_TOKEN "op://Development/GitHub/token"
 
 3. (Optional) Run topic-specific installers:
    ```bash
+   ~/git/lsimons/lsimons-dotfiles/script/install.py
+   # Or using the symlink:
    ~/.dotfiles/script/install.py
    ```
 
@@ -212,9 +225,10 @@ To uninstall:
    ls ~/.dotfiles-backup/
    ```
 
-3. Remove the repository:
+3. Remove the repository and symlink:
    ```bash
-   rm -rf ~/.dotfiles
+   rm ~/.dotfiles  # Remove symlink
+   rm -rf ~/git/lsimons/lsimons-dotfiles
    ```
 
 ## Troubleshooting
@@ -226,7 +240,7 @@ Ensure `~/.zshrc` is properly symlinked:
 ls -la ~/.zshrc
 ```
 
-Should show: `~/.zshrc -> /Users/yourusername/.dotfiles/zsh/zshrc.symlink`
+Should show: `~/.zshrc -> /Users/yourusername/.dotfiles/zsh/zshrc.symlink` (where `~/.dotfiles` is a symlink to `~/git/lsimons/lsimons-dotfiles`)
 
 ### 1Password secrets not loading
 
@@ -239,6 +253,8 @@ Should show: `~/.zshrc -> /Users/yourusername/.dotfiles/zsh/zshrc.symlink`
 
 Run bootstrap again:
 ```bash
+~/git/lsimons/lsimons-dotfiles/script/bootstrap
+# Or using the symlink:
 ~/.dotfiles/script/bootstrap
 ```
 
