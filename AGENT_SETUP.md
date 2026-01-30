@@ -114,18 +114,24 @@ Configure for usability and to distinguish from your main environment:
 
 This is the key security control — you'll see and approve every network connection the agent tries to make.
 
-### 4. Install Core Tools
+### 4. Install Development Tools
 
-Install Homebrew:
+Install Homebrew and clone this dotfiles repository:
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install git
+mkdir -p ~/git && cd ~/git
+git clone https://github.com/lsimons/lsimons-dotfiles.git
+cd lsimons-dotfiles
+./script/install.py
 ```
 
-Install essential tools:
-```bash
-brew install --cask 1password-cli brave-browser ghostty zed
-brew install gh tmux
-```
+This installs all development tools automatically:
+- 1Password CLI, GitHub CLI, tmux
+- Brave Browser, Ghostty terminal, Zed editor
+- Oh My Zsh, nvm with Node.js LTS
+- pi-coding-agent
+- topgrade (for automated updates)
 
 ### 5. Configure Browser and Accounts
 
@@ -134,37 +140,19 @@ brew install gh tmux
 3. Set up 1Password Browser Extension, Desktop App, and CLI
 4. Sign into your bot email account at https://mail.google.com/
 
-### 6. Configure Development Environment
+### 6. Configure Git and SSH
 
-Set up shell:
-```bash
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-```
-
-Configure Git and SSH:
 1. Open Zed and log in with bot GitHub account
 2. Copy over bot SSH keys
 3. Set up 1Password developer mode, configure git to use 1Password SSH key
 
-Set up workspace:
+### 7. Set up Workspace
+
 ```bash
-mkdir ~/git
+mkdir -p ~/git
 cd ~/git
 gh auth login
 gh repo clone <your-repos>
-```
-
-Set up Node.js (install [nvm](https://github.com/nvm-sh/nvm) first):
-```bash
-nvm install --lts
-nvm use --lts
-```
-
-### 7. Install a Coding Agent
-
-Example using [pi-coding-agent](https://shittycodingagent.ai/):
-```bash
-npm install -g @mariozechner/pi-coding-agent
 ```
 
 ## First Run
@@ -180,15 +168,6 @@ npm install -g @mariozechner/pi-coding-agent
 
 ## Additional Security Tools
 
-### Topgrade (Automated Updates)
-
-Keep everything updated:
-```bash
-brew install topgrade
-```
-
-Add automation to run this daily.
-
 ### Pareto Security (Security Checks)
 
 Free security auditing for macOS:
@@ -203,7 +182,4 @@ This replaces central device management for the sandbox VM.
 - [UTM - Virtual machines for Mac](https://mac.getutm.app/)
 - [Little Snitch - Network monitor](https://www.obdev.at/products/littlesnitch/)
 - [pi-coding-agent](https://shittycodingagent.ai/)
-- [Oh My Zsh](https://ohmyz.sh/)
-- [nvm - Node Version Manager](https://github.com/nvm-sh/nvm)
 - [Pareto Security](https://paretosecurity.com/mac)
-- [Topgrade](https://github.com/topgrade-rs/topgrade)
