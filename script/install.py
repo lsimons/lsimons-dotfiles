@@ -304,6 +304,10 @@ def bootstrap_dotfiles(dotfiles_root):
                 dst = xdg_config_home / 'git' / 'config'
             elif basename == 'pythonrc':
                 dst = xdg_config_home / 'python' / 'pythonrc'
+            elif basename == 'settings.json' and src.parent.name == 'zed':
+                dst = xdg_config_home / 'zed' / 'settings.json'
+            elif basename == 'tmux.conf':
+                dst = home / '.tmux.conf'
             else:
                 # Default: link to home directory with a dot prefix
                 dst = home / f'.{basename}'

@@ -1,0 +1,4 @@
+# tmux configuration
+
+# Enable mouse support
+set -g mouse on
