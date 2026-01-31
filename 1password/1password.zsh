@@ -10,7 +10,6 @@ if command -v op &> /dev/null; then
       echo "Usage: op_load_secret <secret-reference>" >&2
       return 1
     fi
-
     op read "$1" 2>/dev/null
   }
 
@@ -21,36 +20,23 @@ if command -v op &> /dev/null; then
       echo "Usage: op_export VAR_NAME <secret-reference>" >&2
       return 1
     fi
-
-    local var_name="$1"
-    local secret_ref="$2"
     local value
-
-    if value=$(op read "$secret_ref" 2>/dev/null) && [ -n "$value" ]; then
-      export "$var_name"="$value"
+    if value=$(op read "$2" 2>/dev/null) && [ -n "$value" ]; then
+      export "$1"="$value"
       return 0
     else
-      echo "Failed to load secret for $var_name" >&2
+      echo "Failed to load secret for $1" >&2
       return 1
     fi
   }
 
   # Load secrets from .env.1password if it exists
-  # This file should contain secret references, not actual secrets
   # Format: VAR_NAME=op://vault/item/field
+  # Uses op inject for efficient bulk loading (single op call)
   if [ -f "$HOME/.dotfiles/1password/.env.1password" ]; then
-    while IFS='=' read -r key value; do
-      # Skip comments and empty lines
-      [[ "$key" =~ ^#.*$ ]] && continue
-      [ -z "$key" ] && continue
-
-      # Remove any quotes around the value
-      value=$(echo "$value" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
-
-      # Check if value is a 1Password reference
-      if [[ "$value" =~ ^op:// ]]; then
-        op_export "$key" "$value" || true
-      fi
-    done < "$HOME/.dotfiles/1password/.env.1password"
+    eval "$(grep -v '^#' "$HOME/.dotfiles/1password/.env.1password" | grep -v '^$' | grep 'op://' | \
+      sed 's/=op:\/\//="{{ op:\/\//; s/$/" }}/' | \
+      sed 's/^/export /' | \
+      op inject 2>/dev/null)" || true
   fi
 fi
