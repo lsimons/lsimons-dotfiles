@@ -105,9 +105,10 @@ Topic-specific `install.py` scripts should:
 - Be idempotent (safe to run multiple times)
 - Use Homebrew for macOS package management
 - Follow XDG Base Directory specification
-- Print clear status messages
+- Print clear status messages using helpers from `script/helpers.py`
 - Handle errors gracefully
 - Never require user input (fully automated)
+- **No type hints required** - this is a simple project, type checking is disabled
 
 Example template:
 ```python
