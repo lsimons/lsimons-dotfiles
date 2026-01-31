@@ -25,6 +25,7 @@ def main():
 
             env = os.environ.copy()
             env['NVM_DIR'] = str(nvm_dir)
+            env['PROFILE'] = '/dev/null'  # Prevent nvm from modifying shell configs
 
             # Install nvm
             subprocess.run(
