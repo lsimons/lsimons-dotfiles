@@ -53,6 +53,14 @@ def main():
         error("Failed to install Git")
         return 1
 
+    if brew_is_installed('git-credential-manager'):
+        success("Git Credential Manager already installed")
+    elif brew_install('git-credential-manager', cask=True):
+        success("Git Credential Manager installed")
+    else:
+        error("Failed to install Git Credential Manager")
+        return 1
+
     generate_local_config()
     return 0
 
