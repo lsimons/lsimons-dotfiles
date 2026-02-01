@@ -68,6 +68,9 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ├── script/           # Installation scripts and helpers
 │   ├── install.py    # Main installer
 │   └── helpers.py    # Shared functions for topic installers
+├── machines/         # Machine-specific configuration
+│   ├── default.json  # Default config (used when no hostname match)
+│   └── <hostname>.json # Per-machine overrides
 ├── 1password/        # 1Password CLI integration
 ├── brave/            # Brave browser installer
 ├── gemini/           # Gemini CLI installer
@@ -109,6 +112,16 @@ All tools are configured to respect these directories:
 - Python history: `~/.local/state/python/history`
 - Git config: `~/.config/git/config`
 - nvm: `~/.local/share/nvm`
+
+## Machine-Specific Configuration
+
+The `machines/` directory contains per-machine configuration in JSON format. During installation, `get_machine_config()` in `helpers.py` loads `machines/<short-hostname>.json`, falling back to `machines/default.json`.
+
+Currently used for git user identity:
+- **default.json**: Leo Simons / mail@leosimons.com (main laptops)
+- **sbp-mac-ai.json**: Leo-Bot Simons / bot@leosimons.com (AI coding machine)
+
+To add a new machine, create `machines/<hostname>.json` (use `hostname -s` to get the short hostname).
 
 ## 1Password Integration
 

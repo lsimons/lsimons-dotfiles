@@ -11,6 +11,8 @@ Personal dotfiles repository for macOS. Topic-based structure inspired by [holma
 
 Topics live in their own directories (`zsh/`, `python/`, `git/`, `1password/`, `script/`).
 
+Machine-specific config lives in `machines/` as JSON files. Use `get_machine_config()` from `helpers.py` to load it.
+
 **File naming:**
 - `*.symlink` - Symlinked to home or XDG directories
 - `*.zsh` - Auto-sourced ZSH config
