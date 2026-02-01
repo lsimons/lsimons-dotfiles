@@ -6,16 +6,13 @@
     path = config.local
 
 [gpg]
-    format = ssh
+	format = ssh
 
 [gpg "ssh"]
     program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
 
 [commit]
-    gpgsign = false
-
-[user]
-    signingkey =
+	gpgsign = true
 
 [core]
 	editor = vim

@@ -24,6 +24,7 @@ def generate_local_config():
 [user]
     name = {git_user['name']}
     email = {git_user['email']}
+	signingkey = {git_user['signingkey']}
 """
 
     # Ensure directory exists
