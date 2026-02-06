@@ -2,7 +2,7 @@
 # Load secrets from 1Password instead of storing them in GitHub
 
 # Check if 1Password CLI is available
-if command -v op &> /dev/null; then
+if command -v op > /dev/null 2>&1; then
   # Function to load a secret from 1Password
   # Usage: op_load_secret "op://vault/item/field"
   op_load_secret() {
@@ -34,7 +34,6 @@ if command -v op &> /dev/null; then
   # Format: VAR_NAME=op://vault/item/field
   # Uses op run for efficient bulk loading (single op call with proper escaping)
   if [ -f "$HOME/.dotfiles/1password/.env.1password" ]; then
-    local _op_vars
     _op_vars=$(grep -v '^#' "$HOME/.dotfiles/1password/.env.1password" | grep -v '^$' | grep 'op://' | cut -d= -f1 | tr '\n' ' ')
     if [ -n "$_op_vars" ]; then
       eval "$(op run --no-masking --env-file="$HOME/.dotfiles/1password/.env.1password" -- sh -c '
@@ -44,5 +43,6 @@ if command -v op &> /dev/null; then
         done
       ' 2>/dev/null)" || true
     fi
+    unset _op_vars
   fi
 fi

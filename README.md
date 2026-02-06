@@ -74,7 +74,8 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ├── machines/         # Machine-specific configuration
 │   ├── default.json  # Default config (used when no hostname match)
 │   └── <hostname>.json # Per-machine overrides
-├── bash/             # Bash configuration
+├── sh/               # Shared shell configuration (sourced by both bash and zsh)
+├── bash/             # Bash-specific configuration
 ├── 1password/        # 1Password CLI integration
 ├── brave/            # Brave browser installer
 ├── gemini/           # Gemini CLI installer
@@ -90,17 +91,20 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ├── topgrade/         # topgrade installer
 ├── uv/               # uv Python package manager
 ├── zed/              # Zed editor installer
-└── zsh/              # ZSH configuration
+└── zsh/              # ZSH-specific configuration
 ```
 
 ### File Naming Convention
 
 - `*.symlink` - Files symlinked to home directory or XDG directories
-- `*.zsh` - ZSH configuration files, automatically sourced by zshrc
-- `*.bash` - Bash configuration files, automatically sourced by bashrc
-- `path.zsh` / `path.bash` - Loaded first, for PATH configuration
-- `completion.zsh` / `completion.bash` - Loaded last, for completion configuration
+- `*.sh` - Shared shell config, sourced by both bash and zsh
+- `*.zsh` - ZSH-specific config, sourced only by zsh
+- `*.bash` - Bash-specific config, sourced only by bash
+- `path.sh` / `path.zsh` / `path.bash` - Loaded first, for PATH configuration
+- `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic-specific installation script
+
+Loading order: `*.sh` files first, then shell-specific files (`*.zsh` or `*.bash`), so shell-specific config can override shared defaults.
 
 ## XDG Base Directory Compliance
 
@@ -168,8 +172,9 @@ op_export GITHUB_TOKEN "op://AI/GitHub/personal_access_token/password"
    ```
 
 2. Add files:
-   - `mytopic.zsh` - ZSH configuration (auto-loaded in zsh)
-   - `mytopic.bash` - Bash configuration (auto-loaded in bash)
+   - `mytopic.sh` - Shared shell config (auto-loaded in both bash and zsh)
+   - `mytopic.zsh` - ZSH-specific config (optional)
+   - `mytopic.bash` - Bash-specific config (optional)
    - `mytopic.symlink` - File to symlink
    - `install.py` - Installation script (optional)
 

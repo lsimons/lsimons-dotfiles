@@ -1,5 +1,5 @@
 # Add custom bin directories to PATH
-# Loaded first by zshrc
+# Loaded first by bashrc/zshrc
 
 # Add dotfiles bin directory
 if [ -d "$HOME/.dotfiles/bin" ]; then

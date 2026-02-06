@@ -9,15 +9,17 @@ Personal dotfiles repository for macOS. Topic-based structure inspired by [holma
 
 ## Structure
 
-Topics live in their own directories (`zsh/`, `python/`, `git/`, `1password/`, `script/`).
+Topics live in their own directories (`sh/`, `zsh/`, `bash/`, `python/`, `git/`, `1password/`, `script/`).
 
 Machine-specific config lives in `machines/` as JSON files. Use `get_machine_config()` from `helpers.py` to load it.
 
 **File naming:**
 - `*.symlink` - Symlinked to home or XDG directories
-- `*.zsh` - Auto-sourced ZSH config
-- `path.zsh` - Loaded first (PATH config)
-- `completion.zsh` - Loaded last
+- `*.sh` - Shared shell config (sourced by both bash and zsh)
+- `*.zsh` - ZSH-specific config (sourced only by zsh)
+- `*.bash` - Bash-specific config (sourced only by bash)
+- `path.sh` / `path.zsh` / `path.bash` - Loaded first (PATH config)
+- `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic installation script
 
 ## Guidelines
@@ -41,7 +43,9 @@ Machine-specific config lives in `machines/` as JSON files. Use `get_machine_con
 
 ```
 newtopic/
-├── newtopic.zsh          # Shell config (auto-loaded)
+├── newtopic.sh           # Shared shell config (auto-loaded by bash and zsh)
+├── newtopic.zsh          # ZSH-specific config (optional)
+├── newtopic.bash         # Bash-specific config (optional)
 ├── newtopicrc.symlink    # Config to symlink
 └── install.py            # Optional installer
 ```
