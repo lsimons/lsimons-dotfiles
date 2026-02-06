@@ -8,7 +8,7 @@
   },
   "1password": {
     "secrets": {
-      "GITHUB_TOKEN": "op://AI/GITHUB_TOKEN/password"
+      "GITHUB_WORDPRESS_TOKEN": "op://AI/GITHUB_TOKEN/password"
     }
   }
 }
