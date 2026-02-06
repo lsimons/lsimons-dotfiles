@@ -1,0 +1,37 @@
+# lsimons Bash configuration
+# This follows the XDG Base Directory specification
+
+# Set up XDG Base Directory paths if not already set
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# Source all .bash files from the dotfiles directory
+# This allows for modular configuration by topic
+DOTFILES="$HOME/.dotfiles"
+if [ -d "$DOTFILES" ]; then
+  # Enable nullglob so unmatched patterns expand to nothing
+  shopt -s nullglob
+
+  # Load path configuration first
+  for file in "$DOTFILES"/*/path.bash; do
+    [ -r "$file" ] && source "$file"
+  done
+
+  # Load everything else
+  for file in "$DOTFILES"/*/*.bash; do
+    # Skip path.bash and completion.bash (loaded separately)
+    case "$file" in
+      */path.bash|*/completion.bash) continue ;;
+      *) [ -r "$file" ] && source "$file" ;;
+    esac
+  done
+
+  # Load completion configuration last
+  for file in "$DOTFILES"/*/completion.bash; do
+    [ -r "$file" ] && source "$file"
+  done
+
+  shopt -u nullglob
+fi

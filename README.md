@@ -2,7 +2,7 @@
 
 Homedir setup for @lsimons (and @lsimons-bot)
 
-A modular dotfiles configuration for macOS, featuring ZSH and Python support, XDG Base Directory compliance, and 1Password CLI integration for secure secret management.
+A modular dotfiles configuration for macOS, featuring ZSH and Bash support, XDG Base Directory compliance, and 1Password CLI integration for secure secret management.
 
 ## Features
 
@@ -10,6 +10,7 @@ A modular dotfiles configuration for macOS, featuring ZSH and Python support, XD
 - **XDG Base Directory compliant** - Follows the [freedesktop.org specification](https://specifications.freedesktop.org/basedir-spec/latest/)
 - **1Password integration** - Load secrets securely without storing them in git
 - **ZSH configuration** - Clean, modular ZSH setup with Oh My Zsh
+- **Bash configuration** - Modular Bash setup with the same topic-based loading
 - **Python-based installation** - Idempotent installation automation
 - **Homebrew integration** - Automatically installs packages via Homebrew
 - **Development tools** - Includes editors, terminals, CLI tools, and coding agents
@@ -42,6 +43,7 @@ The installation script (`./script/install.py`) will:
 | Topic | Installs |
 |-------|----------|
 | `1password/` | 1Password CLI (`op`) |
+| `bash/` | Bash configuration and directories |
 | `brave/` | Brave Browser |
 | `gemini/` | Gemini CLI |
 | `gh/` | GitHub CLI |
@@ -72,6 +74,7 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ├── machines/         # Machine-specific configuration
 │   ├── default.json  # Default config (used when no hostname match)
 │   └── <hostname>.json # Per-machine overrides
+├── bash/             # Bash configuration
 ├── 1password/        # 1Password CLI integration
 ├── brave/            # Brave browser installer
 ├── gemini/           # Gemini CLI installer
@@ -93,9 +96,10 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ### File Naming Convention
 
 - `*.symlink` - Files symlinked to home directory or XDG directories
-- `*.zsh` - ZSH configuration files, automatically sourced
-- `path.zsh` - Loaded first, for PATH configuration
-- `completion.zsh` - Loaded last, for completion configuration
+- `*.zsh` - ZSH configuration files, automatically sourced by zshrc
+- `*.bash` - Bash configuration files, automatically sourced by bashrc
+- `path.zsh` / `path.bash` - Loaded first, for PATH configuration
+- `completion.zsh` / `completion.bash` - Loaded last, for completion configuration
 - `install.py` - Topic-specific installation script
 
 ## XDG Base Directory Compliance
@@ -111,6 +115,7 @@ This setup follows the XDG Base Directory specification:
 
 All tools are configured to respect these directories:
 - ZSH history: `~/.local/state/zsh/history`
+- Bash history: `~/.local/state/bash/history`
 - Python history: `~/.local/state/python/history`
 - Git config: `~/.config/git/config`
 - nvm: `~/.local/share/nvm`
@@ -163,7 +168,8 @@ op_export GITHUB_TOKEN "op://AI/GitHub/personal_access_token/password"
    ```
 
 2. Add files:
-   - `mytopic.zsh` - Shell configuration (auto-loaded)
+   - `mytopic.zsh` - ZSH configuration (auto-loaded in zsh)
+   - `mytopic.bash` - Bash configuration (auto-loaded in bash)
    - `mytopic.symlink` - File to symlink
    - `install.py` - Installation script (optional)
 
@@ -180,6 +186,15 @@ Check symlink:
 ```bash
 ls -la ~/.zshrc
 # Should show: ~/.zshrc -> ~/.dotfiles/zsh/zshrc.symlink
+```
+
+### Bash not loading configuration
+
+Check symlinks:
+```bash
+ls -la ~/.bashrc ~/.bash_profile
+# Should show: ~/.bashrc -> ~/.dotfiles/bash/bashrc.symlink
+# Should show: ~/.bash_profile -> ~/.dotfiles/bash/bash_profile.symlink
 ```
 
 ### 1Password secrets not loading

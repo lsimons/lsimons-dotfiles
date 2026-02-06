@@ -1,0 +1,7 @@
+# lsimons bash profile
+# On macOS, bash reads .bash_profile for login shells.
+# Source .bashrc so all config lives in one place.
+
+if [ -f "$HOME/.bashrc" ]; then
+  source "$HOME/.bashrc"
+fi
