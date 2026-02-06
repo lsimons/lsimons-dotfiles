@@ -44,6 +44,7 @@ The installation script (`./script/install.py`) will:
 |-------|----------|
 | `1password/` | 1Password CLI (`op`) |
 | `bash/` | Bash configuration and directories |
+| `bash-it/` | Bash-it framework (prompt, plugins) |
 | `brave/` | Brave Browser |
 | `gemini/` | Gemini CLI |
 | `gh/` | GitHub CLI |
