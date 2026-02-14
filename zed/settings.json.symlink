@@ -10,9 +10,26 @@
   "agent": {
     "default_model": {
       "provider": "copilot_chat",
-      "model": "claude-opus-4.5"
+      "model": "claude-opus-4.6"
     },
-    "favorite_models": [],
+    "favorite_models": [
+      {
+        "provider": "copilot_chat",
+        "model": "claude-opus-4.6"
+      },
+      {
+        "provider": "copilot_chat",
+        "model": "claude-haiku-4.5"
+      },
+      {
+        "provider": "copilot_chat",
+        "model": "claude-sonnet-4.5"
+      },
+      {
+        "provider": "copilot_chat",
+        "model": "gpt-5.2-codex"
+      }
+    ],
     "model_parameters": []
   },
   "edit_predictions": {
