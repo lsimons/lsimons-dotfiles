@@ -8,10 +8,23 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   "agent": {
+    "tool_permissions": {
+      "tools": {
+        "create_directory": {
+          "always_allow": [
+            {
+              "pattern": "^lsimons\\-dotfiles/"
+            }
+          ]
+        }
+      }
+    },
     "default_profile": "write",
     "default_model": {
+      "effort": "high",
+      "enable_thinking": false,
       "provider": "copilot_chat",
-      "model": "claude-sonnet-4.6"
+      "model": "gpt-5.4"
     },
     "favorite_models": [
       {
@@ -27,6 +40,11 @@
       {
         "provider": "copilot_chat",
         "model": "claude-sonnet-4.6",
+        "enable_thinking": false
+      },
+      {
+        "provider": "copilot_chat",
+        "model": "gpt-5.4",
         "enable_thinking": false
       }
     ],
