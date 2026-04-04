@@ -25,3 +25,8 @@ fi
 mkdir -p "$XDG_CONFIG_HOME/python"
 mkdir -p "$XDG_CONFIG_HOME/pip"
 mkdir -p "$XDG_CACHE_HOME/pip"
+
+# Alias python to python3 (Homebrew best practice)
+if command -v python3 >/dev/null 2>&1; then
+  alias python=python3
+fi

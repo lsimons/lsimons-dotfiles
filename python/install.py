@@ -5,17 +5,20 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, command_exists
+from helpers import info, success, error, command_exists, brew_install
 
 
 def main():
-    info("Checking Python installation...")
+    info("Installing Python...")
 
-    if not command_exists('python3'):
-        error("Python not found")
+    if command_exists('python3'):
+        success("python3 already installed")
+    elif brew_install('python3'):
+        success("python3 installed")
+    else:
+        error("Failed to install python3")
         return 1
 
-    success("Python is installed")
     return 0
 
 
