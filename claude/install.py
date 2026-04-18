@@ -85,28 +85,16 @@ def write_settings(claude_dir, topic_dir):
 def main():
     info("Installing Claude Code...")
 
-    if command_exists('claude'):
-        info("Updating Claude Code via npm...")
-        try:
-            subprocess.run(
-                ['npm', 'install', '-g', '@anthropic-ai/claude-code'],
-                check=True
-            )
-            success("Claude Code updated")
-        except subprocess.CalledProcessError:
-            error("Failed to update Claude Code")
-            return 1
-    else:
-        info("Installing Claude Code via npm...")
-        try:
-            subprocess.run(
-                ['npm', 'install', '-g', '@anthropic-ai/claude-code'],
-                check=True
-            )
-            success("Claude Code installed")
-        except subprocess.CalledProcessError:
-            error("Failed to install Claude Code")
-            return 1
+    info("Installing/updating Claude Code via official installer...")
+    try:
+        subprocess.run(
+            ['sh', '-c', 'curl -fsSL https://claude.ai/install.sh | sh'],
+            check=True
+        )
+        success("Claude Code installed")
+    except subprocess.CalledProcessError:
+        error("Failed to install Claude Code")
+        return 1
 
     # Ensure ~/.claude directory exists
     claude_dir = Path.home() / '.claude'
