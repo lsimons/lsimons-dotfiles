@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Claude Code status line script
+# Reads JSON from stdin and outputs a formatted status line
+
+input=$(cat)
+
+# Extract fields (all optional — degrade gracefully)
+model=$(echo "$input"          | jq -r '.model.display_name // "Claude"')
+cwd=$(echo "$input"            | jq -r '.workspace.current_dir // .cwd // ""')
+output_style=$(echo "$input"   | jq -r '.output_style.name // empty')
+reasoning=$(echo "$input"      | jq -r '.model.reasoning_effort // .reasoning_effort // .model.thinking.type // empty')
+version=$(echo "$input"        | jq -r '.version // empty')
+used_pct=$(echo "$input"       | jq -r '.context_window.used_percentage // empty')
+remaining_pct=$(echo "$input"  | jq -r '.context_window.remaining_percentage // empty')
+input_tokens=$(echo "$input"   | jq -r '[.context_window.current_usage.input_tokens, .context_window.current_usage.cache_creation_input_tokens, .context_window.current_usage.cache_read_input_tokens] | map(. // 0) | add | if . == 0 then empty else . end')
+context_size=$(echo "$input"   | jq -r '.context_window.context_window_size // .context_window.total // empty')
+
+# ANSI colors (literal \033 sequences — emit with printf '%b')
+RESET='\033[0m'
+DIM='\033[2m'
+CYAN='\033[36m'
+BLUE='\033[34m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+RED='\033[31m'
+MAGENTA='\033[35m'
+GREY='\033[90m'
+
+# Shorten home directory
+if [ -n "$cwd" ]; then
+  short_cwd="${cwd/#$HOME/~}"
+else
+  short_cwd="~"
+fi
+
+# Git branch (skip optional locks so we don't race with other git processes)
+git_branch=""
+if [ -n "$cwd" ] && command -v git >/dev/null 2>&1; then
+  git_branch=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null \
+    || GIT_OPTIONAL_LOCKS=0 git -C "$cwd" rev-parse --short HEAD 2>/dev/null)
+fi
+
+# Context bar: colored by usage
+context_str=""
+if [ -n "$used_pct" ] && [ -n "$remaining_pct" ]; then
+  used_int=$(printf '%.0f' "$used_pct")
+  rem_int=$(printf '%.0f' "$remaining_pct")
+
+  if   [ "$used_int" -ge 80 ]; then ctx_color="$RED"
+  elif [ "$used_int" -ge 50 ]; then ctx_color="$YELLOW"
+  else                              ctx_color="$GREEN"
+  fi
+
+  filled=$(( used_int / 10 ))
+  empty=$(( 10 - filled ))
+  bar=""
+  for ((i=0; i<filled; i++)); do bar="${bar}█"; done
+  for ((i=0; i<empty;  i++)); do bar="${bar}░"; done
+
+  used_k=$(( (${input_tokens:-0} + 500) / 1000 ))
+  total_k=$(( (${context_size:-0} + 500) / 1000 ))
+  if [ "$total_k" -gt 0 ]; then
+    tokens_str="${used_k}k/${total_k}k"
+  else
+    tokens_str="${used_int}%/${rem_int}% left"
+  fi
+
+  context_str=" ${ctx_color}${bar}${RESET} ${DIM}${tokens_str}${RESET}"
+fi
+
+# Assemble the line
+line="${CYAN}${model}${RESET}"
+[ -n "$reasoning" ]    && line="${line} ${DIM}[${reasoning}]${RESET}"
+[ -n "$output_style" ] && [ "$output_style" != "default" ] && line="${line} ${DIM}(${output_style})${RESET}"
+line="${line} ${DIM}in${RESET} ${BLUE}${short_cwd}${RESET}"
+[ -n "$git_branch" ]   && line="${line} ${DIM}on${RESET} ${MAGENTA}${git_branch}${RESET}"
+line="${line}${context_str}"
+
+printf '%b\n' "$line"

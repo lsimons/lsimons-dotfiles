@@ -7,6 +7,10 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "hooks": {},
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline-command.sh"
+  },
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true
   },
