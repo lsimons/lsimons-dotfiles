@@ -63,6 +63,7 @@ The installation script (`./script/install.py`) will:
 | `tmux/` | tmux |
 | `topgrade/` | topgrade (automated updates) |
 | `uv/` | uv (Python package manager) |
+| `vivaldi/` | Vivaldi Browser |
 | `zed/` | Zed editor |
 | `zsh/` | ZSH directories |
 
@@ -100,6 +101,7 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ├── tmux/             # tmux installer
 ├── topgrade/         # topgrade installer
 ├── uv/               # uv Python package manager
+├── vivaldi/          # Vivaldi browser installer
 ├── zed/              # Zed editor installer
 └── zsh/              # ZSH-specific configuration
 ```
