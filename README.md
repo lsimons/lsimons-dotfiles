@@ -49,6 +49,7 @@ The installation script (`./script/install.py`) will:
 | `brave/` | Brave Browser |
 | `gemini/` | Gemini CLI |
 | `gh/` | GitHub CLI |
+| `go/` | Go |
 | `ghostty/` | Ghostty terminal |
 | `git/` | Git (via Homebrew) |
 | `jdk/` | JDK configuration |
