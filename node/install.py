@@ -51,9 +51,22 @@ def main():
         '''
         subprocess.run(['bash', '-c', nvm_script], check=True)
         success("Node.js LTS installed")
-        return 0
     except subprocess.CalledProcessError:
         error("Failed to install Node.js LTS")
+        return 1
+
+    info("Installing pnpm...")
+    try:
+        pnpm_script = f'''
+            export NVM_DIR="{nvm_dir}"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            npm install -g pnpm
+        '''
+        subprocess.run(['bash', '-c', pnpm_script], check=True)
+        success("pnpm installed")
+        return 0
+    except subprocess.CalledProcessError:
+        error("Failed to install pnpm")
         return 1
 
 
