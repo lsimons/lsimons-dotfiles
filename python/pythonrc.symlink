@@ -17,7 +17,10 @@ os.makedirs(os.path.dirname(history_file), exist_ok=True)
 
 # Load history if it exists
 if os.path.exists(history_file):
-    readline.read_history_file(history_file)
+    try:
+        readline.read_history_file(history_file)
+    except OSError:
+        pass
 
 # Save history on exit
 import atexit
