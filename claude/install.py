@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, command_exists, brew_install
+from helpers import info, success, error, command_exists
 
 
 def link_directory(src, dst):
@@ -86,11 +86,25 @@ def main():
     info("Installing Claude Code...")
 
     if command_exists('claude'):
-        success("Claude Code already installed")
+        info("Updating Claude Code via npm...")
+        try:
+            subprocess.run(
+                ['npm', 'install', '-g', '@anthropic-ai/claude-code'],
+                check=True
+            )
+            success("Claude Code updated")
+        except subprocess.CalledProcessError:
+            error("Failed to update Claude Code")
+            return 1
     else:
-        if brew_install('claude-code', cask=True):
+        info("Installing Claude Code via npm...")
+        try:
+            subprocess.run(
+                ['npm', 'install', '-g', '@anthropic-ai/claude-code'],
+                check=True
+            )
             success("Claude Code installed")
-        else:
+        except subprocess.CalledProcessError:
             error("Failed to install Claude Code")
             return 1
 
