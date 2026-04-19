@@ -155,6 +155,18 @@ Invoke-Step "Configure git identity and SSH commit signing" {
 }
 
 # ---------------------------------------------------------------------------
+# Claude settings
+# ---------------------------------------------------------------------------
+
+Invoke-Step "Install Claude Code settings (CLAUDE.md, skills, settings.json)" {
+  $installer = Join-Path $scriptDir 'install-claude-settings.ps1'
+  & $installer
+  if ($LASTEXITCODE -ne 0) {
+    throw "install-claude-settings.ps1 failed with exit code $LASTEXITCODE"
+  }
+}
+
+# ---------------------------------------------------------------------------
 # Optional repo clones
 # ---------------------------------------------------------------------------
 
