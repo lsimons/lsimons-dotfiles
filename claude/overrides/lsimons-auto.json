@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 install.py)",
+      "Bash(python3 install.py *)",
+      "Bash(python3 lsimons_auto/actions/*.py --dry-run)",
+      "Bash(python3 lsimons_auto/actions/*.py --dry-run *)"
+    ]
+  }
+}

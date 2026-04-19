@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./script/install.py)",
+      "Bash(./script/install.py *)",
+      "Bash(python3 bash/install.py)",
+      "Bash(python3 claude/install.py)",
+      "Bash(python3 git/install.py)",
+      "Bash(python3 python/install.py)",
+      "Bash(python3 ssh/install.py)",
+      "Bash(python3 tmux/install.py)",
+      "Bash(python3 zed/install.py)",
+      "Bash(python3 zsh/install.py)",
+      "Bash(python3 claude/sync-repo-settings.py)",
+      "Bash(python3 claude/sync-repo-settings.py *)",
+      "Bash(zsh -c 'source ~/.zshrc*)"
+    ]
+  }
+}
