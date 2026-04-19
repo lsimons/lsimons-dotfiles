@@ -8,16 +8,17 @@ What it does:
   1. Backs up per-language version manager state directories (nvm,
      rustup, cargo, pyenv, rbenv, goenv, nodenv) to
      ~/.dotfiles-backup/migrate-to-mise/<timestamp>/.
-  2. Optionally uninstalls Homebrew formulae that mise will replace
-     (python@3, go, ruby, node, nvm) -- interactive prompt; skipped
-     by default.
+  2. Optionally uninstalls Homebrew formulae that mise now owns
+     (node, nvm, go, ruby) -- interactive per-formula prompt.
 
 What it does NOT do:
-  - It does NOT uninstall Homebrew-installed Python (python@3) by
-    default. That Python is used as the bootstrap interpreter for
-    install.py, and removing it can break re-running the installer.
-    Pass --aggressive-brew if you want to include it in the uninstall
-    prompt.
+  - It does NOT touch Homebrew-installed Python. The `python/` topic's
+    install.py intentionally keeps `python@3` (the current-stable Brew
+    cask) installed alongside mise's Python, because other Brew formulae
+    depend on it and because it's the bootstrap interpreter for
+    install.py itself. `--aggressive-brew` is still offered for cleaning
+    up *old* versioned Python formulae (`python@3.12`, `python@3.13`);
+    `python@3` itself is never in the uninstall list.
   - It does NOT install anything. Run ./script/install.py after.
 
 Usage:
@@ -56,10 +57,11 @@ BACKUP_TARGETS = {
     'nvm-home': HOME / '.nvm',
 }
 
-# Homebrew formulae that mise replaces. Uninstalled only with --aggressive-brew
-# or confirmation.
+# Homebrew formulae that mise replaces. Offered interactively.
+# `python@3` deliberately NOT in the aggressive list: the python/ topic
+# installs it on purpose (see python/install.py).
 BREW_CANDIDATES_SAFE = ['node', 'nvm', 'go', 'ruby']
-BREW_CANDIDATES_AGGRESSIVE = ['python@3', 'python@3.12', 'python@3.13']
+BREW_CANDIDATES_AGGRESSIVE = ['python@3.12', 'python@3.13']
 
 
 def run(cmd, check=True, capture_output=False):
