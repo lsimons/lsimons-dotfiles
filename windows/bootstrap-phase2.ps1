@@ -153,22 +153,25 @@ Invoke-Step "Configure git identity and SSH commit signing" {
 # ---------------------------------------------------------------------------
 
 if ($Repos.Count -gt 0) {
-  Invoke-Step "Clone repos into $GitDir" {
-    if (-not (Test-Path $GitDir)) { New-Item -ItemType Directory -Force -Path $GitDir | Out-Null }
-    Push-Location $GitDir
-    try {
-      foreach ($repo in $Repos) {
-        $name = ($repo -split '/')[-1]
-        if (Test-Path (Join-Path $GitDir $name)) {
-          Write-Ok "already cloned: $name"
-          continue
-        }
-        Write-Info "cloning $repo"
-        gh repo clone $repo
-        if ($LASTEXITCODE -ne 0) { Write-WarnMsg "gh repo clone failed for $repo" }
+  Invoke-Step "Clone repos into $GitDir\<owner>\<repo>" {
+    foreach ($repo in $Repos) {
+      $parts = $repo -split '/'
+      if ($parts.Count -ne 2) {
+        Write-WarnMsg "skipping malformed repo spec '$repo' (expected owner/name)"
+        continue
       }
-    } finally {
-      Pop-Location
+      $owner, $name = $parts
+      $ownerDir = Join-Path $GitDir $owner
+      $target   = Join-Path $ownerDir $name
+
+      if (Test-Path $target) { Write-Ok "already cloned: $owner/$name"; continue }
+      if (-not (Test-Path $ownerDir)) {
+        New-Item -ItemType Directory -Force -Path $ownerDir | Out-Null
+      }
+
+      Write-Info "cloning $repo -> $target"
+      gh repo clone $repo $target
+      if ($LASTEXITCODE -ne 0) { Write-WarnMsg "gh repo clone failed for $repo" }
     }
   }
 }
