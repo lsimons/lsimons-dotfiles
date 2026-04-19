@@ -75,11 +75,6 @@
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~*)",
       "Bash(rm -rf $HOME*)",
-      "Bash(mise run*)",
-      "Bash(mise tasks run*)",
-      "Bash(mise tasks r*)",
-      "Bash(pnpm run*)",
-      "Bash(npm run*)",
       "Bash(find * -delete*)",
       "Bash(find * -exec *)",
       "Bash(find * -execdir *)"
