@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Install Go toolchain via mise."""
+"""Install OpenJDK via mise.
+
+Note: jdk/path.sh still sets JAVA_HOME to IntelliJ's bundled JBR when
+present. mise activation runs after path.sh and will override JAVA_HOME
+with the mise-managed JDK for users who want a command-line default.
+"""
 
 import subprocess
 import sys
@@ -10,19 +15,19 @@ from helpers import info, success, error, command_exists
 
 
 def main():
-    info("Installing Go via mise...")
+    info("Installing OpenJDK via mise...")
 
     if not command_exists('mise'):
         error("mise not found; install the 'mise' topic first")
         return 1
 
     try:
-        subprocess.run(['mise', 'use', '-g', 'go@1.26'], check=True)
+        subprocess.run(['mise', 'use', '-g', 'java@temurin-21'], check=True)
     except subprocess.CalledProcessError:
-        error("Failed to install Go via mise")
+        error("Failed to install OpenJDK via mise")
         return 1
 
-    success("Go installed")
+    success("OpenJDK installed")
     return 0
 
 
