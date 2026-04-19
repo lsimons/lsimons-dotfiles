@@ -9,13 +9,24 @@ Steps:
 3. Create ~/.dotfiles symlink
 4. Setup XDG directories
 5. Run topic-specific installation scripts (each installs its own symlinks)
+
+Pass --dry-run to preview without touching the system. The flag is
+propagated to each topic installer.
 """
 
+import argparse
 import os
 import sys
 import subprocess
 import platform
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from helpers import (  # noqa: E402
+    dry,
+    is_dry_run,
+    set_dry_run,
+)
 
 
 class Colors:
@@ -81,6 +92,9 @@ def check_macos():
     if platform.system() != 'Darwin':
         warn("This installation is designed for macOS")
         warn(f"Detected: {platform.system()}")
+        if is_dry_run():
+            dry("non-macOS platform OK for dry-run")
+            return
         response = input("Continue anyway? (y/N): ")
         if response.lower() != 'y':
             info("Installation cancelled")
@@ -98,6 +112,10 @@ def check_homebrew():
 def install_homebrew():
     """Install Homebrew if not present"""
     info("Checking for Homebrew...")
+
+    if is_dry_run():
+        dry("assume Homebrew is installed; skipping bootstrap")
+        return True
 
     if check_homebrew():
         success("Homebrew is already installed")
@@ -152,6 +170,10 @@ def install_python():
     """Install Python via Homebrew"""
     info("Checking for Homebrew Python...")
 
+    if is_dry_run():
+        dry("assume Homebrew python@3 is installed; skipping bootstrap")
+        return True
+
     if check_homebrew_python():
         success("Python is already installed via Homebrew")
         # Get python3 path
@@ -184,6 +206,8 @@ def install_python():
 
 def get_homebrew_python():
     """Get the path to Homebrew Python"""
+    if is_dry_run():
+        return sys.executable
     result = run_command(['which', 'python3'], capture_output=True)
     return result.stdout.strip()
 
@@ -204,6 +228,9 @@ def create_dotfiles_symlink(dotfiles_root):
         else:
             warn(f"~/.dotfiles exists but points to: {current_target}")
             warn(f"Expected: {dotfiles_root}")
+            if is_dry_run():
+                dry("would prompt to recreate ~/.dotfiles symlink")
+                return True
             response = input("Remove and recreate symlink? (y/N): ")
             if response.lower() != 'y':
                 info("Skipping symlink creation")
@@ -215,6 +242,10 @@ def create_dotfiles_symlink(dotfiles_root):
         error("~/.dotfiles exists as a directory or file, not a symlink")
         error(f"Please move or remove {symlink_path} manually")
         return False
+
+    if is_dry_run():
+        dry(f"would create symlink ~/.dotfiles -> {dotfiles_root}")
+        return True
 
     # Create the symlink
     try:
@@ -235,6 +266,11 @@ def setup_xdg():
     xdg_data_home = Path(os.environ.get('XDG_DATA_HOME', home / '.local/share'))
     xdg_cache_home = Path(os.environ.get('XDG_CACHE_HOME', home / '.cache'))
     xdg_state_home = Path(os.environ.get('XDG_STATE_HOME', home / '.local/state'))
+
+    if is_dry_run():
+        for p in (xdg_config_home, xdg_data_home, xdg_cache_home, xdg_state_home):
+            dry(f"would mkdir {p}")
+        return
 
     xdg_config_home.mkdir(parents=True, exist_ok=True)
     xdg_data_home.mkdir(parents=True, exist_ok=True)
@@ -331,6 +367,8 @@ def run_topic_installers(dotfiles_root, python_path):
     if sorted_topics is None:
         return False
 
+    child_args = ['--dry-run'] if is_dry_run() else []
+
     # Run each installer in order
     for topic in sorted_topics:
         script = topics[topic]
@@ -341,7 +379,7 @@ def run_topic_installers(dotfiles_root, python_path):
             info(f"Running installer for: {topic}")
 
         try:
-            run_command([python_path, str(script)])
+            run_command([python_path, str(script), *child_args])
             success(f"Installed: {topic}")
         except subprocess.CalledProcessError:
             error(f"Failed to install: {topic}")
@@ -350,9 +388,24 @@ def run_topic_installers(dotfiles_root, python_path):
     return True
 
 
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Print what would happen without making any changes.',
+    )
+    return parser.parse_args(argv)
+
+
 def main():
     """Main installation flow"""
+    args = parse_args()
+    set_dry_run(args.dry_run)
+
     info("Starting lsimons-dotfiles installation")
+    if is_dry_run():
+        dry("dry-run mode: no changes will be made")
     info("=" * 50)
 
     # Get dotfiles root directory
@@ -394,11 +447,14 @@ def main():
 
     # Done
     success("=" * 50)
-    success("Installation complete!")
-    info("")
-    info("Next steps:")
-    info("  1. Run 'source ~/.zshrc' to load the configuration")
-    info("  2. Configure 1Password CLI for secret management")
+    if is_dry_run():
+        success("Dry-run complete. No changes made.")
+    else:
+        success("Installation complete!")
+        info("")
+        info("Next steps:")
+        info("  1. Run 'source ~/.zshrc' to load the configuration")
+        info("  2. Configure 1Password CLI for secret management")
 
 
 if __name__ == '__main__':

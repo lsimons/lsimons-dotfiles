@@ -1,5 +1,6 @@
 """Common helper functions for topic install scripts."""
 
+import argparse
 import json
 import os
 import shutil
@@ -11,6 +12,8 @@ from pathlib import Path
 
 # Root of the dotfiles repository
 DOTFILES_ROOT = Path(__file__).resolve().parent.parent
+
+_DRY_RUN = False
 
 
 def info(msg):
@@ -33,8 +36,71 @@ def error(msg):
     print(f"[ERROR] {msg}", file=sys.stderr)
 
 
+def dry(msg):
+    """Print a dry-run message."""
+    print(f"[DRY-RUN] {msg}")
+
+
+def is_dry_run():
+    """Return True when dry-run mode is active for this process."""
+    return _DRY_RUN
+
+
+def set_dry_run(value=True):
+    """Explicitly set the dry-run flag."""
+    global _DRY_RUN
+    _DRY_RUN = bool(value)
+
+
+def parse_dry_run(argv=None):
+    """Read --dry-run from argv and update the dry-run flag.
+
+    Safe to call from any install.py at the top of main(). Unknown args
+    are ignored so topic scripts can still add their own argparse later.
+    Returns True if dry-run mode is now active.
+    """
+    if argv is None:
+        argv = sys.argv[1:]
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--dry-run', action='store_true')
+    args, _ = parser.parse_known_args(argv)
+    if args.dry_run:
+        set_dry_run(True)
+    return is_dry_run()
+
+
+def run_cmd(cmd, check=True, capture_output=False, env=None, shell=False):
+    """Run a subprocess command, honouring dry-run mode.
+
+    In dry-run mode, logs the command and returns a fake successful
+    CompletedProcess without executing anything.
+    """
+    if _DRY_RUN:
+        if isinstance(cmd, str):
+            cmd_str = cmd
+        else:
+            cmd_str = ' '.join(str(c) for c in cmd)
+        dry(f"would run: {cmd_str}")
+        return subprocess.CompletedProcess(cmd, 0, stdout='', stderr='')
+    return subprocess.run(
+        cmd,
+        check=check,
+        capture_output=capture_output,
+        text=True,
+        env=env,
+        shell=shell,
+    )
+
+
 def command_exists(cmd):
-    """Check if a command exists in PATH."""
+    """Check if a command exists in PATH.
+
+    In dry-run mode, pretends every command exists so downstream code
+    takes the "tool is available" path.
+    """
+    if _DRY_RUN:
+        dry(f"assume '{cmd}' is on PATH")
+        return True
     result = subprocess.run(['which', cmd], capture_output=True)
     return result.returncode == 0
 
@@ -45,6 +111,9 @@ def app_exists(app_name):
     Args:
         app_name: Name without .app suffix (e.g., 'Brave Browser')
     """
+    if _DRY_RUN:
+        dry(f"assume '{app_name}.app' is installed")
+        return True
     return Path(f'/Applications/{app_name}.app').exists()
 
 
@@ -58,6 +127,11 @@ def brew_install(package, cask=False):
     Returns:
         True on success, False on failure
     """
+    if _DRY_RUN:
+        suffix = ' (cask)' if cask else ''
+        dry(f"would brew install {package}{suffix}")
+        return True
+
     cmd = ['brew', 'install']
     if cask:
         cmd.append('--cask')
@@ -71,9 +145,58 @@ def brew_install(package, cask=False):
 
 
 def brew_is_installed(package):
-    """Check if a package is installed via Homebrew."""
+    """Check if a package is installed via Homebrew.
+
+    In dry-run mode, pretends the package is already installed so the
+    install path is short-circuited to a no-op.
+    """
+    if _DRY_RUN:
+        dry(f"assume brew package '{package}' is already installed")
+        return True
     result = subprocess.run(['brew', 'list', package], capture_output=True)
     return result.returncode == 0
+
+
+def mise_use(tool_spec):
+    """Run `mise use -g <tool_spec>`. Respects dry-run.
+
+    Returns True on success, False on failure.
+    """
+    if _DRY_RUN:
+        dry(f"would run: mise use -g {tool_spec}")
+        return True
+    try:
+        subprocess.run(['mise', 'use', '-g', tool_spec], check=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def make_dir(path, mode=None, parents=True):
+    """Create a directory, honouring dry-run."""
+    path = Path(path)
+    if _DRY_RUN:
+        dry(f"would mkdir {path}")
+        return
+    if mode is not None:
+        path.mkdir(mode=mode, parents=parents, exist_ok=True)
+    else:
+        path.mkdir(parents=parents, exist_ok=True)
+
+
+def write_file(path, content, mode=None):
+    """Write text content to path, honouring dry-run.
+
+    Creates parent directories. Applies `mode` (e.g. 0o600) if given.
+    """
+    path = Path(path)
+    if _DRY_RUN:
+        dry(f"would write {path} ({len(content)} bytes)")
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+    if mode is not None:
+        path.chmod(mode)
 
 
 def get_short_hostname():
@@ -95,13 +218,17 @@ def _deep_merge(base, override):
 def backup_file(file_path):
     """Back up an existing file or symlink before it's replaced."""
     path = Path(file_path)
-    if path.exists() or path.is_symlink():
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_dir = Path.home() / '.dotfiles-backup' / timestamp
-        backup_dir.mkdir(parents=True, exist_ok=True)
-        dest = backup_dir / path.name
-        shutil.move(str(path), str(dest))
-        info(f"Backed up {file_path} to {dest}")
+    if not (path.exists() or path.is_symlink()):
+        return
+    if _DRY_RUN:
+        dry(f"would back up {file_path}")
+        return
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_dir = Path.home() / '.dotfiles-backup' / timestamp
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    dest = backup_dir / path.name
+    shutil.move(str(path), str(dest))
+    info(f"Backed up {file_path} to {dest}")
 
 
 def link_file(src, dst):
@@ -119,6 +246,10 @@ def link_file(src, dst):
     elif dst_path.exists():
         warn(f"File exists: {dst}")
         backup_file(dst)
+
+    if _DRY_RUN:
+        dry(f"would link {dst} -> {src}")
+        return True
 
     dst_path.parent.mkdir(parents=True, exist_ok=True)
     dst_path.symlink_to(src_path)

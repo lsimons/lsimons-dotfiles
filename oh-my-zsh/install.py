@@ -7,14 +7,15 @@ import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error
+from helpers import error, info, is_dry_run, parse_dry_run, run_cmd, success
 
 
 def main():
+    parse_dry_run()
     info("Installing Oh My Zsh...")
 
     oh_my_zsh_dir = Path.home() / '.oh-my-zsh'
-    if oh_my_zsh_dir.exists():
+    if not is_dry_run() and oh_my_zsh_dir.exists():
         success("Oh My Zsh already installed")
         return 0
 
@@ -27,10 +28,10 @@ def main():
             "https://raw.githubusercontent.com"
             "/ohmyzsh/ohmyzsh/master/tools/install.sh"
         )
-        subprocess.run(
+        run_cmd(
             ['sh', '-c', f'curl -fsSL {omz_url} | sh'],
             check=True,
-            env=env
+            env=env,
         )
         success("Oh My Zsh installed")
         return 0

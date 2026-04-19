@@ -5,7 +5,15 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
-from helpers import brew_install, brew_is_installed, error, info, success
+from helpers import (
+    brew_install,
+    brew_is_installed,
+    error,
+    info,
+    parse_dry_run,
+    success,
+    write_file,
+)
 
 AWS_CONFIG_DIR = Path.home() / ".aws"
 AWS_CONFIG_FILE = AWS_CONFIG_DIR / "config"
@@ -18,6 +26,7 @@ output = json
 
 
 def main():
+    parse_dry_run()
     info("Installing AWS CLI...")
 
     if brew_is_installed("awscli"):
@@ -33,8 +42,7 @@ def main():
         success(f"{AWS_CONFIG_FILE} already exists, skipping")
     else:
         info(f"Creating default {AWS_CONFIG_FILE}...")
-        AWS_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        AWS_CONFIG_FILE.write_text(DEFAULT_CONFIG)
+        write_file(AWS_CONFIG_FILE, DEFAULT_CONFIG)
         success(f"Created {AWS_CONFIG_FILE}")
 
     return 0

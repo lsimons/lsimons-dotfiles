@@ -69,7 +69,15 @@ def build_settings(tasks: list[str], override: dict | None) -> dict:
     return {'permissions': perms_out}
 
 
+DOTFILES_REPO = Path(__file__).resolve().parents[1]
+
+
 def sync_repo(repo: Path, overrides_dir: Path, dry_run: bool) -> bool:
+    # Don't auto-generate settings for the dotfiles repo itself; its
+    # .claude/settings.json is maintained by hand.
+    if repo.resolve() == DOTFILES_REPO:
+        return False
+
     mise_toml = repo / '.mise.toml'
     override_file = overrides_dir / f'{repo.name}.json'
 

@@ -25,23 +25,12 @@ On an existing macOS system with Homebrew:
 mkdir -p ~/git/lsimons && cd ~/git/lsimons
 git clone https://github.com/lsimons/lsimons-dotfiles.git
 cd lsimons-dotfiles
-./script/install.py
+./script/install.py              # preview first: ./script/install.py --dry-run
 source ~/.zshrc
 ```
 
-### Migrating from pre-mise setup
-
-If you had this repo installed before mise adoption (nvm / rustup /
-pyenv / brew-managed language runtimes), first run the one-shot
-migration helper to back those up:
-
-```bash
-python3 script/migrate.py --dry-run   # review the plan
-python3 script/migrate.py             # interactive
-./script/install.py                   # install mise + topics
-```
-
-Backups land in `~/.dotfiles-backup/migrate-to-mise/<timestamp>/`.
+Run `python3 script/check.py` (or `mise run check`) to validate the
+repo without touching your system — this is what CI runs on every push.
 
 ## What Gets Installed
 
@@ -102,7 +91,8 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 ```
 .
 ├── script/           # Installation scripts and helpers
-│   ├── install.py    # Main installer
+│   ├── install.py    # Main installer (supports --dry-run)
+│   ├── check.py      # Validation checks (py_compile, ruff, JSON, install dry-run)
 │   └── helpers.py    # Shared functions for topic installers
 ├── machines/         # Machine-specific configuration
 │   ├── default.json  # Default config (used when no hostname match)

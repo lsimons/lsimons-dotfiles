@@ -6,10 +6,19 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, brew_install, brew_is_installed
+from helpers import (
+    brew_install,
+    brew_is_installed,
+    error,
+    info,
+    parse_dry_run,
+    run_cmd,
+    success,
+)
 
 
 def main():
+    parse_dry_run()
     info("Installing tfenv and Terraform...")
 
     if brew_is_installed('tfenv'):
@@ -23,8 +32,8 @@ def main():
 
     info("Installing latest stable Terraform...")
     try:
-        subprocess.run(['tfenv', 'install', 'latest'], check=True)
-        subprocess.run(['tfenv', 'use', 'latest'], check=True)
+        run_cmd(['tfenv', 'install', 'latest'], check=True)
+        run_cmd(['tfenv', 'use', 'latest'], check=True)
         success("Terraform installed")
     except subprocess.CalledProcessError:
         error("Failed to install Terraform via tfenv")

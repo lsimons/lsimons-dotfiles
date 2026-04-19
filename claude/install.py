@@ -8,7 +8,16 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import command_exists, error, info, install_symlinks, success
+from helpers import (
+    dry,
+    error,
+    info,
+    install_symlinks,
+    is_dry_run,
+    parse_dry_run,
+    run_cmd,
+    success,
+)
 
 
 def link_directory(src, dst):
@@ -20,14 +29,24 @@ def link_directory(src, dst):
         if dst_path.resolve() == src_path.resolve():
             success(f"Already linked: {dst}")
             return True
-        dst_path.unlink()
+        if is_dry_run():
+            dry(f"would unlink {dst}")
+        else:
+            dst_path.unlink()
     elif dst_path.exists():
         # Backup existing directory
         backup = dst_path.with_suffix('.backup')
         info(f"Backing up {dst} to {backup}")
-        if backup.exists():
-            shutil.rmtree(backup)
-        shutil.move(str(dst_path), str(backup))
+        if is_dry_run():
+            dry(f"would move {dst} -> {backup}")
+        else:
+            if backup.exists():
+                shutil.rmtree(backup)
+            shutil.move(str(dst_path), str(backup))
+
+    if is_dry_run():
+        dry(f"would link {dst} -> {src}")
+        return True
 
     dst_path.parent.mkdir(parents=True, exist_ok=True)
     dst_path.symlink_to(src_path)
@@ -71,6 +90,10 @@ def write_settings(claude_dir, topic_dir):
     else:
         info("No git email found; skipping attribution config")
 
+    if is_dry_run():
+        dry(f"would write {settings_path}")
+        return
+
     # If settings.json is currently a symlink, replace it with a real file
     if settings_path.is_symlink():
         settings_path.unlink()
@@ -83,15 +106,16 @@ def write_settings(claude_dir, topic_dir):
 
 
 def main():
+    parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
 
     info("Installing Claude Code...")
 
     info("Installing/updating Claude Code via official installer...")
     try:
-        subprocess.run(
+        run_cmd(
             ['sh', '-c', 'curl -fsSL https://claude.ai/install.sh | sh'],
-            check=True
+            check=True,
         )
         success("Claude Code installed")
     except subprocess.CalledProcessError:
@@ -100,7 +124,10 @@ def main():
 
     # Ensure ~/.claude directory exists
     claude_dir = Path.home() / '.claude'
-    claude_dir.mkdir(parents=True, exist_ok=True)
+    if is_dry_run():
+        dry(f"would mkdir {claude_dir}")
+    else:
+        claude_dir.mkdir(parents=True, exist_ok=True)
 
     topic_dir = Path(__file__).resolve().parent
 

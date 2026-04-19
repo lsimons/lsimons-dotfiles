@@ -5,20 +5,15 @@ Installed via `mise use -g cargo:fnox` per the mise-adoption spec
 (requires a Rust toolchain, which the `rust` topic installs via mise).
 """
 
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, command_exists
-
-
-def _mise_run(args):
-    """Run a mise command, inheriting stdout/stderr."""
-    return subprocess.run(['mise', *args], check=True)
+from helpers import command_exists, error, info, mise_use, parse_dry_run, success
 
 
 def main():
+    parse_dry_run()
     info("Installing fnox...")
 
     if not command_exists('mise'):
@@ -29,9 +24,7 @@ def main():
         success("fnox already installed")
         return 0
 
-    try:
-        _mise_run(['use', '-g', 'cargo:fnox'])
-    except subprocess.CalledProcessError:
+    if not mise_use('cargo:fnox'):
         error("Failed to install fnox via 'mise use -g cargo:fnox'")
         return 1
 

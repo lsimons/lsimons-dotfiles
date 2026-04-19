@@ -7,6 +7,8 @@ Personal dotfiles repository for macOS. Topic-based structure inspired by [holma
 ## Quick Reference
 
 - **Install**: `./script/install.py`
+- **Preview install**: `./script/install.py --dry-run`
+- **Quality checks**: `python3 script/check.py` (or `mise run check`)
 - **Test ZSH**: `zsh -c 'source ~/.zshrc && echo "Success"'`
 
 ## Structure
@@ -71,10 +73,13 @@ Work is NOT complete until `git push` succeeds.
 
 1. **Quality gates** (if code changed):
    ```bash
-   ./script/install.py
-   python3 -m py_compile script/install.py
-   git diff  # check for secrets
+   python3 script/check.py   # or: mise run check
+   git diff                   # check for secrets
    ```
+
+   `check.py` runs `py_compile`, `ruff`, JSON validation, and
+   `script/install.py --dry-run` (which exercises every topic
+   installer without touching the system). It's what CI runs.
 
 2. **Push**:
    ```bash

@@ -5,10 +5,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, app_exists, brew_install
+from helpers import app_exists, brew_install, error, info, parse_dry_run, success
 
 
 def main():
+    parse_dry_run()
     info("Installing Ghostty...")
 
     if app_exists('Ghostty'):

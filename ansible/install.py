@@ -5,12 +5,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
-from helpers import brew_install, brew_is_installed, error, info, success
+from helpers import brew_install, brew_is_installed, error, info, parse_dry_run, success
 
 PACKAGES = ["ansible", "ansible-lint", "yamllint"]
 
 
 def main():
+    parse_dry_run()
     info("Installing Ansible and related tools...")
 
     failed = []

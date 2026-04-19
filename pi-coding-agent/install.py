@@ -8,7 +8,18 @@ import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, command_exists
+from helpers import (
+    command_exists,
+    dry,
+    error,
+    info,
+    is_dry_run,
+    link_file,
+    parse_dry_run,
+    run_cmd,
+    success,
+    write_file,
+)
 
 
 def install_npm_package():
@@ -20,20 +31,21 @@ def install_npm_package():
         xdg_data_home = os.environ.get('XDG_DATA_HOME', home)
         nvm_dir = Path(xdg_data_home) / 'nvm'
 
-        if not (nvm_dir / 'nvm.sh').exists():
+        if not (nvm_dir / 'nvm.sh').exists() and not is_dry_run():
             error("npm not found. Please install Node.js first (run node/install.py)")
             return 1
 
     # Check if already installed (via nvm environment)
-    check_script = '''
-        export NVM_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-        which pi 2>/dev/null
-    '''
-    result = subprocess.run(['bash', '-c', check_script], capture_output=True)
-    if result.returncode == 0:
-        success("pi-coding-agent already installed")
-        return 0
+    if not is_dry_run():
+        check_script = '''
+            export NVM_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            which pi 2>/dev/null
+        '''
+        result = subprocess.run(['bash', '-c', check_script], capture_output=True)
+        if result.returncode == 0:
+            success("pi-coding-agent already installed")
+            return 0
 
     try:
         install_script = '''
@@ -41,7 +53,7 @@ def install_npm_package():
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
             npm install -g @mariozechner/pi-coding-agent
         '''
-        subprocess.run(['bash', '-c', install_script], check=True)
+        run_cmd(['bash', '-c', install_script], check=True)
         success("pi-coding-agent installed")
         return 0
     except subprocess.CalledProcessError:
@@ -58,27 +70,10 @@ def configure_agent():
     settings_json = pi_agent_dir / 'settings.json'
     claude_md_source = dotfiles / 'claude' / 'CLAUDE.md.symlink'
 
-    # Ensure ~/.pi/agent exists
-    pi_agent_dir.mkdir(parents=True, exist_ok=True)
+    if not is_dry_run():
+        pi_agent_dir.mkdir(parents=True, exist_ok=True)
 
-    # Symlink AGENTS.md -> claude/CLAUDE.md.symlink
-    if agents_md.is_symlink():
-        current = agents_md.resolve()
-        if current == claude_md_source.resolve():
-            success("AGENTS.md already linked correctly")
-        else:
-            info(f"AGENTS.md points to {current}, relinking")
-            agents_md.unlink()
-            agents_md.symlink_to(claude_md_source)
-            success(f"Linked AGENTS.md -> {claude_md_source}")
-    elif agents_md.exists():
-        info("AGENTS.md exists as regular file, replacing with symlink")
-        agents_md.unlink()
-        agents_md.symlink_to(claude_md_source)
-        success(f"Linked AGENTS.md -> {claude_md_source}")
-    else:
-        agents_md.symlink_to(claude_md_source)
-        success(f"Linked AGENTS.md -> {claude_md_source}")
+    link_file(claude_md_source, agents_md)
 
     # Configure non-volatile settings in settings.json (preserves lastChangelogVersion)
     default_settings = {
@@ -96,21 +91,22 @@ def configure_agent():
                 settings[key] = value
                 updated = True
         if updated:
-            with open(settings_json, 'w') as f:
-                json.dump(settings, f, indent=2)
-                f.write('\n')
+            content = json.dumps(settings, indent=2) + '\n'
+            write_file(settings_json, content)
             success("Updated settings.json with defaults")
         else:
             success("settings.json already has correct defaults")
     else:
-        settings = default_settings.copy()
-        with open(settings_json, 'w') as f:
-            json.dump(settings, f, indent=2)
-            f.write('\n')
-        success("Created settings.json with defaults")
+        if is_dry_run():
+            dry(f"would write {settings_json}")
+        else:
+            content = json.dumps(default_settings, indent=2) + '\n'
+            write_file(settings_json, content)
+            success("Created settings.json with defaults")
 
 
 def main():
+    parse_dry_run()
     info("Setting up pi-coding-agent...")
 
     result = install_npm_package()

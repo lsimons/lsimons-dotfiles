@@ -7,13 +7,22 @@ from Finder / Dock can find mise-managed tools.
 """
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
-    DOTFILES_ROOT, info, success, error, command_exists, brew_install,
+    DOTFILES_ROOT,
+    brew_install,
+    command_exists,
+    dry,
+    error,
+    info,
+    is_dry_run,
+    parse_dry_run,
+    run_cmd,
+    success,
+    write_file,
 )
 
 
@@ -42,24 +51,34 @@ def install_launch_agent():
 
     content = template.read_text().replace('__MISE_SHIMS__', str(shims_path))
 
+    if is_dry_run():
+        dry(f"would install LaunchAgent {dest}")
+        return True
+
     agents_dir.mkdir(parents=True, exist_ok=True)
 
     if dest.exists():
-        subprocess.run(
+        run_cmd(
             ['launchctl', 'unload', str(dest)],
             capture_output=True,
+            check=False,
         )
 
     if dest.exists() and dest.read_text() == content:
-        subprocess.run(
+        run_cmd(
             ['launchctl', 'load', str(dest)],
             capture_output=True,
+            check=False,
         )
         success("mise-gui-path LaunchAgent already up to date")
         return True
 
-    dest.write_text(content)
-    subprocess.run(['launchctl', 'load', str(dest)], capture_output=True)
+    write_file(dest, content)
+    run_cmd(
+        ['launchctl', 'load', str(dest)],
+        capture_output=True,
+        check=False,
+    )
     success(
         "Installed mise-gui-path LaunchAgent "
         "(GUI apps will see mise shims after next login)"
@@ -68,6 +87,7 @@ def install_launch_agent():
 
 
 def main():
+    parse_dry_run()
     info("Installing mise...")
 
     if not install_mise():

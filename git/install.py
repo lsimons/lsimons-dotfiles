@@ -13,7 +13,9 @@ from helpers import (
     get_machine_config,
     info,
     install_symlinks,
+    parse_dry_run,
     success,
+    write_file,
 )
 
 
@@ -35,9 +37,6 @@ email = {git_user["email"]}
 signingkey = {git_user["signingkey"]}
 """
 
-    # Ensure directory exists
-    config_local.parent.mkdir(parents=True, exist_ok=True)
-
     # Check if content changed
     if config_local.exists():
         existing = config_local.read_text()
@@ -45,13 +44,14 @@ signingkey = {git_user["signingkey"]}
             success(f"Git config.local already up to date ({git_user['name']})")
             return True
 
-    config_local.write_text(content)
+    write_file(config_local, content)
     name, email = git_user["name"], git_user["email"]
     success(f"Generated git config.local for {hostname}: {name} <{email}>")
     return True
 
 
 def main():
+    parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
 
     info("Installing Git...")

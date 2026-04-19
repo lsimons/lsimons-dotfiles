@@ -5,7 +5,16 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, success, error, command_exists, brew_install
+from helpers import (
+    brew_install,
+    command_exists,
+    error,
+    info,
+    is_dry_run,
+    link_file,
+    parse_dry_run,
+    success,
+)
 
 
 def configure_gemini():
@@ -15,21 +24,14 @@ def configure_gemini():
     gemini_md = gemini_dir / 'GEMINI.md'
     claude_md_source = dotfiles / 'claude' / 'CLAUDE.md.symlink'
 
-    gemini_dir.mkdir(parents=True, exist_ok=True)
+    if not is_dry_run():
+        gemini_dir.mkdir(parents=True, exist_ok=True)
 
-    if gemini_md.is_symlink():
-        if gemini_md.resolve() == claude_md_source.resolve():
-            success("GEMINI.md already linked correctly")
-            return
-        gemini_md.unlink()
-    elif gemini_md.exists():
-        gemini_md.unlink()
-
-    gemini_md.symlink_to(claude_md_source)
-    success(f"Linked GEMINI.md -> {claude_md_source}")
+    link_file(claude_md_source, gemini_md)
 
 
 def main():
+    parse_dry_run()
     info("Installing Gemini CLI...")
 
     if command_exists('gemini'):

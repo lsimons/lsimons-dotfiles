@@ -6,15 +6,21 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, install_symlinks, success
+from helpers import dry, info, install_symlinks, is_dry_run, parse_dry_run, success
 
 
 def main():
+    parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
 
     info("Configuring SSH...")
 
     ssh_dir = Path.home() / '.ssh'
+    if is_dry_run():
+        dry(f"would ensure {ssh_dir} exists with mode 0700 and config.local exists")
+        success("SSH configured")
+        return 0
+
     ssh_dir.mkdir(mode=0o700, exist_ok=True)
 
     # Ensure correct permissions

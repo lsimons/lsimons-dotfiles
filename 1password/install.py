@@ -2,14 +2,23 @@
 """Installation script for 1Password CLI"""
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
-    DOTFILES_ROOT, info, success, error, command_exists,
-    brew_install, get_machine_config,
+    DOTFILES_ROOT,
+    brew_install,
+    command_exists,
+    dry,
+    error,
+    get_machine_config,
+    info,
+    is_dry_run,
+    parse_dry_run,
+    run_cmd,
+    success,
+    write_file,
 )
 
 
@@ -39,21 +48,21 @@ def generate_env_file():
 
     content = '\n'.join(entries.values()) + '\n'
 
-    # Write env file
-    env_dir.mkdir(parents=True, exist_ok=True)
     if env_file.exists() and env_file.read_text() == content:
         success("1Password env file already up to date")
     else:
-        env_file.write_text(content)
-        env_file.chmod(0o600)
+        write_file(env_file, content, mode=0o600)
         success(f"Generated 1Password env file for {hostname}")
 
     # Delete stale cache so next shell picks up new config
     xdg_cache_home = Path(os.environ.get('XDG_CACHE_HOME', home / '.cache'))
     cache_file = xdg_cache_home / '1password' / 'secrets.sh'
     if cache_file.exists():
-        cache_file.unlink()
-        info("Deleted stale secrets cache")
+        if is_dry_run():
+            dry(f"would delete stale cache {cache_file}")
+        else:
+            cache_file.unlink()
+            info("Deleted stale secrets cache")
 
     return str(cache_file)
 
@@ -72,32 +81,43 @@ def install_launch_agent(cache_file_path):
 
     content = template.read_text().replace('__CACHE_FILE__', cache_file_path)
 
+    if is_dry_run():
+        dry(f"would install LaunchAgent {dest}")
+        return True
+
     agents_dir.mkdir(parents=True, exist_ok=True)
 
     # Unload old agent if present
     if dest.exists():
-        subprocess.run(
+        run_cmd(
             ['launchctl', 'unload', str(dest)],
-            capture_output=True
+            capture_output=True,
+            check=False,
         )
 
     # Check if content changed
     if dest.exists() and dest.read_text() == content:
         # Reload in case it was unloaded
-        subprocess.run(
+        run_cmd(
             ['launchctl', 'load', str(dest)],
-            capture_output=True
+            capture_output=True,
+            check=False,
         )
         success("LaunchAgent already up to date")
         return True
 
-    dest.write_text(content)
-    subprocess.run(['launchctl', 'load', str(dest)], capture_output=True)
+    write_file(dest, content)
+    run_cmd(
+        ['launchctl', 'load', str(dest)],
+        capture_output=True,
+        check=False,
+    )
     success("Installed 1Password cache cleanup LaunchAgent")
     return True
 
 
 def main():
+    parse_dry_run()
     info("Installing 1Password CLI...")
 
     if command_exists('op'):

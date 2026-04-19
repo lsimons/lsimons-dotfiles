@@ -6,18 +6,18 @@ import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import info, install_symlinks, success
+from helpers import info, install_symlinks, make_dir, parse_dry_run, success
 
 
 def main():
+    parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
 
     info("Setting up Bash directories...")
 
     xdg_state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state'))
 
-    bash_state = xdg_state / 'bash'
-    bash_state.mkdir(parents=True, exist_ok=True)
+    make_dir(xdg_state / 'bash')
 
     success("Bash directories configured")
     return 0

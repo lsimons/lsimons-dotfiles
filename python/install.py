@@ -6,27 +6,30 @@ continue to work. Then installs Python via mise so mise shims take precedence
 in interactive shells, giving the user the mise-managed version.
 """
 
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import command_exists, error, info, install_symlinks, success
+from helpers import (
+    brew_install,
+    brew_is_installed,
+    command_exists,
+    error,
+    info,
+    install_symlinks,
+    mise_use,
+    parse_dry_run,
+    success,
+)
 
 
 def install_homebrew_python():
-    result = subprocess.run(
-        ['brew', 'list', 'python@3'],
-        capture_output=True
-    )
-    if result.returncode == 0:
+    if brew_is_installed('python@3'):
         info("Homebrew python@3 already installed")
         return True
 
     info("Installing python@3 via Homebrew...")
-    try:
-        subprocess.run(['brew', 'install', 'python@3'], check=True)
-    except subprocess.CalledProcessError:
+    if not brew_install('python@3'):
         error("Failed to install python@3 via Homebrew")
         return False
 
@@ -40,9 +43,7 @@ def install_mise_python():
         return False
 
     info("Installing Python via mise...")
-    try:
-        subprocess.run(['mise', 'use', '-g', 'python@3.14'], check=True)
-    except subprocess.CalledProcessError:
+    if not mise_use('python@3.14'):
         error("Failed to install Python via mise")
         return False
 
@@ -51,6 +52,7 @@ def install_mise_python():
 
 
 def main():
+    parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
 
     if not install_homebrew_python():
