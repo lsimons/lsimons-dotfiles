@@ -24,6 +24,26 @@ For the rationale (why native-only, why these tools, constraints), see
 
 ## Run
 
+### Phase 0 — unblock the scripts (once)
+
+Fresh Windows 11 blocks unsigned scripts by default, and any file extracted
+from a downloaded ZIP carries a Mark-of-the-Web that makes `RemoteSigned`
+refuse it too. Fix both in one shot from the `windows\` directory:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+Get-ChildItem -Recurse | Unblock-File
+```
+
+Or bypass per-invocation (no permanent policy change):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\bootstrap-phase1.ps1
+```
+
+If you `git clone` the repo instead of downloading a ZIP, the Mark-of-the-Web
+doesn't apply and `Set-ExecutionPolicy RemoteSigned` alone is enough.
+
 ### Phase 1 — unattended
 
 From a **non-admin** PowerShell (5.1 is fine; pwsh 7 installs during this phase):
