@@ -1,0 +1,56 @@
+{
+  "$help": "https://aka.ms/terminal-documentation",
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+  "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+  "theme": "dark",
+  "copyOnSelect": false,
+  "copyFormatting": "none",
+  "useAcrylicInTabRow": true,
+  "profiles": {
+    "defaults": {
+      "colorScheme": "Sandbox Green",
+      "font": {
+        "face": "CaskaydiaCove Nerd Font",
+        "size": 11
+      },
+      "cursorShape": "filledBox",
+      "useAcrylic": true,
+      "opacity": 92,
+      "padding": "8, 8, 8, 8",
+      "scrollbarState": "hidden",
+      "antialiasingMode": "cleartype"
+    },
+    "list": []
+  },
+  "schemes": [
+    {
+      "name": "Sandbox Green",
+      "background": "#0B1F14",
+      "foreground": "#C8E6C9",
+      "cursorColor": "#00E676",
+      "selectionBackground": "#2E7D32",
+      "black": "#0B1F14",
+      "red": "#FF6E6E",
+      "green": "#69F0AE",
+      "yellow": "#FFD54F",
+      "blue": "#64B5F6",
+      "purple": "#CE93D8",
+      "cyan": "#80DEEA",
+      "white": "#C8E6C9",
+      "brightBlack": "#4E6E5D",
+      "brightRed": "#FF8A80",
+      "brightGreen": "#B9F6CA",
+      "brightYellow": "#FFE082",
+      "brightBlue": "#82B1FF",
+      "brightPurple": "#EA80FC",
+      "brightCyan": "#84FFFF",
+      "brightWhite": "#E8F5E9"
+    }
+  ],
+  "actions": [
+    { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+c" },
+    { "command": "paste", "keys": "ctrl+v" },
+    { "command": "find", "keys": "ctrl+shift+f" },
+    { "command": { "action": "splitPane", "split": "auto", "splitMode": "duplicate" }, "keys": "alt+shift+d" }
+  ]
+}

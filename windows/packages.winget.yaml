@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+#
+# Declarative winget manifest for the Windows 11 ARM64 AI-agent VM.
+# See ../docs/AGENT_WINDOWS_SETUP.md for rationale.
+#
+# Apply with:
+#     winget configure --file packages.winget.yaml \
+#                      --accept-configuration-agreements
+#
+# All packages here are GUI apps or system components that want MSI-style
+# machine-wide install. Unixy CLI tools live in scoopfile.json.
+
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    # --- Core dev toolchain ---
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: Git
+      directives:
+        description: Install Git for Windows
+      settings:
+        id: Git.Git
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: GitHubCLI
+      directives:
+        description: Install GitHub CLI
+      settings:
+        id: GitHub.cli
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: PowerShell7
+      directives:
+        description: Install PowerShell 7
+      settings:
+        id: Microsoft.PowerShell
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: WindowsTerminal
+      directives:
+        description: Install Windows Terminal
+      settings:
+        id: Microsoft.WindowsTerminal
+        source: winget
+
+    # --- Editor ---
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: Zed
+      directives:
+        description: Install Zed editor
+      settings:
+        id: Zed-Industries.Zed
+        source: winget
+
+    # --- Browser ---
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: Vivaldi
+      directives:
+        description: Install Vivaldi browser
+      settings:
+        id: Vivaldi.Vivaldi
+        source: winget
+
+    # --- Secrets ---
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: OnePassword
+      directives:
+        description: Install 1Password desktop app
+      settings:
+        id: AgileBits.1Password
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: OnePasswordCLI
+      directives:
+        description: Install 1Password CLI
+      settings:
+        id: AgileBits.1Password.CLI
+        source: winget
+
+    # --- Security tooling ---
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: ParetoSecurity
+      directives:
+        description: Install Pareto Security (security audit)
+      settings:
+        id: ParetoSecurity.ParetoSecurity
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: Simplewall
+      directives:
+        description: Install simplewall (interactive outbound firewall)
+      settings:
+        id: Henry++.simplewall
+        source: winget

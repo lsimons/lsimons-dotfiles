@@ -18,6 +18,7 @@ A modular dotfiles configuration for macOS, featuring ZSH and Bash support, XDG 
 ## Quick Start
 
 For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./docs/AGENT_SETUP.md) first.
+For the Windows 11 ARM64 sandbox variant, see [AGENT_WINDOWS_SETUP.md](./docs/AGENT_WINDOWS_SETUP.md) and [windows/README.md](./windows/README.md).
 
 On an existing macOS system with Homebrew:
 

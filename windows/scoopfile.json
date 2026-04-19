@@ -1,0 +1,27 @@
+{
+  "buckets": [
+    { "Name": "main",       "Source": "https://github.com/ScoopInstaller/Main" },
+    { "Name": "extras",     "Source": "https://github.com/ScoopInstaller/Extras" },
+    { "Name": "nerd-fonts", "Source": "https://github.com/matthewjberger/scoop-nerd-fonts" },
+    { "Name": "versions",   "Source": "https://github.com/ScoopInstaller/Versions" }
+  ],
+  "apps": [
+    { "Name": "7zip",            "Source": "main" },
+    { "Name": "aria2",           "Source": "main" },
+    { "Name": "bat",             "Source": "main" },
+    { "Name": "delta",           "Source": "main" },
+    { "Name": "eza",             "Source": "main" },
+    { "Name": "fd",              "Source": "main" },
+    { "Name": "fzf",             "Source": "main" },
+    { "Name": "jq",              "Source": "main" },
+    { "Name": "just",            "Source": "main" },
+    { "Name": "lazygit",         "Source": "main" },
+    { "Name": "mise",            "Source": "main" },
+    { "Name": "ripgrep",         "Source": "main" },
+    { "Name": "sd",              "Source": "main" },
+    { "Name": "starship",        "Source": "main" },
+    { "Name": "yq",              "Source": "main" },
+    { "Name": "zoxide",          "Source": "main" },
+    { "Name": "CascadiaCode-NF", "Source": "nerd-fonts" }
+  ]
+}
