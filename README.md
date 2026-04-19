@@ -29,6 +29,9 @@ cd lsimons-dotfiles
 source ~/.zshrc
 ```
 
+Once mise is installed you can also use `mise run install` (add
+`-- --dry-run` to preview) and `mise run check` for subsequent runs.
+
 Run `mise run check` (or `python3 script/check.py`) to validate the
 repo without touching your system — this is what CI runs on every push.
 Prefer `mise run check`: it bootstraps ruff via `.mise.toml`'s

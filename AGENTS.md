@@ -6,9 +6,9 @@ Personal dotfiles repository for macOS. Topic-based structure inspired by [holma
 
 ## Quick Reference
 
-- **Install**: `./script/install.py`
-- **Preview install**: `./script/install.py --dry-run`
-- **Quality checks**: `python3 script/check.py` (or `mise run check`)
+- **Install**: `mise run install` (or `./script/install.py`)
+- **Preview install**: `mise run install -- --dry-run`
+- **Quality checks**: `mise run check` (or `python3 script/check.py`)
 - **Test ZSH**: `zsh -c 'source ~/.zshrc && echo "Success"'`
 
 ## Structure
