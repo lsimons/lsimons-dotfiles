@@ -1,0 +1,5 @@
+[disable]
+# Windows Update is disabled because PSWindowsUpdate with -AcceptAll will
+# install feature upgrades (e.g. 25H2, 61 GB) without asking. Do OS upgrades
+# manually via Settings > Windows Update when you intentionally want them.
+windows_update = true

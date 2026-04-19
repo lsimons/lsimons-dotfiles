@@ -263,6 +263,11 @@ Invoke-Step "Install Windows Terminal settings" {
   Copy-IfChanged -Source $src -Dest (Join-Path $wtDir 'settings.json')
 }
 
+Invoke-Step "Install topgrade config" {
+  $src = Join-Path $scriptDir 'topgrade.toml'
+  Copy-IfChanged -Source $src -Dest (Join-Path $env:APPDATA 'topgrade.toml')
+}
+
 # ---------------------------------------------------------------------------
 # Claude Code
 # ---------------------------------------------------------------------------
