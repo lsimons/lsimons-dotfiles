@@ -29,6 +29,20 @@ cd lsimons-dotfiles
 source ~/.zshrc
 ```
 
+### Migrating from pre-mise setup
+
+If you had this repo installed before mise adoption (nvm / rustup /
+pyenv / brew-managed language runtimes), first run the one-shot
+migration helper to back those up:
+
+```bash
+python3 script/migrate.py --dry-run   # review the plan
+python3 script/migrate.py             # interactive
+./script/install.py                   # install mise + topics
+```
+
+Backups land in `~/.dotfiles-backup/migrate-to-mise/<timestamp>/`.
+
 ## What Gets Installed
 
 The installation script (`./script/install.py`) will:
@@ -53,19 +67,21 @@ The installation script (`./script/install.py`) will:
 | `copilot/` | GitHub Copilot CLI |
 | `docker/` | Docker |
 | `gemini/` | Gemini CLI |
+| `fnox/` | fnox (1Password secret injection, via mise) |
 | `gh/` | GitHub CLI |
-| `go/` | Go |
+| `go/` | Go (via mise) |
 | `ghostty/` | Ghostty terminal |
 | `git/` | Git (via Homebrew) |
-| `jdk/` | JDK configuration |
+| `jdk/` | OpenJDK (via mise) |
 | `lsimons-agent/` | LLM agent environment configuration |
-| `node/` | nvm and Node.js LTS |
+| `mise/` | mise (polyglot tool version manager) |
+| `node/` | Node.js + pnpm (via mise) |
 | `oh-my-zsh/` | Oh My Zsh |
 | `openspec/` | openspec |
 | `pi-coding-agent/` | pi-coding-agent |
-| `python/` | Python configuration |
-| `ruby/` | Ruby (via rbenv) |
-| `rust/` | Rust (via rustup) |
+| `python/` | Python (via mise) + XDG config |
+| `ruby/` | Ruby (via mise) |
+| `rust/` | Rust (via mise) + CARGO_HOME |
 | `sh/` | Shared shell configuration (PATH, XDG, settings) |
 | `ssh/` | SSH configuration (post-quantum warning, 1Password agent) |
 | `terraform/` | tfenv and Terraform |
@@ -122,7 +138,7 @@ All tools are configured to respect these directories:
 - Bash history: `~/.local/state/bash/history`
 - Python history: `~/.local/state/python/history`
 - Git config: `~/.config/git/config`
-- nvm: `~/.local/share/nvm`
+- mise installs/shims: `~/.local/share/mise/`
 
 ## Machine-Specific Configuration
 

@@ -57,6 +57,11 @@
     "diagnostics": false,
     "metrics": false
   },
+  "terminal": {
+    "env": {
+      "PATH": "${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}"
+    }
+  },
   "ui_font_size": 16,
   "buffer_font_size": 15,
   "theme": {

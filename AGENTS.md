@@ -39,7 +39,10 @@ Machine-specific config lives in `machines/` as JSON files. Use `get_machine_con
 **Installation scripts must be:**
 - Idempotent
 - Non-interactive
-- Use Homebrew for packages
+- Use Homebrew for packages that aren't language runtimes
+- Use `mise use -g <tool>@<version>` for language runtimes and for tools
+  that benefit from per-project version pinning (node, python, rust, go,
+  ruby, jdk, pnpm, fnox, etc.)
 
 ## Adding a New Topic
 
