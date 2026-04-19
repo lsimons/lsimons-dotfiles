@@ -4,7 +4,7 @@
     Phase 1 bootstrap for the Windows 11 ARM64 AI-agent VM.
 
 .DESCRIPTION
-    Unattended setup. No sign-ins required — account-coupled work lives in
+    Unattended setup. No sign-ins required --account-coupled work lives in
     bootstrap-phase2.ps1. Runs as the regular user; winget may prompt for
     UAC when a package needs machine-wide install.
 
@@ -69,10 +69,10 @@ function Invoke-Step {
 
 Write-Info "lsimons-dotfiles Windows bootstrap-phase1"
 Write-Info "Dotfiles root: $dotfilesRoot"
-if ($DryRun) { Write-Dry "dry-run mode — no changes will be made" }
+if ($DryRun) { Write-Dry "dry-run mode --no changes will be made" }
 
 if (Test-Admin) {
-  Write-WarnMsg "Running as Administrator. Scoop will refuse to install — re-run as your regular user."
+  Write-WarnMsg "Running as Administrator. Scoop will refuse to install --re-run as your regular user."
   Write-WarnMsg "winget will self-elevate for individual packages that need it."
   if (-not $DryRun) {
     throw "Refusing to continue elevated. Start a non-admin pwsh and re-run."
@@ -110,7 +110,7 @@ Invoke-Step "Apply UI tweaks (dark mode, file extensions, hidden files, accent c
   Set-RegistryValue -Path $advanced -Name 'ShowSuperHidden' -Value 0
   Set-RegistryValue -Path $advanced -Name 'LaunchTo'        -Value 1   # Open to: This PC
 
-  # Distinct accent colour — bright green to signal "sandbox VM"
+  # Distinct accent colour --bright green to signal "sandbox VM"
   # Format is ABGR 32-bit.
   $dwm = 'HKCU:\Software\Microsoft\Windows\DWM'
   Set-RegistryValue -Path $dwm -Name 'ColorPrevalence'    -Value 1
@@ -166,7 +166,7 @@ if (-not $SkipScoop) {
     if (-not (Test-Path $manifest)) { throw "Manifest not found: $manifest" }
 
     # Ensure git is on PATH for bucket clones. If winget installed Git,
-    # its bin is in Program Files — pick it up.
+    # its bin is in Program Files --pick it up.
     $gitBin = 'C:\Program Files\Git\cmd'
     if ((Test-Path $gitBin) -and (-not ($env:Path -split ';' -contains $gitBin))) {
       $env:Path = "$gitBin;$env:Path"
@@ -174,7 +174,7 @@ if (-not $SkipScoop) {
 
     scoop import $manifest
     if ($LASTEXITCODE -ne 0) {
-      Write-WarnMsg "scoop import exited $LASTEXITCODE — continuing (import can partial-fail on already-present apps)"
+      Write-WarnMsg "scoop import exited $LASTEXITCODE --continuing (import can partial-fail on already-present apps)"
     }
     Write-Ok "scoop import complete"
   }
@@ -215,7 +215,7 @@ Invoke-Step "Install Windows Terminal settings" {
   $src = Join-Path $scriptDir 'WindowsTerminal-settings.json'
   $wtDir = Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState'
   if (-not (Test-Path $wtDir)) {
-    Write-WarnMsg "Windows Terminal LocalState not found — launch WT once, then re-run this script"
+    Write-WarnMsg "Windows Terminal LocalState not found --launch WT once, then re-run this script"
     return
   }
   Copy-IfChanged -Source $src -Dest (Join-Path $wtDir 'settings.json')
@@ -231,7 +231,7 @@ if (-not $SkipClaude) {
       Write-Ok "claude already installed"
     } else {
       Invoke-RestMethod -Uri 'https://claude.ai/install.ps1' | Invoke-Expression
-      Write-Ok "claude installed — run 'claude' and '/login' to authenticate"
+      Write-Ok "claude installed --run 'claude' and '/login' to authenticate"
     }
   }
 }
@@ -258,7 +258,7 @@ Write-Host ""
 Write-Ok "Phase 1 complete."
 Write-Info ""
 Write-Info "Next steps (manual, interactive):"
-Write-Info "  1. Launch Windows Terminal once (so LocalState exists) — re-run this script if needed"
+Write-Info "  1. Launch Windows Terminal once (so LocalState exists) --re-run this script if needed"
 Write-Info "  2. Sign in to 1Password, enable the SSH agent (Settings > Developer > Use the SSH agent)"
 Write-Info "  3. gh auth login    # OAuth in browser"
 Write-Info "  4. claude           # then /login"

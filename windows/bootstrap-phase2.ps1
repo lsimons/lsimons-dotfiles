@@ -69,11 +69,11 @@ function Invoke-Step {
 # ---------------------------------------------------------------------------
 
 Write-Info "lsimons-dotfiles Windows bootstrap-phase2"
-if ($DryRun) { Write-Dry "dry-run mode — no changes will be made" }
+if ($DryRun) { Write-Dry "dry-run mode --no changes will be made" }
 
 foreach ($cmd in 'op','git','ssh') {
   if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-    throw "Required command not found: $cmd — run bootstrap-phase1.ps1 first"
+    throw "Required command not found: $cmd --run bootstrap-phase1.ps1 first"
   }
 }
 
