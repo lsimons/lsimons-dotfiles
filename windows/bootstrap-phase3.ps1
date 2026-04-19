@@ -63,11 +63,11 @@ $tools = @(
   'go@latest',
   'rust@latest',
   'ruby@latest',
-  'java@21',
-  'uv@latest',
-  'terraform@latest',
-  'awscli@latest',
-  'azure-cli@latest'
+  'java@temurin-21',
+  'uv@latest'
+  # terraform: aqua backend resolves non-existent ARM64 version (404)
+  # awscli:    aqua backend explicitly unsupported on windows/arm64
+  # azure-cli: requires Visual C++ build tools, fails on ARM64
 )
 
 foreach ($tool in $tools) {
