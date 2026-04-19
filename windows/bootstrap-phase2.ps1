@@ -134,17 +134,23 @@ Invoke-Step "Configure git identity and SSH commit signing" {
   git config --global user.name       $GitName
   git config --global user.email      $GitEmail
   git config --global user.signingkey $pubkeyPath
-  git config --global gpg.format      ssh
-  git config --global gpg.ssh.program $opSshSign
-  git config --global commit.gpgsign  true
-  git config --global tag.gpgsign     true
-  git config --global init.defaultBranch main
-  git config --global push.default    simple
-  git config --global push.followTags true
-  git config --global core.autocrlf   input
-  git config --global pull.rebase     false
+  $allowedSigners = Join-Path $sshDir 'allowed_signers'
+  $pubkeyContent  = Get-Content $pubkeyPath -Raw
+  Set-Content -Path $allowedSigners -Value "$GitEmail $pubkeyContent" -Encoding ascii -NoNewline
+
+  git config --global gpg.format                 ssh
+  git config --global gpg.ssh.program            $opSshSign
+  git config --global gpg.ssh.allowedSignersFile $allowedSigners
+  git config --global commit.gpgsign             true
+  git config --global tag.gpgsign                true
+  git config --global init.defaultBranch         main
+  git config --global push.default               simple
+  git config --global push.followTags            true
+  git config --global core.autocrlf              input
+  git config --global pull.rebase                false
 
   Write-Ok "git identity: $GitName <$GitEmail>"
+  Write-Ok "allowed signers: $allowedSigners"
   Write-Ok "git will sign commits via 1Password SSH agent"
 }
 
