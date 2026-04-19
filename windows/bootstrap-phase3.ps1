@@ -74,7 +74,7 @@ foreach ($tool in $tools) {
   Invoke-Step "mise use -g $tool" {
     mise use --global $tool
     if ($LASTEXITCODE -ne 0) {
-      Write-WarnMsg "$tool: mise exited $LASTEXITCODE -- skipping"
+      Write-WarnMsg "${tool}: mise exited $LASTEXITCODE -- skipping"
     } else {
       Write-Ok "$tool installed"
     }
