@@ -331,6 +331,19 @@ Invoke-Step "Add Simplewall to user PATH and startup" {
 }
 
 # ---------------------------------------------------------------------------
+# topgrade dependencies
+# ---------------------------------------------------------------------------
+
+Invoke-Step "Install PSWindowsUpdate module (enables topgrade Windows Update step)" {
+  if (Get-Module -ListAvailable -Name PSWindowsUpdate) {
+    Write-Ok "PSWindowsUpdate already installed"
+  } else {
+    Install-Module -Name PSWindowsUpdate -Scope CurrentUser -Force -AllowClobber
+    Write-Ok "PSWindowsUpdate installed"
+  }
+}
+
+# ---------------------------------------------------------------------------
 # Workspace
 # ---------------------------------------------------------------------------
 
