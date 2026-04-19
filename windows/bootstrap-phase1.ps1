@@ -276,6 +276,27 @@ if (-not $SkipClaude) {
       Write-Ok "claude installed --run 'claude' and '/login' to authenticate"
     }
   }
+
+  Invoke-Step "Ensure ~\.local\bin is on the user PATH" {
+    # Claude Code's Windows installer drops the binary in %USERPROFILE%\.local\bin
+    # but doesn't update PATH. Add it for the user scope (persistent) and the
+    # current session (so subsequent steps can 'claude').
+    $toAdd = Join-Path $env:USERPROFILE '.local\bin'
+    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    $segments = @()
+    if ($userPath) { $segments = $userPath -split ';' }
+    if ($segments -notcontains $toAdd) {
+      $newPath = ($toAdd + ';' + $userPath).TrimEnd(';')
+      [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+      Write-Ok "added $toAdd to user PATH (open a new shell to pick it up)"
+    } else {
+      Write-Ok "$toAdd already on user PATH"
+    }
+    # Make it work in the current session too
+    if (($env:Path -split ';') -notcontains $toAdd) {
+      $env:Path = "$toAdd;$env:Path"
+    }
+  }
 }
 
 # ---------------------------------------------------------------------------
