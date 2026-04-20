@@ -2,6 +2,7 @@
 """Installation script for Claude Code"""
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -89,6 +90,15 @@ def write_settings(claude_dir, topic_dir):
         }
     else:
         info("No git email found; skipping attribution config")
+
+    # Route git in Claude sessions to the Claude-specific git config
+    # (signs with an on-disk SSH key instead of op-ssh-sign).
+    xdg_config_home = Path(
+        os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')
+    )
+    settings.setdefault('env', {})['GIT_CONFIG_GLOBAL'] = str(
+        xdg_config_home / 'git' / 'config.claude'
+    )
 
     if is_dry_run():
         dry(f"would write {settings_path}")
