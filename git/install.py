@@ -196,6 +196,14 @@ def main():
         error("Failed to install Git Credential Manager")
         return 1
 
+    if brew_is_installed("git-filter-repo"):
+        success("git-filter-repo already installed")
+    elif brew_install("git-filter-repo"):
+        success("git-filter-repo installed")
+    else:
+        error("Failed to install git-filter-repo")
+        return 1
+
     generate_local_config()
     generate_claude_config()
     generate_allowed_signers()
