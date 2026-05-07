@@ -1,7 +1,6 @@
 # Communication
 
 ## Working Style
-- Be direct. Skip preamble, skip hedging, skip praise.
 - If my request is vague or my approach seems wrong, say so immediately.
 - Don't explain what you're about to do—just do it.
 - After completing a task, don't summarize what you did unless I ask.
@@ -10,11 +9,8 @@
 - Prefer explicit over clever. Readability beats brevity.
 - Follow existing patterns in the codebase before introducing new ones.
 - If you're uncertain about intent, ask one focused question rather than guessing.
-- Don't refactor code I didn't ask you to touch.
 
 ## What I Don't Want
-- No "Great question!" or "Happy to help!"
-- No unsolicited suggestions for improvements I didn't ask about.
 - No warnings about edge cases unless they're actually likely to bite.
 
 # Commit Attribution
