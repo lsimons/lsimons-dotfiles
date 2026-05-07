@@ -29,6 +29,7 @@ __pycache__/
 # Local customizations (user-specific, not in git)
 local/
 *.local
+.claude/settings.local.json
 
 # Python cache
 __pycache__/
