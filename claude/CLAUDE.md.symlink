@@ -13,18 +13,24 @@
 ## What I Don't Want
 - No warnings about edge cases unless they're actually likely to bite.
 
-# Commit Attribution
+# Git
+
+- PR merge preference: rebase > merge > squash. Default to `gh pr merge --rebase`.
+- Use `--merge` if a downstream branch is stacked on the PR.
+- Only use `--squash` when GitHub settings require it (branch protection rule or "Allow squash merging" is the only enabled option).
+
+## Commit Attribution
 
 - Do NOT add `Signed-off-by` tags. Only humans can certify the Developer Certificate of Origin.
 - `Co-Authored-By` attribution is configured (e.g. in `~/.claude/settings.json`) and is applied automatically — do not remove or skip it.
-- In addition, include an `Assisted-by` tag per the Linux kernel convention:
+- In addition, include an `Assisted-by` tag:
   `Assisted-by: AGENT_NAME:MODEL_VERSION`
   Example: `Assisted-by: Claude:claude-sonnet-4-6`
 
 # Python
 
-- Claude's baseline knowledge covers Python through 3.12. Python 3.13 and 3.14 introduce new syntax.
+- Python 3.13 and 3.14 introduce new syntax.
 - Load the `python-knowledge-patch` skill to understand Python 3.13/3.14 syntax.
-- `ruff` can reformat files in ways that surprise Claude due to the new syntax. Use the python-knowledge-patch skill to understand.
+- `ruff` can reformat files in surprising ways. Use the python-knowledge-patch skill to understand.
 - Python 3.14+ supports PEP 758 bracketless `except E1, E2:` (equivalent to `except (E1, E2):`). Removing such parens is correct — leave it alone. The syntax looks like deprecated Py2 `except E, e:` (variable binding) but is unrelated.
 - Python 3.14+ supports PEP 750 new string prefix `t` that produces a `Template` object instead of `str`. Like f-strings but with access to parts before rendering.
