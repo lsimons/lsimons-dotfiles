@@ -15,7 +15,6 @@
     "removeDenyRules": true
   },
   "ssh": {
-    "claudeSigningKeyPasswordRef": "op://Shared/lsimons-bot ssh key sbplt2mkg3xk6/password",
-    "claudeSbpGitlabKeyPasswordRef": "op://Shared/Claude SBP GitLab SSH Key sbplt2mkg3xk6/password"
+    "claudeSigningKeyPasswordRef": "op://Shared/lsimons-bot ssh key sbplt2mkg3xk6/password"
   }
 }

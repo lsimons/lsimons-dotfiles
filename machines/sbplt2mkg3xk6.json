@@ -1,0 +1,5 @@
+{
+  "ssh": {
+    "claudeSbpGitlabKeyPasswordRef": "op://Private/Claude SBP GitLab SSH Key/password"
+  }
+}
