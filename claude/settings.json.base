@@ -128,5 +128,6 @@
     "rust-analyzer-lsp@claude-plugins-official": true
   },
   "defaultMode": "acceptEdits",
-  "model": "claude-sonnet-4-6"
+  "model": "claude-sonnet-4-6",
+  "effortLevel": "high"
 }
