@@ -1,5 +1,8 @@
 {
   "ssh": {
-    "claudeSbpGitlabKeyPasswordRef": "op://Private/Claude SBP GitLab SSH Key/password"
+    "claudeSbpGitlabKey": {
+      "ref": "op://Employee/claude_sbp_gitlab_ed25519/password",
+      "account": "schubergphilis"
+    }
   }
 }

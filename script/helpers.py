@@ -3,12 +3,20 @@
 import argparse
 import json
 import os
+import shlex
 import shutil
 import socket
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+
+
+# 1Password has no notion of a default account when multiple are
+# signed in, so the install code always emits an explicit
+# --account flag. "my" is what every machine has historically used;
+# secrets that live in another account override via object form.
+OP_DEFAULT_ACCOUNT = "my"
 
 # Root of the dotfiles repository
 DOTFILES_ROOT = Path(__file__).resolve().parent.parent
@@ -379,3 +387,29 @@ def get_machine_config():
             config = _deep_merge(config, json.load(f))
 
     return config, hostname
+
+
+def op_secret(value):
+    """Normalise a 1Password secret reference.
+
+    Accepts either:
+    - a string ``"op://vault/item/field"`` — uses OP_DEFAULT_ACCOUNT
+    - a dict ``{"ref": "op://...", "account": "schubergphilis"}``;
+      ``account`` is optional and defaults to OP_DEFAULT_ACCOUNT.
+
+    Returns ``(ref, account)``. Raises if the input is malformed.
+    """
+    if isinstance(value, str):
+        return value, OP_DEFAULT_ACCOUNT
+    if isinstance(value, dict):
+        ref = value.get('ref')
+        if not ref:
+            raise ValueError(f"1Password secret object missing 'ref': {value!r}")
+        return ref, value.get('account', OP_DEFAULT_ACCOUNT)
+    raise TypeError(f"Unsupported 1Password secret reference: {value!r}")
+
+
+def op_read_command(value):
+    """Return a shell-safe ``op read --account X 'ref'`` command string."""
+    ref, account = op_secret(value)
+    return f"op read --account {shlex.quote(account)} {shlex.quote(ref)}"
