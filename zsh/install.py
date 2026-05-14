@@ -12,16 +12,6 @@ from helpers import info, install_symlinks, make_dir, parse_dry_run, success
 def main():
     parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
-
-    info("Setting up ZSH directories...")
-
-    xdg_cache = Path(os.environ.get('XDG_CACHE_HOME', Path.home() / '.cache'))
-    xdg_state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state'))
-
-    make_dir(xdg_cache / 'zsh')
-    make_dir(xdg_state / 'zsh')
-
-    success("ZSH directories configured")
     return 0
 
 

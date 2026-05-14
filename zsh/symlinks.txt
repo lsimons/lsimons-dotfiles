@@ -1,2 +1,4 @@
 # ZSH symlink destinations
+zshenv.symlink -> ~/.zshenv
 zshrc.symlink -> ~/.zshrc
+zprofile.symlink -> ~/.zprofile
