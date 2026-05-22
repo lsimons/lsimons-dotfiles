@@ -7,6 +7,7 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "proxy": "",
   "icon_theme": "Colored Zed Icons Theme Light",
   "language_models": {
     "openai_compatible": {
@@ -41,6 +42,9 @@
       "type": "registry"
     },
     "claude-acp": {
+      "default_config_options": {
+        "mode": "acceptEdits"
+      },
       "type": "registry"
     }
   },
