@@ -34,25 +34,25 @@
   # Global (typeset -gA) so prompt-render-time templates and formatter
   # functions can also look colors up.
   typeset -gA clr=(
-    fg              '#1d1406'   # base text (deep brown)
-    fg_muted        '#4b3a1d'   # softer text
-    fg_dim          '#6a583a'   # ruler, multiline gap
-    fg_faint        '#877456'   # shortened paths, low-emphasis
+    fg              '#241100'   # base text (deep brown)
+    fg_muted        '#3e290f'   # softer text
+    fg_dim          '#594329'   # ruler, multiline gap
+    fg_faint        '#765e44'   # shortened paths, low-emphasis
     accent          '#c17a23'   # signature warm amber
     accent_bright   '#d4a057'
-    red             '#b7000a'
+    red             '#a10000'
     red_bright      '#d01c25'
-    green           '#007459'
+    green           '#006248'
     green_bright    '#00896d'
-    yellow          '#7b5800'
+    yellow          '#694700'
     yellow_bright   '#906d00'
-    blue            '#0058c2'
+    blue            '#0045ae'
     blue_bright     '#006eda'
-    magenta         '#c8005e'
-    magenta_bright  '#e50075'
-    cyan            '#006a71'
+    magenta         '#aa0048'
+    magenta_bright  '#da006c'
+    cyan            '#006168'
     cyan_bright     '#00888f'
-    orange          '#c63a00'
+    orange          '#b52700'
   )
 
   # The list of segments shown on the left. Fill it with the most important segments.
