@@ -31,7 +31,9 @@
 
   # LSD Warm Light palette. All color choices in this file route through
   # ${clr[name]} so the theme can be retuned by editing this table alone.
-  local -A clr=(
+  # Global (typeset -gA) so prompt-render-time templates and formatter
+  # functions can also look colors up.
+  typeset -gA clr=(
     fg              '#1d1406'   # base text (deep brown)
     fg_muted        '#4b3a1d'   # softer text
     fg_dim          '#6a583a'   # ruler, multiline gap
@@ -218,9 +220,9 @@
 
   ################################[ prompt_char: prompt symbol ]################################
   # Green prompt symbol if the last command succeeded.
-  typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=${clr[green_bright]}
+  typeset -g POWERLEVEL9K_PROMPT_CHAR_OK_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=${clr[green]}
   # Red prompt symbol if the last command failed.
-  typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=${clr[red_bright]}
+  typeset -g POWERLEVEL9K_PROMPT_CHAR_ERROR_{VIINS,VICMD,VIVIS,VIOWR}_FOREGROUND=${clr[red]}
   # Default prompt symbol.
   typeset -g POWERLEVEL9K_PROMPT_CHAR_{OK,ERROR}_VIINS_CONTENT_EXPANSION='❯'
   # Prompt symbol in command vi mode.
@@ -247,7 +249,7 @@
   typeset -g POWERLEVEL9K_DIR_SHORTENED_FOREGROUND=${clr[fg_faint]}
   # Color of the anchor directory segments. Anchor segments are never shortened. The first
   # segment is always an anchor.
-  typeset -g POWERLEVEL9K_DIR_ANCHOR_FOREGROUND=${clr[blue_bright]}
+  typeset -g POWERLEVEL9K_DIR_ANCHOR_FOREGROUND=${clr[blue]}
   # Display anchor directory segments in bold.
   typeset -g POWERLEVEL9K_DIR_ANCHOR_BOLD=true
   # Don't shorten directories that contain any of these files. They are anchors.
@@ -346,19 +348,19 @@
   #   typeset -g POWERLEVEL9K_DIR_WORK_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_DIR_WORK_FOREGROUND=${clr[blue]}
   #   typeset -g POWERLEVEL9K_DIR_WORK_SHORTENED_FOREGROUND=${clr[fg_faint]}
-  #   typeset -g POWERLEVEL9K_DIR_WORK_ANCHOR_FOREGROUND=${clr[blue_bright]}
+  #   typeset -g POWERLEVEL9K_DIR_WORK_ANCHOR_FOREGROUND=${clr[blue]}
   #
   #   # Styling for WORK_NOT_WRITABLE.
   #   typeset -g POWERLEVEL9K_DIR_WORK_NOT_WRITABLE_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_DIR_WORK_NOT_WRITABLE_FOREGROUND=${clr[blue]}
   #   typeset -g POWERLEVEL9K_DIR_WORK_NOT_WRITABLE_SHORTENED_FOREGROUND=${clr[fg_faint]}
-  #   typeset -g POWERLEVEL9K_DIR_WORK_NOT_WRITABLE_ANCHOR_FOREGROUND=${clr[blue_bright]}
+  #   typeset -g POWERLEVEL9K_DIR_WORK_NOT_WRITABLE_ANCHOR_FOREGROUND=${clr[blue]}
   #
   #   # Styling for WORK_NON_EXISTENT.
   #   typeset -g POWERLEVEL9K_DIR_WORK_NON_EXISTENT_VISUAL_IDENTIFIER_EXPANSION='⭐'
   #   typeset -g POWERLEVEL9K_DIR_WORK_NON_EXISTENT_FOREGROUND=${clr[blue]}
   #   typeset -g POWERLEVEL9K_DIR_WORK_NON_EXISTENT_SHORTENED_FOREGROUND=${clr[fg_faint]}
-  #   typeset -g POWERLEVEL9K_DIR_WORK_NON_EXISTENT_ANCHOR_FOREGROUND=${clr[blue_bright]}
+  #   typeset -g POWERLEVEL9K_DIR_WORK_NON_EXISTENT_ANCHOR_FOREGROUND=${clr[blue]}
   #
   # If a styling parameter isn't explicitly defined for some class, it falls back to the classless
   # parameter. For example, if POWERLEVEL9K_DIR_WORK_NOT_WRITABLE_FOREGROUND is not set, it falls
@@ -397,18 +399,18 @@
 
     if (( $1 )); then
       # Styling for up-to-date Git status.
-      local       meta='%f'     # default foreground
-      local      clean='%76F'   # green foreground
-      local   modified='%178F'  # yellow foreground
-      local  untracked='%39F'   # blue foreground
-      local conflicted='%196F'  # red foreground
+      local       meta='%f'                       # default foreground
+      local      clean="%F{${clr[green_bright]}}"
+      local   modified="%F{${clr[yellow]}}"
+      local  untracked="%F{${clr[blue_bright]}}"
+      local conflicted="%F{${clr[red_bright]}}"
     else
-      # Styling for incomplete and stale Git status.
-      local       meta='%244F'  # grey foreground
-      local      clean='%244F'  # grey foreground
-      local   modified='%244F'  # grey foreground
-      local  untracked='%244F'  # grey foreground
-      local conflicted='%244F'  # grey foreground
+      # Styling for incomplete and stale Git status (all muted).
+      local       meta="%F{${clr[fg_dim]}}"
+      local      clean="%F{${clr[fg_dim]}}"
+      local   modified="%F{${clr[fg_dim]}}"
+      local  untracked="%F{${clr[fg_dim]}}"
+      local conflicted="%F{${clr[fg_dim]}}"
     fi
 
     local res
@@ -528,8 +530,8 @@
 
   # These settings are used for repositories other than Git or when gitstatusd fails and
   # Powerlevel10k has to fall back to using vcs_info.
-  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=${clr[green_bright]}
-  typeset -g POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND=${clr[green_bright]}
+  typeset -g POWERLEVEL9K_VCS_CLEAN_FOREGROUND=${clr[green]}
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND=${clr[green]}
   typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=${clr[yellow]}
 
   ##########################[ status: exit code of the last command ]###########################
@@ -687,7 +689,7 @@
   # typeset -g POWERLEVEL9K_ASDF_DOTNET_SHOW_ON_UPGLOB='*.foo|*.bar'
 
   # Flutter version from asdf.
-  typeset -g POWERLEVEL9K_ASDF_FLUTTER_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_ASDF_FLUTTER_FOREGROUND=${clr[cyan]}
   # typeset -g POWERLEVEL9K_ASDF_FLUTTER_VISUAL_IDENTIFIER_EXPANSION='⭐'
   # typeset -g POWERLEVEL9K_ASDF_FLUTTER_SHOW_ON_UPGLOB='*.foo|*.bar'
 
@@ -712,7 +714,7 @@
   # typeset -g POWERLEVEL9K_ASDF_ERLANG_SHOW_ON_UPGLOB='*.foo|*.bar'
 
   # Elixir version from asdf.
-  typeset -g POWERLEVEL9K_ASDF_ELIXIR_FOREGROUND=${clr[magenta_bright]}
+  typeset -g POWERLEVEL9K_ASDF_ELIXIR_FOREGROUND=${clr[magenta]}
   # typeset -g POWERLEVEL9K_ASDF_ELIXIR_VISUAL_IDENTIFIER_EXPANSION='⭐'
   # typeset -g POWERLEVEL9K_ASDF_ELIXIR_SHOW_ON_UPGLOB='*.foo|*.bar'
 
@@ -738,7 +740,7 @@
 
   ##########[ nordvpn: nordvpn connection status, linux only (https://nordvpn.com/) ]###########
   # NordVPN connection indicator color.
-  typeset -g POWERLEVEL9K_NORDVPN_FOREGROUND=${clr[blue_bright]}
+  typeset -g POWERLEVEL9K_NORDVPN_FOREGROUND=${clr[blue]}
   # Hide NordVPN connection indicator when not connected.
   typeset -g POWERLEVEL9K_NORDVPN_{DISCONNECTED,CONNECTING,DISCONNECTING}_CONTENT_EXPANSION=
   typeset -g POWERLEVEL9K_NORDVPN_{DISCONNECTED,CONNECTING,DISCONNECTING}_VISUAL_IDENTIFIER_EXPANSION=
@@ -783,7 +785,7 @@
 
   #[ nix_shell: nix shell (https://nixos.org/nixos/nix-pills/developing-with-nix-shell.html) ]##
   # Nix shell color.
-  typeset -g POWERLEVEL9K_NIX_SHELL_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_NIX_SHELL_FOREGROUND=${clr[cyan]}
 
   # Display the icon of nix_shell if PATH contains a subdirectory of /nix/store.
   # typeset -g POWERLEVEL9K_NIX_SHELL_INFER_FROM_PATH=false
@@ -796,14 +798,14 @@
 
   ##################[ chezmoi_shell: chezmoi shell (https://www.chezmoi.io/) ]##################
   # chezmoi shell color.
-  typeset -g POWERLEVEL9K_CHEZMOI_SHELL_FOREGROUND=${clr[blue_bright]}
+  typeset -g POWERLEVEL9K_CHEZMOI_SHELL_FOREGROUND=${clr[blue]}
   # Custom icon.
   # typeset -g POWERLEVEL9K_CHEZMOI_SHELL_VISUAL_IDENTIFIER_EXPANSION='⭐'
 
   ##################################[ disk_usage: disk usage ]##################################
   # Colors for different levels of disk usage.
   typeset -g POWERLEVEL9K_DISK_USAGE_NORMAL_FOREGROUND=${clr[green]}
-  typeset -g POWERLEVEL9K_DISK_USAGE_WARNING_FOREGROUND=${clr[yellow_bright]}
+  typeset -g POWERLEVEL9K_DISK_USAGE_WARNING_FOREGROUND=${clr[yellow]}
   typeset -g POWERLEVEL9K_DISK_USAGE_CRITICAL_FOREGROUND=${clr[red]}
   # Thresholds for different levels of disk usage (percentage points).
   typeset -g POWERLEVEL9K_DISK_USAGE_WARNING_LEVEL=90
@@ -839,7 +841,7 @@
 
   ################[ todo: todo items (https://github.com/todotxt/todo.txt-cli) ]################
   # Todo color.
-  typeset -g POWERLEVEL9K_TODO_FOREGROUND=${clr[blue_bright]}
+  typeset -g POWERLEVEL9K_TODO_FOREGROUND=${clr[blue]}
   # Hide todo when the total number of tasks is zero.
   typeset -g POWERLEVEL9K_TODO_HIDE_ZERO_TOTAL=true
   # Hide todo when the number of tasks after filtering is zero.
@@ -863,7 +865,7 @@
 
   ###########[ timewarrior: timewarrior tracking status (https://timewarrior.net/) ]############
   # Timewarrior color.
-  typeset -g POWERLEVEL9K_TIMEWARRIOR_FOREGROUND=${clr[blue_bright]}
+  typeset -g POWERLEVEL9K_TIMEWARRIOR_FOREGROUND=${clr[blue]}
   # If the tracked task is longer than 24 characters, truncate and append "…".
   # Tip: To always display tasks without truncation, delete the following parameter.
   # Tip: To hide task names and display just the icon when time tracking is enabled, set the
@@ -875,7 +877,7 @@
 
   ##############[ taskwarrior: taskwarrior task count (https://taskwarrior.org/) ]##############
   # Taskwarrior color.
-  typeset -g POWERLEVEL9K_TASKWARRIOR_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_TASKWARRIOR_FOREGROUND=${clr[cyan]}
 
   # Taskwarrior segment format. The following parameters are available within the expansion.
   #
@@ -895,7 +897,7 @@
 
   ######[ per_directory_history: Oh My Zsh per-directory-history local/global indicator ]#######
   # Color when using local/global history.
-  typeset -g POWERLEVEL9K_PER_DIRECTORY_HISTORY_LOCAL_FOREGROUND=${clr[magenta_bright]}
+  typeset -g POWERLEVEL9K_PER_DIRECTORY_HISTORY_LOCAL_FOREGROUND=${clr[magenta]}
   typeset -g POWERLEVEL9K_PER_DIRECTORY_HISTORY_GLOBAL_FOREGROUND=${clr[fg_muted]}
 
   # Tip: Uncomment the next two lines to hide "local"/"global" text and leave just the icon.
@@ -1118,7 +1120,7 @@
 
   ###[ package: name@version from package.json (https://docs.npmjs.com/files/package.json) ]####
   # Package color.
-  typeset -g POWERLEVEL9K_PACKAGE_FOREGROUND=${clr[blue_bright]}
+  typeset -g POWERLEVEL9K_PACKAGE_FOREGROUND=${clr[blue]}
   # Package format. The following parameters are available within the expansion.
   #
   # - P9K_PACKAGE_NAME     The value of `name` field in package.json.
@@ -1153,7 +1155,7 @@
 
   ###########[ fvm: flutter version management (https://github.com/leoafarias/fvm) ]############
   # Fvm color.
-  typeset -g POWERLEVEL9K_FVM_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_FVM_FOREGROUND=${clr[cyan]}
   # Custom icon.
   # typeset -g POWERLEVEL9K_FVM_VISUAL_IDENTIFIER_EXPANSION='⭐'
 
@@ -1363,12 +1365,12 @@
       # '*prod*'  PROD    # These values are examples that are unlikely
       # '*test*'  TEST    # to match your needs. Customize them as needed.
       '*'         OTHER)
-  typeset -g POWERLEVEL9K_TERRAFORM_OTHER_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_TERRAFORM_OTHER_FOREGROUND=${clr[cyan]}
   # typeset -g POWERLEVEL9K_TERRAFORM_OTHER_VISUAL_IDENTIFIER_EXPANSION='⭐'
 
   #############[ terraform_version: terraform version (https://www.terraform.io) ]##############
   # Terraform version color.
-  typeset -g POWERLEVEL9K_TERRAFORM_VERSION_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_TERRAFORM_VERSION_FOREGROUND=${clr[cyan]}
   # Custom icon.
   # typeset -g POWERLEVEL9K_TERRAFORM_VERSION_VISUAL_IDENTIFIER_EXPANSION='⭐'
 
@@ -1570,7 +1572,7 @@
 
   ########################[ vpn_ip: virtual private network indicator ]#########################
   # VPN IP color.
-  typeset -g POWERLEVEL9K_VPN_IP_FOREGROUND=${clr[cyan_bright]}
+  typeset -g POWERLEVEL9K_VPN_IP_FOREGROUND=${clr[cyan]}
   # When on VPN, show just an icon without the IP address.
   # Tip: To display the private IP address when on VPN, remove the next line.
   typeset -g POWERLEVEL9K_VPN_IP_CONTENT_EXPANSION=
@@ -1599,7 +1601,7 @@
   #   P9K_IP_TX_BYTES_DELTA | number of bytes sent since last prompt
   #   P9K_IP_RX_RATE        | receive rate (since last prompt)
   #   P9K_IP_TX_RATE        | send rate (since last prompt)
-  typeset -g POWERLEVEL9K_IP_CONTENT_EXPANSION='$P9K_IP_IP${P9K_IP_RX_RATE:+ %70F⇣$P9K_IP_RX_RATE}${P9K_IP_TX_RATE:+ %215F⇡$P9K_IP_TX_RATE}'
+  typeset -g POWERLEVEL9K_IP_CONTENT_EXPANSION='$P9K_IP_IP${P9K_IP_RX_RATE:+ %F{'${clr[green]}'}⇣$P9K_IP_RX_RATE}${P9K_IP_TX_RATE:+ %F{'${clr[orange]}'}⇡$P9K_IP_TX_RATE}'
   # Show information for the first network interface whose name matches this regular expression.
   # Run `ifconfig` or `ip -4 a show` to see the names of all network interfaces.
   typeset -g POWERLEVEL9K_IP_INTERFACE='[ew].*'
