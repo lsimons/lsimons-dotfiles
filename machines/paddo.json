@@ -23,7 +23,7 @@
         "op_vault": "Private",
         "op_account": "my",
         "auth": false,
-        "sign": false
+        "sign": true
       },
       {
         "name": "lsimons-bot_id_ed25519",

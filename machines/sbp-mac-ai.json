@@ -10,6 +10,7 @@
     "removeDenyRules": true
   },
   "ssh": {
+    "aiKey": "lsimons-bot_id_ed25519",
     "keys": [
       {
         "name": "lsimons-bot_id_ed25519",
