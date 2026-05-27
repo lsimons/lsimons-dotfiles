@@ -1,4 +1,4 @@
-# Auto-load the claude signing SSH key into ssh-agent on first login.
+# Auto-load the AI SSH key into ssh-agent on first login.
 #
 # Side effect: invoking `op read` to fetch the passphrase also unlocks
 # 1Password biometric for the session, so subsequent op-ssh-sign git
@@ -13,49 +13,24 @@ case $- in
   *) return 0 2>/dev/null || true ;;
 esac
 
-_dotfiles_ssh_askpass="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ssh-askpass-claude.sh"
-_dotfiles_claude_key="$HOME/.ssh/claude_signing_ed25519"
+_dotfiles_ssh_askpass_ai="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ssh-askpass-ai.sh"
+_dotfiles_ai_key="$HOME/.ssh/ai_ed25519"
 
 if [ -x "$_dotfiles_ssh_askpass" ] \
-  && [ -f "$_dotfiles_claude_key" ] \
+  && [ -f "$_dotfiles_ai_key" ] \
   && [ -n "${SSH_AUTH_SOCK:-}" ] \
   && command -v op > /dev/null 2>&1 \
   && command -v ssh-add > /dev/null 2>&1 \
   && command -v ssh-keygen > /dev/null 2>&1; then
-  _dotfiles_claude_fp=$(ssh-keygen -lf "$_dotfiles_claude_key" 2>/dev/null | awk '{print $2}')
-  if [ -n "$_dotfiles_claude_fp" ] \
-    && ! ssh-add -l 2>/dev/null | grep -q -- "$_dotfiles_claude_fp"; then
+  _dotfiles_ai_fp=$(ssh-keygen -lf "$_dotfiles_ai_key" 2>/dev/null | awk '{print $2}')
+  if [ -n "$_dotfiles_ai_fp" ] \
+    && ! ssh-add -l 2>/dev/null | grep -q -- "$_dotfiles_ai_fp"; then
     DISPLAY="${DISPLAY:-:0}" \
       SSH_ASKPASS="$_dotfiles_ssh_askpass" \
       SSH_ASKPASS_REQUIRE=force \
-      ssh-add "$_dotfiles_claude_key" </dev/null > /dev/null 2>&1
+      ssh-add "$_dotfiles_ai_key" </dev/null > /dev/null 2>&1
   fi
-  unset _dotfiles_claude_fp
+  unset _dotfiles_ai_fp
 fi
 
-unset _dotfiles_ssh_askpass _dotfiles_claude_key
-
-# Same pattern for the dedicated sbp gitlab auth key — used by Claude
-# sessions to push/pull/clone sbp gitlab repos when 1Password is locked.
-
-_dotfiles_sbp_askpass="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ssh-askpass-claude-sbp-gitlab.sh"
-_dotfiles_sbp_key="$HOME/.ssh/claude_sbp_gitlab_ed25519"
-
-if [ -x "$_dotfiles_sbp_askpass" ] \
-  && [ -f "$_dotfiles_sbp_key" ] \
-  && [ -n "${SSH_AUTH_SOCK:-}" ] \
-  && command -v op > /dev/null 2>&1 \
-  && command -v ssh-add > /dev/null 2>&1 \
-  && command -v ssh-keygen > /dev/null 2>&1; then
-  _dotfiles_sbp_fp=$(ssh-keygen -lf "$_dotfiles_sbp_key" 2>/dev/null | awk '{print $2}')
-  if [ -n "$_dotfiles_sbp_fp" ] \
-    && ! ssh-add -l 2>/dev/null | grep -q -- "$_dotfiles_sbp_fp"; then
-    DISPLAY="${DISPLAY:-:0}" \
-      SSH_ASKPASS="$_dotfiles_sbp_askpass" \
-      SSH_ASKPASS_REQUIRE=force \
-      ssh-add "$_dotfiles_sbp_key" </dev/null > /dev/null 2>&1
-  fi
-  unset _dotfiles_sbp_fp
-fi
-
-unset _dotfiles_sbp_askpass _dotfiles_sbp_key
+unset _dotfiles_ssh_askpass _dotfiles_ai_key

@@ -11,17 +11,26 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+DOTFILES_ROOT = Path(__file__).resolve().parent.parent
+HOME = Path.home()
+HOME_STR = str(HOME)
+XDG_CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config"))
+XDG_CONFIG_HOME_STR = str(XDG_CONFIG_HOME)
 
-# 1Password has no notion of a default account when multiple are
-# signed in, so the install code always emits an explicit
-# --account flag. "my" is what every machine has historically used;
-# secrets that live in another account override via object form.
 OP_DEFAULT_ACCOUNT = "my"
 
-# Root of the dotfiles repository
-DOTFILES_ROOT = Path(__file__).resolve().parent.parent
+NOW = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 _DRY_RUN = False
+
+# ssh paths are also used also by git/ topic
+SSH_CONFIG_DIR = HOME / ".ssh"
+SSH_CONFIG_AI_PATH = SSH_CONFIG_DIR / "config.ai"
+SSH_ASKPASS_AI_PATH = XDG_CONFIG_HOME / "dotfiles" / "ssh-askpass-ai.sh"
+AI_KEY_FILE = "ai_ed25519"
+AI_KEY_PATH = SSH_CONFIG_DIR / AI_KEY_FILE
+AI_KEY_PUB_FILE = AI_KEY_FILE + ".pub"
+AI_KEY_PUB_PATH = SSH_CONFIG_DIR / AI_KEY_PUB_FILE
 
 
 def info(msg):
@@ -70,7 +79,7 @@ def parse_dry_run(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument("--dry-run", action="store_true")
     args, _ = parser.parse_known_args(argv)
     if args.dry_run:
         set_dry_run(True)
@@ -87,9 +96,9 @@ def run_cmd(cmd, check=True, capture_output=False, env=None, shell=False):
         if isinstance(cmd, str):
             cmd_str = cmd
         else:
-            cmd_str = ' '.join(str(c) for c in cmd)
+            cmd_str = " ".join(str(c) for c in cmd)
         dry(f"would run: {cmd_str}")
-        return subprocess.CompletedProcess(cmd, 0, stdout='', stderr='')
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
     return subprocess.run(
         cmd,
         check=check,
@@ -109,7 +118,7 @@ def command_exists(cmd):
     if _DRY_RUN:
         dry(f"assume '{cmd}' is on PATH")
         return True
-    result = subprocess.run(['which', cmd], capture_output=True)
+    result = subprocess.run(["which", cmd], capture_output=True)
     return result.returncode == 0
 
 
@@ -122,7 +131,7 @@ def app_exists(app_name):
     if _DRY_RUN:
         dry(f"assume '{app_name}.app' is installed")
         return True
-    return Path(f'/Applications/{app_name}.app').exists()
+    return Path(f"/Applications/{app_name}.app").exists()
 
 
 def brew_install(package, cask=False):
@@ -136,13 +145,13 @@ def brew_install(package, cask=False):
         True on success, False on failure
     """
     if _DRY_RUN:
-        suffix = ' (cask)' if cask else ''
+        suffix = " (cask)" if cask else ""
         dry(f"would brew install {package}{suffix}")
         return True
 
-    cmd = ['brew', 'install']
+    cmd = ["brew", "install"]
     if cask:
-        cmd.append('--cask')
+        cmd.append("--cask")
     cmd.append(package)
 
     try:
@@ -161,7 +170,7 @@ def brew_is_installed(package):
     if _DRY_RUN:
         dry(f"assume brew package '{package}' is already installed")
         return True
-    result = subprocess.run(['brew', 'list', package], capture_output=True)
+    result = subprocess.run(["brew", "list", package], capture_output=True)
     return result.returncode == 0
 
 
@@ -174,11 +183,11 @@ def brew_uninstall(package):
     if _DRY_RUN:
         dry(f"would brew uninstall {package} if installed")
         return True
-    result = subprocess.run(['brew', 'list', package], capture_output=True)
+    result = subprocess.run(["brew", "list", package], capture_output=True)
     if result.returncode != 0:
         return True
     try:
-        subprocess.run(['brew', 'uninstall', package], check=True)
+        subprocess.run(["brew", "uninstall", package], check=True)
         return True
     except subprocess.CalledProcessError:
         return False
@@ -192,11 +201,11 @@ def npm_install_global(package):
     if _DRY_RUN:
         dry(f"would run: npm install -g {package}")
         return True
-    if not command_exists('npm'):
+    if not command_exists("npm"):
         error("npm not found; install the 'node' topic first")
         return False
     try:
-        subprocess.run(['npm', 'install', '-g', package], check=True)
+        subprocess.run(["npm", "install", "-g", package], check=True)
         return True
     except subprocess.CalledProcessError:
         return False
@@ -211,10 +220,26 @@ def mise_use(tool_spec):
         dry(f"would run: mise use -g {tool_spec}")
         return True
     try:
-        subprocess.run(['mise', 'use', '-g', tool_spec], check=True)
+        subprocess.run(["mise", "use", "-g", tool_spec], check=True)
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def chmod(path, mode):
+    """Chmod a directory or file, honouring dry-run."""
+    if mode is None:
+        return
+    if _DRY_RUN:
+        dry("would ensure {path} permissions {mode}")
+        return
+
+    st_mode = path.stat().st_mode
+    current_mode = st_mode & 0o777
+
+    if current_mode != mode:
+        path.chmod(mode)
+        info(f"Set {path} permissions: {oct(current_mode)} -> {oct(mode)}")
 
 
 def make_dir(path, mode=None, parents=True):
@@ -223,10 +248,19 @@ def make_dir(path, mode=None, parents=True):
     if _DRY_RUN:
         dry(f"would mkdir {path}")
         return
-    if mode is not None:
-        path.mkdir(mode=mode, parents=parents, exist_ok=True)
-    else:
+
+    if path.is_file():
+        error(f"{path} exists and is a file")
+        return
+
+    if path.is_dir():
+        chmod(path, mode)
+        return
+
+    if mode is None:
         path.mkdir(parents=parents, exist_ok=True)
+    else:
+        path.mkdir(mode=mode, parents=parents, exist_ok=True)
 
 
 def write_file(path, content, mode=None):
@@ -238,15 +272,33 @@ def write_file(path, content, mode=None):
     if _DRY_RUN:
         dry(f"would write {path} ({len(content)} bytes)")
         return
-    path.parent.mkdir(parents=True, exist_ok=True)
+    make_dir(path.parent)
     path.write_text(content)
-    if mode is not None:
-        path.chmod(mode)
+    chmod(path, mode)
+
+
+def touch_file(path, mode=None):
+    """Ensure file exists, honouring dry-run.
+
+    Creates parent directories. Applies `mode` (e.g. 0o600) if given.
+    """
+    path = Path(path)
+    if _DRY_RUN:
+        dry(f"would touch {path}")
+        return
+    if path.exists():
+        return
+
+    make_dir(path.parent)
+    if mode is None:
+        path.touch()
+    else:
+        path.touch(mode)
 
 
 def get_short_hostname():
     """Get short hostname (without domain suffix)."""
-    return socket.gethostname().split('.')[0]
+    return socket.gethostname().split(".")[0]
 
 
 def _deep_merge(base, override):
@@ -268,9 +320,8 @@ def backup_file(file_path):
     if _DRY_RUN:
         dry(f"would back up {file_path}")
         return
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_dir = Path.home() / '.dotfiles-backup' / timestamp
-    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup_dir = HOME / ".dotfiles-backup" / NOW
+    make_dir(backup_dir)
     dest = backup_dir / path.name
     shutil.move(str(path), str(dest))
     info(f"Backed up {file_path} to {dest}")
@@ -310,29 +361,24 @@ def load_symlink_mappings(topic_dir):
     """
     topic_dir = Path(topic_dir)
     mappings = {}
-    symlinks_file = topic_dir / 'symlinks.txt'
+    symlinks_file = topic_dir / "symlinks.txt"
     if not symlinks_file.exists():
         return mappings
 
-    home = Path.home()
-    xdg_config_home = Path(
-        os.environ.get('XDG_CONFIG_HOME', home / '.config')
-    )
-
-    for line in symlinks_file.read_text().strip().split('\n'):
+    for line in symlinks_file.read_text().strip().split("\n"):
         line = line.strip()
-        if not line or line.startswith('#'):
+        if not line or line.startswith("#"):
             continue
-        if ' -> ' not in line:
+        if " -> " not in line:
             continue
 
-        src_name, dst_path = line.split(' -> ', 1)
+        src_name, dst_path = line.split(" -> ", 1)
         src_name = src_name.strip()
         dst_path = dst_path.strip()
 
-        dst_path = dst_path.replace('$HOME', str(home))
-        dst_path = dst_path.replace('$XDG_CONFIG_HOME', str(xdg_config_home))
-        dst_path = dst_path.replace('~', str(home))
+        dst_path = dst_path.replace("~", HOME_STR)
+        dst_path = dst_path.replace("$HOME", HOME_STR)
+        dst_path = dst_path.replace("$XDG_CONFIG_HOME", XDG_CONFIG_HOME_STR)
 
         mappings[src_name] = Path(dst_path)
 
@@ -346,22 +392,24 @@ def install_symlinks(topic_dir):
     file is linked to ``~/.<basename>`` (the filename without ``.symlink``).
     """
     topic_dir = Path(topic_dir)
-    symlink_files = sorted(topic_dir.glob('*.symlink'))
+    symlink_files = sorted(topic_dir.glob("*.symlink"))
     if not symlink_files:
         return True
 
     mappings = load_symlink_mappings(topic_dir)
-    home = Path.home()
 
     all_ok = True
     for src in symlink_files:
         if not src.is_file():
             continue
-        dst = mappings.get(src.name, home / f'.{src.stem}')
+        dst = mappings.get(src.name, HOME / f".{src.stem}")
         if not link_file(src, dst):
             all_ok = False
 
     return all_ok
+
+
+__machine_config = None
 
 
 def get_machine_config():
@@ -373,20 +421,41 @@ def get_machine_config():
     Returns:
         tuple: (config_dict, hostname)
     """
+    global __machine_config
+
+    if __machine_config is not None:
+        return __machine_config
+
     hostname = get_short_hostname()
-    machines_dir = DOTFILES_ROOT / 'machines'
+    machines_dir = DOTFILES_ROOT / "machines"
 
     # Always load default first
-    with open(machines_dir / 'default.json') as f:
+    with open(machines_dir / "default.json") as f:
         config = json.load(f)
 
     # Merge hostname-specific config if it exists
-    host_config_file = machines_dir / f'{hostname}.json'
+    host_config_file = machines_dir / f"{hostname}.json"
     if host_config_file.exists():
         with open(host_config_file) as f:
             config = _deep_merge(config, json.load(f))
 
-    return config, hostname
+    __machine_config = config, hostname
+    return __machine_config
+
+
+def get_machine_ssh_config():
+    machine_config, _ = get_machine_config()
+    return machine_config.get("ssh", {})
+
+
+def find_ssh_key(name):
+    ssh_keys = get_machine_ssh_config().get("keys", [])
+    for ssh_key in ssh_keys:
+        key_name = ssh_key["name"]
+        if key_name != name:
+            continue
+        return ssh_key
+    return None
 
 
 def op_secret(value):
@@ -402,10 +471,10 @@ def op_secret(value):
     if isinstance(value, str):
         return value, OP_DEFAULT_ACCOUNT
     if isinstance(value, dict):
-        ref = value.get('ref')
+        ref = value.get("ref")
         if not ref:
             raise ValueError(f"1Password secret object missing 'ref': {value!r}")
-        return ref, value.get('account', OP_DEFAULT_ACCOUNT)
+        return ref, value.get("account", OP_DEFAULT_ACCOUNT)
     raise TypeError(f"Unsupported 1Password secret reference: {value!r}")
 
 

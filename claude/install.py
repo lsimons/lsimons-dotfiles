@@ -8,7 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     command_exists,
     dry,
@@ -40,7 +40,7 @@ def link_directory(src, dst):
             dst_path.unlink()
     elif dst_path.exists():
         # Backup existing directory
-        backup = dst_path.with_suffix('.backup')
+        backup = dst_path.with_suffix(".backup")
         info(f"Backing up {dst} to {backup}")
         if is_dry_run():
             dry(f"would move {dst} -> {backup}")
@@ -62,24 +62,23 @@ def link_directory(src, dst):
 def get_git_email():
     """Get the global git user email."""
     result = subprocess.run(
-        ['git', 'config', '--get', 'user.email'],
-        capture_output=True, text=True
+        ["git", "config", "--get", "user.email"], capture_output=True, text=True
     )
     return result.stdout.strip() if result.returncode == 0 else None
 
 
 def build_attribution(email):
     """Return the commit attribution string based on git email."""
-    if email == 'bot@leosimons.com':
-        return 'Co-Authored-By: Leo Simons <mail@leosimons.com>'
+    if email == "bot@leosimons.com":
+        return "Co-Authored-By: Leo Simons <mail@leosimons.com>"
     else:
-        return 'Co-Authored-By: lsimons-bot <bot@leosimons.com>'
+        return "Co-Authored-By: lsimons-bot <bot@leosimons.com>"
 
 
 def write_settings(claude_dir, topic_dir):
     """Write ~/.claude/settings.json from base config plus dynamic attribution."""
-    base_file = topic_dir / 'settings.json.base'
-    settings_path = claude_dir / 'settings.json'
+    base_file = topic_dir / "settings.json.base"
+    settings_path = claude_dir / "settings.json"
 
     with open(base_file) as f:
         settings = json.load(f)
@@ -88,26 +87,24 @@ def write_settings(claude_dir, topic_dir):
     if email:
         info(f"Detected git email: {email}")
         attribution_text = build_attribution(email)
-        settings['attribution'] = {
-            'commit': attribution_text,
-            'pr': attribution_text,
+        settings["attribution"] = {
+            "commit": attribution_text,
+            "pr": attribution_text,
         }
     else:
         info("No git email found; skipping attribution config")
 
     # Route git in Claude sessions to the Claude-specific git config
     # (signs with an on-disk SSH key instead of op-ssh-sign).
-    xdg_config_home = Path(
-        os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')
-    )
-    settings.setdefault('env', {})['GIT_CONFIG_GLOBAL'] = str(
-        xdg_config_home / 'git' / 'config.claude'
+    xdg_config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    settings.setdefault("env", {})["GIT_CONFIG_GLOBAL"] = str(
+        xdg_config_home / "git" / "config.ai"
     )
 
     machine_config, hostname = get_machine_config()
-    if machine_config.get('claude', {}).get('removeDenyRules'):
+    if machine_config.get("claude", {}).get("removeDenyRules"):
         info(f"Removing deny rules for machine: {hostname}")
-        settings.get('permissions', {}).pop('deny', None)
+        settings.get("permissions", {}).pop("deny", None)
 
     if is_dry_run():
         dry(f"would write {settings_path}")
@@ -117,9 +114,9 @@ def write_settings(claude_dir, topic_dir):
     if settings_path.is_symlink():
         settings_path.unlink()
 
-    with open(settings_path, 'w') as f:
+    with open(settings_path, "w") as f:
         json.dump(settings, f, indent=2)
-        f.write('\n')
+        f.write("\n")
 
     success(f"Wrote: {settings_path}")
 
@@ -133,7 +130,7 @@ def main():
     info("Installing/updating Claude Code via official installer...")
     try:
         run_cmd(
-            ['sh', '-c', 'curl -fsSL https://claude.ai/install.sh | sh'],
+            ["sh", "-c", "curl -fsSL https://claude.ai/install.sh | sh"],
             check=True,
         )
         success("Claude Code installed")
@@ -142,15 +139,15 @@ def main():
         return 1
 
     # ccusage powers the monthly $-spend segment in the status line.
-    if command_exists('ccusage'):
+    if command_exists("ccusage"):
         success("ccusage already installed")
-    elif npm_install_global('ccusage'):
+    elif npm_install_global("ccusage"):
         success("ccusage installed")
     else:
         warn("Failed to install ccusage; status line cost segment will be hidden")
 
     # Ensure ~/.claude directory exists
-    claude_dir = Path.home() / '.claude'
+    claude_dir = Path.home() / ".claude"
     if is_dry_run():
         dry(f"would mkdir {claude_dir}")
     else:
@@ -159,15 +156,15 @@ def main():
     topic_dir = Path(__file__).resolve().parent
 
     # Link skills directory
-    skills_src = topic_dir / 'skills'
-    skills_dst = claude_dir / 'skills'
+    skills_src = topic_dir / "skills"
+    skills_dst = claude_dir / "skills"
     if skills_src.exists():
         link_directory(skills_src, skills_dst)
 
     # Link themes directory (LSD Warm Light/Dark, etc.). Claude Code picks up
     # custom themes from ~/.claude/themes/*.json; activate via /theme.
-    themes_src = topic_dir / 'themes'
-    themes_dst = claude_dir / 'themes'
+    themes_src = topic_dir / "themes"
+    themes_dst = claude_dir / "themes"
     if themes_src.exists():
         link_directory(themes_src, themes_dst)
 
@@ -177,5 +174,5 @@ def main():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
