@@ -12,6 +12,7 @@ from helpers import (
     brew_is_installed,
     error,
     info,
+    install_symlinks,
     is_dry_run,
     parse_dry_run,
     run_cmd,
@@ -64,6 +65,7 @@ def install_powerlevel10k():
 def main():
     parse_dry_run()
 
+    install_symlinks(Path(__file__).resolve().parent)
     if not install_oh_my_zsh():
         return 1
     if not install_powerlevel10k():
