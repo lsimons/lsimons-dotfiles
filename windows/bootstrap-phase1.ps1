@@ -268,6 +268,20 @@ Invoke-Step "Install topgrade config" {
   Copy-IfChanged -Source $src -Dest (Join-Path $env:APPDATA 'topgrade.toml')
 }
 
+Invoke-Step "Install Zed theme and settings" {
+  # Zed on Windows reads config from %APPDATA%\Zed. Install the shared
+  # "LSD Warm" theme (same colours as the macOS zed/ topic) and a minimal
+  # Windows-specific settings file that selects it. Settings are kept
+  # separate from the macOS topic on purpose -- this only carries the look.
+  $zedDir = Join-Path $env:APPDATA 'Zed'
+  Copy-IfChanged `
+    -Source (Join-Path $dotfilesRoot 'zed\lsd-warm.json.symlink') `
+    -Dest   (Join-Path $zedDir 'themes\lsd-warm.json')
+  Copy-IfChanged `
+    -Source (Join-Path $scriptDir 'Zed-settings.json') `
+    -Dest   (Join-Path $zedDir 'settings.json')
+}
+
 # ---------------------------------------------------------------------------
 # Claude Code
 # ---------------------------------------------------------------------------

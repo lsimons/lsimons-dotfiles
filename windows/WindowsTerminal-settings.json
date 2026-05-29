@@ -8,7 +8,10 @@
   "useAcrylicInTabRow": true,
   "profiles": {
     "defaults": {
-      "colorScheme": "Sandbox Green",
+      "colorScheme": {
+        "dark": "LSD Warm Dark",
+        "light": "LSD Warm Light"
+      },
       "font": {
         "face": "CaskaydiaCove Nerd Font",
         "size": 11
@@ -31,6 +34,52 @@
     ]
   },
   "schemes": [
+    {
+      "name": "LSD Warm Dark",
+      "background": "#1A0C00",
+      "foreground": "#DFCAB2",
+      "cursorColor": "#D79E59",
+      "selectionBackground": "#3A2B16",
+      "black": "#1A0C00",
+      "red": "#C10032",
+      "green": "#007A5E",
+      "yellow": "#815E00",
+      "blue": "#005FC9",
+      "purple": "#C8005E",
+      "cyan": "#007980",
+      "white": "#DFCAB2",
+      "brightBlack": "#5E4C38",
+      "brightRed": "#C10032",
+      "brightGreen": "#007A5E",
+      "brightYellow": "#815E00",
+      "brightBlue": "#005FC9",
+      "brightPurple": "#C8005E",
+      "brightCyan": "#007980",
+      "brightWhite": "#FFEBD2"
+    },
+    {
+      "name": "LSD Warm Light",
+      "background": "#FAF1F3",
+      "foreground": "#241100",
+      "cursorColor": "#C17A23",
+      "selectionBackground": "#EBD3B4",
+      "black": "#241100",
+      "red": "#A10000",
+      "green": "#006248",
+      "yellow": "#694700",
+      "blue": "#0045AE",
+      "purple": "#AA0048",
+      "cyan": "#006168",
+      "white": "#FAF1F3",
+      "brightBlack": "#594329",
+      "brightRed": "#D01C25",
+      "brightGreen": "#00896D",
+      "brightYellow": "#906D00",
+      "brightBlue": "#006EDA",
+      "brightPurple": "#DA006C",
+      "brightCyan": "#00888F",
+      "brightWhite": "#F7F7F7"
+    },
     {
       "name": "Sandbox Green",
       "background": "#0B1F14",

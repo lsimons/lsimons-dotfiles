@@ -16,6 +16,7 @@ For the rationale (why native-only, why these tools, constraints), see
 | `scoopfile.json` | Declarative Scoop manifest (CLI toolchain) |
 | `Microsoft.PowerShell_profile.ps1` | PowerShell profile (copied into `$PROFILE` paths) |
 | `WindowsTerminal-settings.json` | Windows Terminal settings (copied into LocalState) |
+| `Zed-settings.json` | Zed settings for this VM (copied into `%APPDATA%\Zed`; selects the LSD Warm theme) |
 
 ## Prereqs
 

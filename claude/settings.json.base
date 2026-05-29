@@ -128,7 +128,7 @@
     "rust-analyzer-lsp@claude-plugins-official": true
   },
   "defaultMode": "acceptEdits",
-  "model": "claude-sonnet-4-6",
+  "model": "opus[1m]",
   "effortLevel": "high",
   "theme": "custom:lsd-warm-light"
 }

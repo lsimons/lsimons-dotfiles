@@ -88,6 +88,21 @@ Invoke-Step "Install skills/" {
   }
 }
 
+Invoke-Step "Install themes/" {
+  # Claude Code picks up custom themes from ~/.claude/themes/*.json; the
+  # settings.json below selects one via "theme": "custom:lsd-warm-light".
+  $src  = Join-Path $topicDir 'themes'
+  $dest = Join-Path $claudeDir 'themes'
+  if (-not (Test-Path $dest)) {
+    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+  }
+  Get-ChildItem -Path $src -Recurse -File | ForEach-Object {
+    $rel      = $_.FullName.Substring($src.Length).TrimStart('\','/')
+    $destFile = Join-Path $dest $rel
+    Copy-IfChanged -Source $_.FullName -Dest $destFile
+  }
+}
+
 Invoke-Step "Write settings.json" {
   $basePath     = Join-Path $topicDir 'settings.json.base'
   $settingsPath = Join-Path $claudeDir 'settings.json'
