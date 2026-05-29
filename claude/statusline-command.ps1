@@ -2,6 +2,10 @@
 # Claude Code status line script (Windows/PowerShell port of statusline-command.sh)
 # Reads JSON from stdin, outputs a formatted ANSI-coloured status line.
 
+# Claude Code reads our stdout as UTF-8; without this the block-bar glyphs
+# (█ ░) are emitted in the OEM codepage and render as � in the terminal.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $raw  = [Console]::In.ReadToEnd()
 $json = $raw | ConvertFrom-Json
 
