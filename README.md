@@ -52,7 +52,7 @@ The installation script (`./script/install.py`) will:
 
 | Topic | Installs |
 |-------|----------|
-| `1password/` | 1Password CLI (`op`) |
+| `1password/` | 1Password app and CLI (`op`) |
 | `ansible/` | Ansible and related tools |
 | `aws/` | AWS CLI (`awscli`) + default `~/.aws/config` |
 | `azure/` | Azure CLI (`az`) |

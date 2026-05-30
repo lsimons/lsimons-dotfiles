@@ -70,6 +70,14 @@ def main():
 
     install_1password_ssh_agent_config()
 
+    if Path("/Applications/1Password.app").exists():
+        success("1Password app already installed")
+    elif brew_install("1password", cask=True):
+        success("1Password app installed")
+    else:
+        error("Failed to install 1Password app")
+        return 1
+
     if command_exists("op"):
         success("1Password CLI already installed")
     elif brew_install("1password-cli", cask=True):
