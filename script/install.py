@@ -280,6 +280,12 @@ def setup_xdg():
     success("XDG directories created")
 
 
+# Topics that must run after all others, in this exact order. They are
+# excluded from the normal dependency-sorted pass and run last so the apps
+# and tools they reference are guaranteed to be installed first.
+FINAL_TOPICS = ['dock']
+
+
 def get_topic_dependencies(topic_dir):
     """Read dependencies from a topic's dependencies.txt file"""
     deps_file = topic_dir / 'dependencies.txt'
@@ -349,7 +355,8 @@ def run_topic_installers(dotfiles_root, python_path):
         # Skip script directory to avoid recursive invocation
         if (topic_dir.is_dir()
                 and not topic_dir.name.startswith('.')
-                and topic_dir.name != 'script'):
+                and topic_dir.name != 'script'
+                and topic_dir.name not in FINAL_TOPICS):
             install_py = topic_dir / 'install.py'
             if install_py.exists():
                 topic_name = topic_dir.name
@@ -378,6 +385,25 @@ def run_topic_installers(dotfiles_root, python_path):
         else:
             info(f"Running installer for: {topic}")
 
+        try:
+            run_command([python_path, str(script), *child_args])
+            success(f"Installed: {topic}")
+        except subprocess.CalledProcessError:
+            error(f"Failed to install: {topic}")
+            return False
+
+    return True
+
+
+def run_final_topics(dotfiles_root, python_path):
+    """Run the FINAL_TOPICS installers last, in declared order."""
+    child_args = ['--dry-run'] if is_dry_run() else []
+
+    for topic in FINAL_TOPICS:
+        script = dotfiles_root / topic / 'install.py'
+        if not script.exists():
+            continue
+        info(f"Running final installer for: {topic}")
         try:
             run_command([python_path, str(script), *child_args])
             success(f"Installed: {topic}")
@@ -450,6 +476,11 @@ def main():
     # Step 8: Run topic installers (each installs its own .symlink files)
     info("=" * 50)
     if not run_topic_installers(dotfiles_root, python_path):
+        error("Some topic installations failed")
+        sys.exit(1)
+
+    # Step 9: Run final topics (e.g. dock) after everything else
+    if not run_final_topics(dotfiles_root, python_path):
         error("Some topic installations failed")
         sys.exit(1)
 

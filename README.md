@@ -62,6 +62,7 @@ The installation script (`./script/install.py`) will:
 | `colors/` | `pastel` color CLI + docs for theme/palette files across tools |
 | `copilot/` | GitHub Copilot CLI |
 | `docker/` | Docker |
+| `dock/` | Pins apps to the macOS Dock via dockutil (runs last) |
 | `gemini/` | Gemini CLI |
 | `fnox/` | fnox (1Password secret injection, via mise) |
 | `fonts/` | Fonts (Cascadia Code, Iosevka, JetBrains Mono, Lilex, Lilex Nerd Font) |
