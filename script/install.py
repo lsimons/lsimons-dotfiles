@@ -439,7 +439,15 @@ def main():
     # Step 6: Setup XDG directories
     setup_xdg()
 
-    # Step 7: Run topic installers (each installs its own .symlink files)
+    # Step 7: Add mise shims to PATH so topic installers can find mise-managed
+    # tools (e.g. npm) even before the shell config topics have been sourced.
+    xdg_data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share'))
+    mise_shims = str(xdg_data_home / 'mise' / 'shims')
+    if mise_shims not in os.environ.get('PATH', '').split(':'):
+        os.environ['PATH'] = f"{mise_shims}:{os.environ['PATH']}"
+        info(f"Added mise shims to PATH: {mise_shims}")
+
+    # Step 8: Run topic installers (each installs its own .symlink files)
     info("=" * 50)
     if not run_topic_installers(dotfiles_root, python_path):
         error("Some topic installations failed")
