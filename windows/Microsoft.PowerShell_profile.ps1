@@ -48,6 +48,19 @@ if (-not $env:SSH_AUTH_SOCK) {
   $env:SSH_AUTH_SOCK = '\\.\pipe\openssh-ssh-agent'
 }
 
+# --- .NET SDK ---
+# The SDK itself is installed machine-wide by winget (Microsoft.DotNet.SDK.9),
+# which adds C:\Program Files\dotnet to the system PATH and lets the dotnet
+# muxer self-resolve DOTNET_ROOT -- so neither needs setting here. We only add
+# the per-user global tools directory (dotnet tool install -g lands here) and
+# opt out of telemetry/logo noise on the agent VM.
+$dotnetTools = Join-Path $env:USERPROFILE '.dotnet\tools'
+if ((Test-Path $dotnetTools) -and ($env:PATH -notlike "*$dotnetTools*")) {
+  $env:PATH = "$dotnetTools;$env:PATH"
+}
+$env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+$env:DOTNET_NOLOGO = '1'
+
 # --- mise (polyglot tool version manager) ---
 # mise's pwsh chpwd hook requires PowerShell 7+; activating under Windows
 # PowerShell 5.1 only emits a warning, so gate it on the major version.

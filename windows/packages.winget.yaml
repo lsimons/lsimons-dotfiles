@@ -47,6 +47,14 @@ properties:
         id: Microsoft.WindowsTerminal
         source: winget
 
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: DotNetSDK9
+      directives:
+        description: Install .NET SDK 9 (native arch via MSI, machine-wide)
+      settings:
+        id: Microsoft.DotNet.SDK.9
+        source: winget
+
     # --- Editor ---
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
