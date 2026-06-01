@@ -1,5 +1,5 @@
 # PowerShell profile for the Windows 11 ARM64 AI-agent VM.
-# Symlinked to $PROFILE.CurrentUserAllHosts by bootstrap-phase1.ps1.
+# Copied to $PROFILE.CurrentUserAllHosts by bootstrap-phase1.ps1.
 # See ../docs/AGENT_WINDOWS_SETUP.md for rationale.
 
 # --- XDG-on-Windows ---
@@ -29,6 +29,15 @@ if (Get-Module -ListAvailable -Name PSReadLine) {
   Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
   Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
   Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
+}
+
+# --- File listing colors ---
+# PowerShell 7.2+ colors directories from Get-ChildItem with
+# $PSStyle.FileInfo.Directory, which defaults to "`e[44;1m" (blue background,
+# bold). On a light scheme that's black-on-dark-blue and unreadable, so switch
+# to a bold blue foreground with no background fill.
+if ($PSStyle) {
+  $PSStyle.FileInfo.Directory = "`e[1;34m"
 }
 
 # --- 1Password SSH agent (named pipe) ---
