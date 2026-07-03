@@ -3,11 +3,13 @@
 import argparse
 import json
 import os
+import re
 import shlex
 import shutil
 import socket
 import subprocess
 import sys
+import tomllib
 from datetime import datetime
 from pathlib import Path
 
@@ -294,6 +296,84 @@ def touch_file(path, mode=None):
         path.touch()
     else:
         path.touch(mode)
+
+
+def _toml_literal(value):
+    """Serialise a Python scalar to its TOML literal form."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    if isinstance(value, str):
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+    raise TypeError(f"Unsupported TOML value type: {type(value).__name__}")
+
+
+def set_toml_value(path, table, key, value):
+    """Idempotently set a single ``key = value`` under ``[table]`` in a TOML file.
+
+    Only the one key is managed: all other content, comments, and formatting
+    are preserved, so the file is *not* brought fully under version control.
+    Creates the file (or the ``[table]`` section, or the key) as needed, and
+    replaces an out-of-date value in place. The edit is scoped to the target
+    table's block, so a same-named key in another table is left alone.
+
+    Honours dry-run mode. Returns True on success.
+    """
+    path = Path(path)
+    setting_line = f"{key} = {_toml_literal(value)}"
+
+    if not path.exists():
+        if _DRY_RUN:
+            dry(f"would create {path} with [{table}] {setting_line}")
+            return True
+        write_file(path, f"[{table}]\n{setting_line}\n")
+        success(f"Created {path} with {setting_line}")
+        return True
+
+    text = path.read_text()
+    if tomllib.loads(text).get(table, {}).get(key) == value:
+        success(f"{path}: {table}.{key} already set")
+        return True
+
+    if _DRY_RUN:
+        dry(f"would set {setting_line} under [{table}] in {path}")
+        return True
+
+    lines = text.splitlines(keepends=True)
+    header_re = re.compile(rf"^\s*\[{re.escape(table)}\]\s*$")
+    boundary_re = re.compile(r"^\s*\[")
+    key_re = re.compile(rf"^\s*{re.escape(key)}\s*=")
+
+    table_start = next(
+        (i for i, line in enumerate(lines) if header_re.match(line)), None
+    )
+
+    if table_start is None:
+        sep = "\n" if text.endswith("\n") else "\n\n"
+        new_text = f"{text}{sep}[{table}]\n{setting_line}\n"
+    else:
+        table_end = next(
+            (
+                j
+                for j in range(table_start + 1, len(lines))
+                if boundary_re.match(lines[j])
+            ),
+            len(lines),
+        )
+        for j in range(table_start + 1, table_end):
+            if key_re.match(lines[j]):
+                nl = "\n" if lines[j].endswith("\n") else ""
+                lines[j] = setting_line + nl
+                break
+        else:
+            lines.insert(table_start + 1, setting_line + "\n")
+        new_text = "".join(lines)
+
+    write_file(path, new_text)
+    success(f"Set {setting_line} in {path}")
+    return True
 
 
 def get_short_hostname():
