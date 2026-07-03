@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
     DOTFILES_ROOT,
+    XDG_CONFIG_HOME,
     brew_install,
     command_exists,
     dry,
@@ -21,9 +22,12 @@ from helpers import (
     is_dry_run,
     parse_dry_run,
     run_cmd,
+    set_toml_value,
     success,
     write_file,
 )
+
+MINIMUM_RELEASE_AGE = '7d'
 
 
 def install_mise():
@@ -86,6 +90,18 @@ def install_launch_agent():
     return True
 
 
+def ensure_minimum_release_age():
+    """Ensure ~/.config/mise/config.toml sets settings.minimum_release_age.
+
+    Only this single key is managed; the rest of the file is left untouched
+    so it is not brought under version control.
+    """
+    config_path = XDG_CONFIG_HOME / 'mise' / 'config.toml'
+    return set_toml_value(
+        config_path, 'settings', 'minimum_release_age', MINIMUM_RELEASE_AGE
+    )
+
+
 def main():
     parse_dry_run()
     info("Installing mise...")
@@ -93,6 +109,7 @@ def main():
     if not install_mise():
         return 1
 
+    ensure_minimum_release_age()
     install_launch_agent()
     return 0
 
