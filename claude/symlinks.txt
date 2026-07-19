@@ -1,3 +1,2 @@
 # Claude Code symlink destinations
-CLAUDE.md.symlink -> ~/.claude/CLAUDE.md
 statusline-command.sh.symlink -> ~/.claude/statusline-command.sh

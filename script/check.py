@@ -26,6 +26,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_DIR = REPO_ROOT / 'script'
+AGENTS_DIR = REPO_ROOT / 'agents'
 
 
 # Directories to skip when walking the repo for Python / JSON files.
@@ -42,8 +43,9 @@ def _walk_files(suffix: str) -> list[Path]:
 
 
 def check_py_compile() -> bool:
-    """Byte-compile every Python file under script/ and every */install.py."""
+    """Byte-compile shared tooling and every topic installer."""
     targets: list[Path] = sorted(SCRIPT_DIR.glob('*.py'))
+    targets += sorted(AGENTS_DIR.glob('*.py'))
     targets += sorted(REPO_ROOT.glob('*/install.py'))
 
     print(f'[check] py_compile: {len(targets)} files')
@@ -69,7 +71,7 @@ def check_py_compile() -> bool:
 
 
 def check_ruff() -> bool:
-    """Run ruff on script/*.py.
+    """Run ruff on shared Python tooling.
 
     Soft-fails (warns and skips) when ruff isn't on PATH, so first-run
     users without the full toolchain still get the other checks. Use
@@ -78,6 +80,7 @@ def check_ruff() -> bool:
     explicitly.
     """
     targets = sorted(SCRIPT_DIR.glob('*.py'))
+    targets += sorted(AGENTS_DIR.glob('*.py'))
     print(f'[check] ruff: {len(targets)} files')
 
     if shutil.which('ruff') is None:

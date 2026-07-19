@@ -14,6 +14,14 @@ from datetime import datetime
 from pathlib import Path
 
 DOTFILES_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(DOTFILES_ROOT))
+from agents.shared import (  # noqa: E402, F401
+    AGENTS_MD,
+    SKILLS_DIR,
+    build_attribution,
+    render_instructions,
+)
+
 HOME = Path.home()
 HOME_STR = str(HOME)
 XDG_CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config"))
@@ -441,28 +449,6 @@ def get_git_email():
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def build_attribution(email):
-    """Return the Co-Authored-By attribution line for the given git email."""
-    if email == "bot@leosimons.com":
-        return "Co-Authored-By: Leo Simons <mail@leosimons.com>"
-    return "Co-Authored-By: lsimons-bot <bot@leosimons.com>"
-
-
-# Master global agent instructions. Claude Code reads this directly (symlinked)
-# and gets attribution injected via ~/.claude/settings.json. Agents that have no
-# settings.json equivalent get a compiled copy from render_agents_md() instead,
-# with the machine-specific attribution line spelled out inline.
-# Agent skills (SKILL.md dirs) shared across every skill-capable coding agent.
-# Claude Code, opencode, gemini, and copilot each discover skills from their own
-# personal directory; link_directory() points each at this one source.
-SKILLS_DIR = DOTFILES_ROOT / "claude" / "skills"
-
-MASTER_AGENTS_MD = DOTFILES_ROOT / "claude" / "CLAUDE.md.symlink"
-_ATTRIBUTION_RE = re.compile(
-    r"<!-- attribution:start -->.*?<!-- attribution:end -->", re.DOTALL
-)
-
-
 def render_agents_md(dst, mode=None):
     """Compile the master agent instructions to dst for a non-Claude agent.
 
@@ -470,16 +456,7 @@ def render_agents_md(dst, mode=None):
     specific Co-Authored-By line, since these agents can't inject it themselves.
     """
     dst_path = Path(dst)
-    content = MASTER_AGENTS_MD.read_text()
-    attribution = build_attribution(get_git_email())
-    block = (
-        "- End **both** commit messages and PR descriptions with exactly this "
-        "attribution line. Do NOT emit your own built-in co-author trailer "
-        "(e.g. `Co-authored-by: Copilot`, `Co-authored-by: opencode`) — use "
-        "this line instead, and do not remove or skip it:\n"
-        f"  `{attribution}`"
-    )
-    content = _ATTRIBUTION_RE.sub(block, content, count=1)
+    content = render_instructions(get_git_email())
 
     # A previous install may have left a symlink here; writing through it would
     # clobber the master. Replace it with a real file.

@@ -9,6 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
+    AGENTS_MD,
+    SKILLS_DIR,
     build_attribution,
     command_exists,
     dry,
@@ -19,6 +21,7 @@ from helpers import (
     install_symlinks,
     is_dry_run,
     link_directory,
+    link_file,
     npm_install_global,
     parse_dry_run,
     run_cmd,
@@ -87,11 +90,8 @@ def main():
 
     topic_dir = Path(__file__).resolve().parent
 
-    # Link skills directory
-    skills_src = topic_dir / "skills"
-    skills_dst = claude_dir / "skills"
-    if skills_src.exists():
-        link_directory(skills_src, skills_dst)
+    link_file(AGENTS_MD, claude_dir / "CLAUDE.md")
+    link_directory(SKILLS_DIR, claude_dir / "skills")
 
     # Link themes directory (LSD Warm Light/Dark, etc.). Claude Code picks up
     # custom themes from ~/.claude/themes/*.json; activate via /theme.
