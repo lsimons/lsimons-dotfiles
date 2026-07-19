@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
+    SKILLS_DIR,
     command_exists,
     dry,
     error,
@@ -72,6 +73,9 @@ def configure_agent():
         "defaultThinkingLevel": "off",
         "theme": "lsd-warm-light",
         "shellCommandPrefix": shell_command_prefix,
+        # Load the shared skills dir (same skills as the claude/codex/copilot/
+        # opencode topics) alongside pi's own auto-discovered ~/.pi/agent/skills.
+        "skills": [str(SKILLS_DIR)],
     }
 
     if settings_json.exists():
