@@ -10,9 +10,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
+    build_attribution,
     command_exists,
     dry,
     error,
+    get_git_email,
     get_machine_config,
     info,
     install_symlinks,
@@ -57,22 +59,6 @@ def link_directory(src, dst):
     dst_path.symlink_to(src_path)
     success(f"Linked: {dst} -> {src}")
     return True
-
-
-def get_git_email():
-    """Get the global git user email."""
-    result = subprocess.run(
-        ["git", "config", "--get", "user.email"], capture_output=True, text=True
-    )
-    return result.stdout.strip() if result.returncode == 0 else None
-
-
-def build_attribution(email):
-    """Return the commit attribution string based on git email."""
-    if email == "bot@leosimons.com":
-        return "Co-Authored-By: Leo Simons <mail@leosimons.com>"
-    else:
-        return "Co-Authored-By: lsimons-bot <bot@leosimons.com>"
 
 
 def write_settings(claude_dir, topic_dir):

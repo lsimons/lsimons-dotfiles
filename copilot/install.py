@@ -11,8 +11,8 @@ from helpers import (
     error,
     info,
     is_dry_run,
-    link_file,
     parse_dry_run,
+    render_agents_md,
     success,
 )
 
@@ -36,16 +36,14 @@ def install_copilot_cli():
 def configure_copilot():
     """Configure copilot-instructions.md symlink"""
     home = Path.home()
-    dotfiles = home / ".dotfiles"
     copilot_dir = home / ".copilot"
     instructions_md = copilot_dir / "copilot-instructions.md"
-    claude_md_source = dotfiles / "claude" / "CLAUDE.md.symlink"
 
     # Ensure ~/.copilot exists
     if not is_dry_run():
         copilot_dir.mkdir(parents=True, exist_ok=True)
 
-    link_file(claude_md_source, instructions_md)
+    render_agents_md(instructions_md)
 
 
 def main():

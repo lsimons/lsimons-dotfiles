@@ -12,9 +12,9 @@ from helpers import (
     error,
     info,
     is_dry_run,
-    link_file,
     npm_install_global,
     parse_dry_run,
+    render_agents_md,
     success,
     warn,
 )
@@ -22,15 +22,13 @@ from helpers import (
 
 def configure_gemini():
     home = Path.home()
-    dotfiles = home / '.dotfiles'
     gemini_dir = home / '.gemini'
     gemini_md = gemini_dir / 'GEMINI.md'
-    claude_md_source = dotfiles / 'claude' / 'CLAUDE.md.symlink'
 
     if not is_dry_run():
         gemini_dir.mkdir(parents=True, exist_ok=True)
 
-    link_file(claude_md_source, gemini_md)
+    render_agents_md(gemini_md)
 
 
 def main():
