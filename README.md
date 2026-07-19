@@ -62,7 +62,7 @@ The installation script (`./script/install.py`) will:
 | `claude/` | Claude Code CLI and configuration |
 | `colors/` | `pastel` color CLI + docs for theme/palette files across tools |
 | `codex/` | OpenAI Codex CLI and configuration |
-| `copilot/` | GitHub Copilot CLI |
+| `copilot/` | GitHub Copilot CLI (git-config-ai routing) |
 | `docker/` | Docker |
 | `dock/` | Pins apps to the macOS Dock via dockutil (runs last) |
 | `gemini/` | Gemini CLI |
