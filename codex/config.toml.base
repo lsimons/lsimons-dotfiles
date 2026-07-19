@@ -2,7 +2,7 @@ model = "azure/gpt-5-6-sol"
 model_provider = "sbpai"
 model_catalog_json = "/Users/lsimons/.codex/models.json"
 personality = "pragmatic"
-model_reasoning_effort = "low"
+model_reasoning_effort = "medium"
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "cached"
@@ -23,6 +23,9 @@ enabled = false
 
 [feedback]
 enabled = false
+
+[tui]
+status_line = ["model-with-reasoning", "context-remaining", "git-branch"]
 
 [model_providers.sbpai]
 name = "SBP AI"
