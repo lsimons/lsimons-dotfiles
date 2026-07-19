@@ -14,7 +14,7 @@
     "keys": [
       {
         "name": "lsimons-bot_id_ed25519",
-        "fingerpint": "SHA256:YlEe9GYgnnlcpv9iod/RBvmZ/mlQSKrKVVOGRH3kfNE",
+        "fingerprint": "SHA256:YlEe9GYgnnlcpv9iod/RBvmZ/mlQSKrKVVOGRH3kfNE",
         "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDEqWWKMxrHuWw1pnd5awLQVwc9qgSjP7SNHKEtmsDrY lsimons-bot@op-my-shared",
         "op_vault": "AI",
         "op_account": "my",

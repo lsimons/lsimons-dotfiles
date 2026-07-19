@@ -1,1 +1,3 @@
 1password
+git
+ssh

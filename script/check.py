@@ -6,10 +6,11 @@ verification before pushing.
 
 Checks, in order:
 
-  1. Python byte-compile for ``script/*.py`` and every ``*/install.py``
-  2. Ruff linting for ``script/*.py``
-  3. JSON validity for every tracked ``*.json`` file in the repo
-  4. Installer dry-run: ``python3 script/install.py --dry-run``
+  1. Compile every Python file in memory (without creating ``__pycache__``)
+  2. Ruff linting for every Python file
+  3. JSON validity and machine configuration validation
+  4. Standard-library unit tests
+  5. Installer dry-run: ``python3 script/install.py --dry-run``
      (exercises every topic installer with dry-run propagated)
 
 Exits non-zero if any check fails.
@@ -19,18 +20,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT_DIR = REPO_ROOT / 'script'
-AGENTS_DIR = REPO_ROOT / 'agents'
 
 
 # Directories to skip when walking the repo for Python / JSON files.
-SKIP_DIRS = {'.git', 'node_modules', '__pycache__', '.venv', 'venv'}
+SKIP_DIRS = {'.git', '.system', 'node_modules', '__pycache__', '.venv', 'venv'}
 
 
 def _walk_files(suffix: str) -> list[Path]:
@@ -43,23 +44,17 @@ def _walk_files(suffix: str) -> list[Path]:
 
 
 def check_py_compile() -> bool:
-    """Byte-compile shared tooling and every topic installer."""
-    targets: list[Path] = sorted(SCRIPT_DIR.glob('*.py'))
-    targets += sorted(AGENTS_DIR.glob('*.py'))
-    targets += sorted(REPO_ROOT.glob('*/install.py'))
+    """Compile every Python source file without writing bytecode caches."""
+    targets = _walk_files('.py')
 
     print(f'[check] py_compile: {len(targets)} files')
     failed: list[str] = []
     for target in targets:
         try:
-            subprocess.run(
-                [sys.executable, '-m', 'py_compile', str(target)],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except subprocess.CalledProcessError as exc:
-            failed.append(f'{target.relative_to(REPO_ROOT)}\n{exc.stderr}')
+            source = target.read_bytes()
+            compile(source, str(target), 'exec')
+        except (OSError, SyntaxError) as exc:
+            failed.append(f'{target.relative_to(REPO_ROOT)}: {exc}')
 
     if failed:
         print('[FAIL] py_compile errors:')
@@ -71,26 +66,16 @@ def check_py_compile() -> bool:
 
 
 def check_ruff() -> bool:
-    """Run ruff on shared Python tooling.
-
-    Soft-fails (warns and skips) when ruff isn't on PATH, so first-run
-    users without the full toolchain still get the other checks. Use
-    `mise run check` (which installs ruff via .mise.toml's [tools]) or
-    `pip install ruff` to get ruff coverage locally; CI installs it
-    explicitly.
-    """
-    targets = sorted(SCRIPT_DIR.glob('*.py'))
-    targets += sorted(AGENTS_DIR.glob('*.py'))
+    """Run ruff on every Python source file."""
+    targets = _walk_files('.py')
     print(f'[check] ruff: {len(targets)} files')
 
-    if shutil.which('ruff') is None:
-        print('[WARN] ruff not on PATH; skipping. '
-              'Install via `mise run check` or `pip install ruff`.')
-        return True
-
-    cmd = ['ruff', 'check', *[str(t) for t in targets], '--select=E,F,W']
+    cmd = ['ruff', 'check', *[str(t) for t in targets]]
     try:
         subprocess.run(cmd, check=True)
+    except FileNotFoundError:
+        print('[FAIL] ruff not on PATH; run checks with `mise run check`')
+        return False
     except subprocess.CalledProcessError:
         print('[FAIL] ruff reported issues')
         return False
@@ -98,8 +83,172 @@ def check_ruff() -> bool:
     return True
 
 
+def _machine_error(errors, source, path, message):
+    errors.append(f'{source}:{path}: {message}')
+
+
+def validate_machine_data(data, source, *, require_git=False) -> list[str]:
+    """Validate one machine override and return human-readable errors."""
+    errors: list[str] = []
+    if not isinstance(data, dict):
+        return [f'{source}: root must be an object']
+
+    def object_at(value, path, allowed):
+        if not isinstance(value, dict):
+            _machine_error(errors, source, path, 'must be an object')
+            return False
+        for key in value.keys() - allowed:
+            _machine_error(errors, source, f'{path}.{key}', 'unknown key')
+        return True
+
+    object_at(data, '$', {'git', 'ssh', 'claude'})
+    if require_git and 'git' not in data:
+        _machine_error(errors, source, '$.git', 'required key missing')
+
+    if 'git' in data and object_at(data['git'], '$.git', {'user'}):
+        git = data['git']
+        if require_git and 'user' not in git:
+            _machine_error(errors, source, '$.git.user', 'required key missing')
+        if 'user' in git and object_at(
+            git['user'], '$.git.user', {'name', 'email', 'signingkey'}
+        ):
+            user = git['user']
+            if require_git:
+                for key in ('name', 'email', 'signingkey'):
+                    if key not in user:
+                        _machine_error(
+                            errors, source, f'$.git.user.{key}', 'required key missing'
+                        )
+            for key in ('name', 'email'):
+                if key in user and not isinstance(user[key], str):
+                    _machine_error(errors, source, f'$.git.user.{key}', 'must be a string')
+            if 'signingkey' in user and not isinstance(user['signingkey'], (str, type(None))):
+                _machine_error(
+                    errors, source, '$.git.user.signingkey', 'must be a string or null'
+                )
+
+    if 'claude' in data and object_at(
+        data['claude'], '$.claude', {'removeDenyRules'}
+    ):
+        value = data['claude'].get('removeDenyRules')
+        if 'removeDenyRules' in data['claude'] and type(value) is not bool:
+            _machine_error(
+                errors, source, '$.claude.removeDenyRules', 'must be a boolean'
+            )
+
+    if 'ssh' in data and object_at(data['ssh'], '$.ssh', {'aiKey', 'keys'}):
+        ssh = data['ssh']
+        if 'aiKey' in ssh and not isinstance(ssh['aiKey'], str):
+            _machine_error(errors, source, '$.ssh.aiKey', 'must be a string')
+        if 'keys' in ssh:
+            if not isinstance(ssh['keys'], list):
+                _machine_error(errors, source, '$.ssh.keys', 'must be an array')
+            else:
+                key_fields = {
+                    'name': str,
+                    'fingerprint': str,
+                    'public_key': str,
+                    'op_vault': str,
+                    'op_account': str,
+                    'auth': bool,
+                    'sign': bool,
+                }
+                for index, key_data in enumerate(ssh['keys']):
+                    path = f'$.ssh.keys[{index}]'
+                    if not object_at(key_data, path, set(key_fields)):
+                        continue
+                    for key, expected_type in key_fields.items():
+                        if key not in key_data:
+                            _machine_error(errors, source, f'{path}.{key}', 'required key missing')
+                        elif type(key_data[key]) is not expected_type:
+                            _machine_error(
+                                errors,
+                                source,
+                                f'{path}.{key}',
+                                f'must be a {expected_type.__name__}',
+                            )
+    return errors
+
+
+def _deep_merge(base, override):
+    result = base.copy()
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def check_machine_configs() -> list[str]:
+    """Validate machine schemas and references after applying defaults."""
+    machines_dir = REPO_ROOT / 'machines'
+    default_path = machines_dir / 'default.json'
+    try:
+        default = json.loads(default_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return []  # The general JSON check reports this with better context.
+
+    errors = validate_machine_data(default, 'machines/default.json', require_git=True)
+    for path in sorted(machines_dir.glob('*.json')):
+        if path == default_path:
+            data = default
+        else:
+            try:
+                data = json.loads(path.read_text())
+            except (OSError, json.JSONDecodeError):
+                continue
+            errors.extend(validate_machine_data(data, str(path.relative_to(REPO_ROOT))))
+
+        merged = _deep_merge(default, data)
+        merged_git = merged.get('git')
+        merged_git = merged_git if isinstance(merged_git, dict) else {}
+        merged_user = merged_git.get('user')
+        merged_user = merged_user if isinstance(merged_user, dict) else {}
+        merged_ssh = merged.get('ssh')
+        merged_ssh = merged_ssh if isinstance(merged_ssh, dict) else {}
+        merged_keys = merged_ssh.get('keys')
+        merged_keys = merged_keys if isinstance(merged_keys, list) else []
+        keys_by_name = {}
+        for key in merged_keys:
+            if not isinstance(key, dict) or not isinstance(key.get('name'), str):
+                continue
+            key_name = key['name']
+            if key_name in keys_by_name:
+                _machine_error(
+                    errors,
+                    str(path.relative_to(REPO_ROOT)),
+                    '$.ssh.keys',
+                    f'duplicate SSH key name {key_name!r}',
+                )
+            else:
+                keys_by_name[key_name] = key
+        references = {
+            '$.git.user.signingkey': merged_user.get('signingkey'),
+            '$.ssh.aiKey': merged_ssh.get('aiKey'),
+        }
+        for ref_path, key_name in references.items():
+            if not isinstance(key_name, str):
+                continue
+            if key_name not in keys_by_name:
+                _machine_error(
+                    errors,
+                    str(path.relative_to(REPO_ROOT)),
+                    ref_path,
+                    f'references unknown SSH key {key_name!r}',
+                )
+            elif keys_by_name[key_name].get('sign') is not True:
+                _machine_error(
+                    errors,
+                    str(path.relative_to(REPO_ROOT)),
+                    ref_path,
+                    f'references SSH key {key_name!r} that is not enabled for signing',
+                )
+    return errors
+
+
 def check_json() -> bool:
-    """Validate every JSON file in the repo."""
+    """Validate every JSON file and all machine configuration semantics."""
     targets = _walk_files('.json')
     print(f'[check] json: {len(targets)} files')
     failed: list[str] = []
@@ -112,6 +261,8 @@ def check_json() -> bool:
         except OSError as exc:
             failed.append(f'{target.relative_to(REPO_ROOT)}: {exc}')
 
+    failed.extend(check_machine_configs())
+
     if failed:
         print('[FAIL] JSON parse errors:')
         for entry in failed:
@@ -121,19 +272,51 @@ def check_json() -> bool:
     return True
 
 
-def check_install_dry_run() -> bool:
-    """Run `script/install.py --dry-run` to exercise every topic installer."""
-    install_py = SCRIPT_DIR / 'install.py'
-    print('[check] install.py --dry-run')
+def check_tests() -> bool:
+    """Run the repository's standard-library unittest suite."""
+    print('[check] tests: unittest discover')
     try:
         subprocess.run(
-            [sys.executable, str(install_py), '--dry-run'],
+            [sys.executable, '-B', '-m', 'unittest', 'discover', '-s', 'tests'],
             check=True,
             cwd=REPO_ROOT,
         )
     except subprocess.CalledProcessError:
-        print('[FAIL] install.py --dry-run returned non-zero')
+        print('[FAIL] unit tests failed')
         return False
+    print('[ok]   tests')
+    return True
+
+
+def check_install_dry_run() -> bool:
+    """Run `script/install.py --dry-run` to exercise every topic installer."""
+    install_py = SCRIPT_DIR / 'install.py'
+    print('[check] install.py --dry-run')
+    with tempfile.TemporaryDirectory() as temp_dir:
+        home = Path(temp_dir) / 'home'
+        env = os.environ.copy()
+        env.update(
+            {
+                'HOME': str(home),
+                'XDG_CONFIG_HOME': str(home / '.config'),
+                'XDG_DATA_HOME': str(home / '.local/share'),
+                'XDG_CACHE_HOME': str(home / '.cache'),
+                'XDG_STATE_HOME': str(home / '.local/state'),
+            }
+        )
+        try:
+            subprocess.run(
+                [sys.executable, str(install_py), '--dry-run'],
+                check=True,
+                cwd=REPO_ROOT,
+                env=env,
+            )
+        except subprocess.CalledProcessError:
+            print('[FAIL] install.py --dry-run returned non-zero')
+            return False
+        if home.exists():
+            print('[FAIL] install.py --dry-run modified its temporary home')
+            return False
     print('[ok]   install.py --dry-run')
     return True
 
@@ -142,6 +325,7 @@ CHECKS = {
     'py_compile': check_py_compile,
     'ruff': check_ruff,
     'json': check_json,
+    'tests': check_tests,
     'install': check_install_dry_run,
 }
 

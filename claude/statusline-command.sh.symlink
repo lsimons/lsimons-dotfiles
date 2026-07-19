@@ -16,16 +16,16 @@ remaining_pct=$(echo "$input"  | jq -r '.context_window.remaining_percentage // 
 input_tokens=$(echo "$input"   | jq -r '[.context_window.current_usage.input_tokens, .context_window.current_usage.cache_creation_input_tokens, .context_window.current_usage.cache_read_input_tokens] | map(. // 0) | add | if . == 0 then empty else . end')
 context_size=$(echo "$input"   | jq -r '.context_window.context_window_size // .context_window.total // empty')
 
-# ANSI colors (literal \033 sequences — emit with printf '%b')
-RESET='\033[0m'
-DIM='\033[2m'
-CYAN='\033[36m'
-BLUE='\033[34m'
-GREEN='\033[32m'
-YELLOW='\033[33m'
-RED='\033[31m'
-MAGENTA='\033[35m'
-GREY='\033[90m'
+# ANSI colors
+RESET=$'\033[0m'
+DIM=$'\033[2m'
+CYAN=$'\033[36m'
+BLUE=$'\033[34m'
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+RED=$'\033[31m'
+MAGENTA=$'\033[35m'
+GREY=$'\033[90m'
 
 # Shorten home directory
 if [ -n "$cwd" ]; then
@@ -48,8 +48,12 @@ if command -v ccusage >/dev/null 2>&1; then
   now=$(date +%s)
   mtime=$(stat -f %m "$cache_file" 2>/dev/null || echo 0)
   if [ ! -s "$cache_file" ] || [ $(( now - mtime )) -gt 300 ]; then
-    ( ccusage monthly --json >"${cache_file}.tmp" 2>/dev/null \
-        && mv "${cache_file}.tmp" "$cache_file" ) >/dev/null 2>&1 &
+    (
+      temp_file="${cache_file}.$$"
+      trap 'rm -f "$temp_file"' EXIT
+      ccusage monthly --json >"$temp_file" 2>/dev/null \
+        && mv "$temp_file" "$cache_file"
+    ) >/dev/null 2>&1 &
     disown 2>/dev/null
   fi
   if [ -s "$cache_file" ]; then
@@ -104,10 +108,19 @@ term_width=$({ stty size </dev/tty; } 2>/dev/null | awk '{print $2}')
 [ -z "$term_width" ] && term_width=$({ tput cols </dev/tty; } 2>/dev/null)
 [ -z "$term_width" ] && term_width="${COLUMNS:-120}"
 
-# Strip the literal \033[...m sequences in our segments to count visible chars.
+# Strip our ANSI sequences to count visible characters.
 vlen() {
   local stripped
-  stripped=$(printf '%s' "$1" | sed 's/\\033\[[0-9;]*[a-zA-Z]//g')
+  stripped="$1"
+  stripped=${stripped//"$RESET"/}
+  stripped=${stripped//"$DIM"/}
+  stripped=${stripped//"$CYAN"/}
+  stripped=${stripped//"$BLUE"/}
+  stripped=${stripped//"$GREEN"/}
+  stripped=${stripped//"$YELLOW"/}
+  stripped=${stripped//"$RED"/}
+  stripped=${stripped//"$MAGENTA"/}
+  stripped=${stripped//"$GREY"/}
   printf '%s' "${#stripped}"
 }
 
@@ -146,4 +159,4 @@ fi
 sp1=$(printf '%*s' "$pad1" '')
 sp2=$(printf '%*s' "$pad2" '')
 
-printf '%b\n' "${left}${sp1}${center}${sp2}${right}"
+printf '%s\n' "${left}${sp1}${center}${sp2}${right}"

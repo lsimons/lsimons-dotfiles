@@ -41,13 +41,13 @@ def write_settings(claude_dir, topic_dir):
     email = get_git_email()
     if email:
         info(f"Detected git email: {email}")
-        attribution_text = build_attribution(email)
-        settings["attribution"] = {
-            "commit": attribution_text,
-            "pr": attribution_text,
-        }
     else:
-        info("No git email found; skipping attribution config")
+        info("No git email found; using default attribution")
+    attribution_text = build_attribution(email)
+    settings["attribution"] = {
+        "commit": attribution_text,
+        "pr": attribution_text,
+    }
 
     # Route git in Claude sessions to the Claude-specific git config
     # (signs with an on-disk SSH key instead of op-ssh-sign).

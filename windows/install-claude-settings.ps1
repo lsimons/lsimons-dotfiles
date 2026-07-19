@@ -4,9 +4,9 @@
     Install Claude Code settings from the claude/ dotfiles topic.
 
 .DESCRIPTION
-    Copies CLAUDE.md and skills/, then builds settings.json from
-    settings.json.base with dynamic commit attribution derived from
-    the configured git user email. Idempotent.
+    Copies the shared agent instructions and skills, then builds Claude Code
+    settings.json from the claude/ topic with dynamic commit attribution
+    derived from the configured git user email. Idempotent.
 
 .PARAMETER DryRun
     Print what would happen without making changes.
@@ -21,6 +21,7 @@ Set-StrictMode -Version Latest
 $scriptDir    = Split-Path -Parent $MyInvocation.MyCommand.Path
 $dotfilesRoot = Split-Path -Parent $scriptDir
 $topicDir     = Join-Path $dotfilesRoot 'claude'
+$agentsDir    = Join-Path $dotfilesRoot 'agents'
 $claudeDir    = Join-Path $env:USERPROFILE '.claude'
 
 function Write-Info    { param($m) Write-Host "[INFO]    $m" -ForegroundColor Blue }
@@ -65,7 +66,7 @@ Invoke-Step "Ensure $claudeDir exists" {
 
 Invoke-Step "Install CLAUDE.md" {
   Copy-IfChanged `
-    -Source (Join-Path $topicDir 'CLAUDE.md.symlink') `
+    -Source (Join-Path $agentsDir 'AGENTS.md') `
     -Dest   (Join-Path $claudeDir 'CLAUDE.md')
 }
 
@@ -76,7 +77,7 @@ Invoke-Step "Install statusline-command.ps1" {
 }
 
 Invoke-Step "Install skills/" {
-  $src  = Join-Path $topicDir 'skills'
+  $src  = Join-Path $agentsDir 'skills'
   $dest = Join-Path $claudeDir 'skills'
   if (-not (Test-Path $dest)) {
     New-Item -ItemType Directory -Force -Path $dest | Out-Null

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Installation script for 1Password CLI"""
 
-import re
 import sys
 from pathlib import Path
 
@@ -19,12 +18,33 @@ from helpers import (
     make_dir,
     parse_dry_run,
     success,
+    warn,
     write_file,
 )
 
-OP_CONFIG_DIR = XDG_CONFIG_HOME / "1password"
+OP_CONFIG_DIR = XDG_CONFIG_HOME / "1Password"
 OP_SSH_CONFIG_DIR = OP_CONFIG_DIR / "ssh"
 SSH_AGENT_TOML = OP_SSH_CONFIG_DIR / "agent.toml"
+
+
+def migrate_legacy_config_dir():
+    """Correct the historical lowercase directory when it is unambiguous."""
+    if not XDG_CONFIG_HOME.exists():
+        return
+
+    entries = {entry.name: entry for entry in XDG_CONFIG_HOME.iterdir()}
+    legacy = entries.get("1password")
+    if legacy is None or "1Password" in entries:
+        return
+    if not legacy.is_dir() or legacy.is_symlink():
+        warn(f"Not migrating unexpected legacy path: {legacy}")
+        return
+
+    if is_dry_run():
+        dry(f"would move {legacy} to {OP_CONFIG_DIR}")
+        return
+    legacy.rename(OP_CONFIG_DIR)
+    success(f"Migrated {legacy} to {OP_CONFIG_DIR}")
 
 
 def install_1password_ssh_agent_config():
@@ -52,7 +72,13 @@ def install_1password_ssh_agent_config():
             continue
         item = ssh_key["name"]
         vault = ssh_key["op_vault"]
-        content += "[[ssh-keys]]\n" + f'item = "{item}"\n' + f'vault = "{vault}"\n\n'
+        account = ssh_key["op_account"]
+        content += (
+            "[[ssh-keys]]\n"
+            f'item = "{item}"\n'
+            f'vault = "{vault}"\n'
+            f'account = "{account}"\n\n'
+        )
 
     mode = 0o644
     if SSH_AGENT_TOML.exists() and SSH_AGENT_TOML.read_text() == content:
@@ -68,6 +94,7 @@ def main():
     parse_dry_run()
     info("Installing 1Password CLI...")
 
+    migrate_legacy_config_dir()
     install_1password_ssh_agent_config()
 
     if Path("/Applications/1Password.app").exists():

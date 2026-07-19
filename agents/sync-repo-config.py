@@ -19,21 +19,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
+import tomllib
 from pathlib import Path
-
-TASK_HEADER_RE = re.compile(r'^\[tasks\.(?:"([^"]+)"|([A-Za-z0-9_.:-]+))\]\s*$')
 
 
 def parse_tasks(mise_toml: Path) -> list[str]:
     """Return the list of task names declared in a .mise.toml file."""
-    tasks: list[str] = []
-    for line in mise_toml.read_text().splitlines():
-        m = TASK_HEADER_RE.match(line)
-        if m:
-            tasks.append(m.group(1) or m.group(2))
-    return tasks
+    with open(mise_toml, "rb") as f:
+        config = tomllib.load(f)
+    return list(config.get("tasks", {}))
 
 
 def dedupe(seq: list[str]) -> list[str]:

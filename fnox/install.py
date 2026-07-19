@@ -10,14 +10,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import command_exists, error, info, mise_use, parse_dry_run, success
+from helpers import command_exists, error, info, is_dry_run, mise_use, parse_dry_run, success
 
 
 def main():
     parse_dry_run()
     info("Installing fnox...")
 
-    if not command_exists('mise'):
+    if not command_exists('mise') and not is_dry_run():
         error("mise not found; install the 'mise' topic first")
         return 1
 

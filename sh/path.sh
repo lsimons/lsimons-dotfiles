@@ -11,11 +11,6 @@ if [ -d "$HOME/.local/bin" ]; then
   export PATH="$HOME/.local/bin:$PATH"
 fi
 
-# Rancher Desktop
-if [ -d "$HOME/.rd/bin" ]; then
-  export PATH="$HOME/.rd/bin:$PATH"
-fi
-
 # LM Studio
 if [ -d "$HOME/.lmstudio/bin" ]; then
   export PATH="$HOME/.lmstudio/bin:$PATH"

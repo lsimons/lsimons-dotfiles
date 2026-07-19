@@ -69,20 +69,32 @@ def install_launch_agent():
         )
 
     if dest.exists() and dest.read_text() == content:
-        run_cmd(
+        result = run_cmd(
             ['launchctl', 'load', str(dest)],
             capture_output=True,
             check=False,
         )
+        if result.returncode != 0:
+            error(
+                "Failed to load mise-gui-path LaunchAgent: "
+                f"{(result.stderr or '').strip()}"
+            )
+            return False
         success("mise-gui-path LaunchAgent already up to date")
         return True
 
     write_file(dest, content)
-    run_cmd(
+    result = run_cmd(
         ['launchctl', 'load', str(dest)],
         capture_output=True,
         check=False,
     )
+    if result.returncode != 0:
+        error(
+            "Failed to load mise-gui-path LaunchAgent: "
+            f"{(result.stderr or '').strip()}"
+        )
+        return False
     success(
         "Installed mise-gui-path LaunchAgent "
         "(GUI apps will see mise shims after next login)"
@@ -109,8 +121,11 @@ def main():
     if not install_mise():
         return 1
 
-    ensure_minimum_release_age()
-    install_launch_agent()
+    if not ensure_minimum_release_age():
+        error("Failed to configure mise minimum release age")
+        return 1
+    if not install_launch_agent():
+        return 1
     return 0
 
 

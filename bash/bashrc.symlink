@@ -12,7 +12,12 @@ export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 # .bash files are bash-specific, loaded second
 DOTFILES="$HOME/.dotfiles"
 if [ -d "$DOTFILES" ]; then
-  # Enable nullglob so unmatched patterns expand to nothing
+  # Enable nullglob so unmatched patterns expand to nothing, preserving its state.
+  if shopt -q nullglob; then
+    nullglob_was_set=true
+  else
+    nullglob_was_set=false
+  fi
   shopt -s nullglob
 
   # Load path configuration first
@@ -45,5 +50,8 @@ if [ -d "$DOTFILES" ]; then
     [ -r "$file" ] && source "$file"
   done
 
-  shopt -u nullglob
+  if [ "$nullglob_was_set" = false ]; then
+    shopt -u nullglob
+  fi
+  unset nullglob_was_set
 fi

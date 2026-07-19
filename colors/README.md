@@ -13,7 +13,7 @@ theme lives so the palette stays in sync as it evolves.
 
 | Tool | File(s) | Notes |
 | ---- | ------- | ----- |
-| **Ghostty** (terminal) | `ghostty/Claude-Light.symlink`, `ghostty/Claude-Dark.symlink`, `ghostty/LSD-Warm-Light.symlink`, `ghostty/LSD-Warm-Dark.symlink` | Native ghostty theme files. Selected via `theme = ...` in `ghostty/config.symlink`. Palette is `palette = N=#rrggbb` (16 ANSI slots) plus `background` / `foreground` / `cursor-color` / `selection-*`. |
+| **Ghostty** (terminal) | `ghostty/LSD-Warm-Light.symlink`, `ghostty/LSD-Warm-Dark.symlink` | Native ghostty theme files. Selected via `theme = ...` in `ghostty/config.symlink`. Palette is `palette = N=#rrggbb` (16 ANSI slots) plus `background` / `foreground` / `cursor-color` / `selection-*`. |
 | **Zed** (editor) | `zed/lsd-warm.json.symlink` | Custom theme JSON containing both `LSD Warm Dark` and `LSD Warm Light` variants. Active theme selected in `zed/settings.json.symlink` (`"theme": ...`). Edit per-token colors under `style.syntax.*`; edit the chrome under the other top-level keys (`background`, `border`, `text`, ...). |
 | **Powerlevel10k** (zsh prompt) | `oh-my-zsh/p10k.zsh.symlink` | All ~95 segment foregrounds route through a `local -A clr=(...)` table near the top of the file, populated from the LSD Warm Light palette. See [p10k.COLORS.md](./p10k.COLORS.md) for the full mapping and re-application recipe (after re-running `p10k configure`). |
 | **Oh My Zsh** prompt | `oh-my-zsh/powerline10k.zsh` | Loads the p10k config above. |

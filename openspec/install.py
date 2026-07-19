@@ -11,6 +11,7 @@ from helpers import (
     command_exists,
     error,
     info,
+    is_dry_run,
     parse_dry_run,
     run_cmd,
     success,
@@ -38,7 +39,7 @@ def main():
 
     uninstall_brew_openspec()
 
-    if not command_exists('npm'):
+    if not command_exists('npm') and not is_dry_run():
         error("npm not found; run node/install.py first")
         return 1
 

@@ -26,6 +26,9 @@ HOME = Path.home()
 HOME_STR = str(HOME)
 XDG_CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config"))
 XDG_CONFIG_HOME_STR = str(XDG_CONFIG_HOME)
+XDG_DATA_HOME_STR = os.environ.get("XDG_DATA_HOME", str(HOME / ".local/share"))
+XDG_CACHE_HOME_STR = os.environ.get("XDG_CACHE_HOME", str(HOME / ".cache"))
+XDG_STATE_HOME_STR = os.environ.get("XDG_STATE_HOME", str(HOME / ".local/state"))
 
 OP_DEFAULT_ACCOUNT = "my"
 
@@ -122,12 +125,12 @@ def run_cmd(cmd, check=True, capture_output=False, env=None, shell=False):
 def command_exists(cmd):
     """Check if a command exists in PATH.
 
-    In dry-run mode, pretends every command exists so downstream code
-    takes the "tool is available" path.
+    In dry-run mode, reports commands as absent so installers exercise
+    their installation paths without running anything.
     """
     if _DRY_RUN:
-        dry(f"assume '{cmd}' is on PATH")
-        return True
+        dry(f"probe '{cmd}' as absent")
+        return False
     result = subprocess.run(["which", cmd], capture_output=True)
     return result.returncode == 0
 
@@ -139,8 +142,8 @@ def app_exists(app_name):
         app_name: Name without .app suffix (e.g., 'Brave Browser')
     """
     if _DRY_RUN:
-        dry(f"assume '{app_name}.app' is installed")
-        return True
+        dry(f"probe '{app_name}.app' as absent")
+        return False
     return Path(f"/Applications/{app_name}.app").exists()
 
 
@@ -174,12 +177,12 @@ def brew_install(package, cask=False):
 def brew_is_installed(package):
     """Check if a package is installed via Homebrew.
 
-    In dry-run mode, pretends the package is already installed so the
-    install path is short-circuited to a no-op.
+    In dry-run mode, reports packages as absent so the install path is
+    exercised without changing the system.
     """
     if _DRY_RUN:
-        dry(f"assume brew package '{package}' is already installed")
-        return True
+        dry(f"probe brew package '{package}' as absent")
+        return False
     result = subprocess.run(["brew", "list", package], capture_output=True)
     return result.returncode == 0
 
@@ -350,7 +353,7 @@ def set_toml_value(path, table, key, value):
         return True
 
     lines = text.splitlines(keepends=True)
-    header_re = re.compile(rf"^\s*\[{re.escape(table)}\]\s*$")
+    header_re = re.compile(rf"^\s*\[{re.escape(table)}\]\s*(?:#.*)?$")
     boundary_re = re.compile(r"^\s*\[")
     key_re = re.compile(rf"^\s*{re.escape(key)}\s*=")
 
@@ -409,15 +412,27 @@ def backup_file(file_path):
         dry(f"would back up {file_path}")
         return
     backup_dir = HOME / ".dotfiles-backup" / NOW
-    make_dir(backup_dir)
-    dest = backup_dir / path.name
+    try:
+        relative_path = path.absolute().relative_to(HOME.absolute())
+    except ValueError:
+        relative_path = Path("__absolute__", *path.absolute().parts[1:])
+    dest = backup_dir / relative_path
+    make_dir(dest.parent)
+    if dest.exists() or dest.is_symlink():
+        counter = 1
+        while True:
+            candidate = dest.with_name(f"{dest.name}.{counter}")
+            if not (candidate.exists() or candidate.is_symlink()):
+                dest = candidate
+                break
+            counter += 1
     shutil.move(str(path), str(dest))
     info(f"Backed up {file_path} to {dest}")
 
 
 def link_file(src, dst):
     """Symlink src to dst, backing up anything already at dst."""
-    src_path = Path(src)
+    src_path = Path(src).resolve()
     dst_path = Path(dst)
 
     if dst_path.is_symlink():
@@ -472,26 +487,16 @@ def render_agents_md(dst, mode=None):
 
 def link_directory(src, dst):
     """Symlink a directory to dst, backing up anything already at dst."""
-    src_path = Path(src)
+    src_path = Path(src).resolve()
     dst_path = Path(dst)
 
     if dst_path.is_symlink():
         if dst_path.resolve() == src_path.resolve():
             success(f"Already linked: {dst}")
             return True
-        if _DRY_RUN:
-            dry(f"would unlink {dst}")
-        else:
-            dst_path.unlink()
+        backup_file(dst_path)
     elif dst_path.exists():
-        backup = dst_path.with_suffix(".backup")
-        info(f"Backing up {dst} to {backup}")
-        if _DRY_RUN:
-            dry(f"would move {dst} -> {backup}")
-        else:
-            if backup.exists():
-                shutil.rmtree(backup)
-            shutil.move(str(dst_path), str(backup))
+        backup_file(dst_path)
 
     if _DRY_RUN:
         dry(f"would link {dst} -> {src}")
@@ -507,7 +512,8 @@ def load_symlink_mappings(topic_dir):
     """Load symlink destination overrides from <topic>/symlinks.txt.
 
     Each non-comment line has the form ``source.symlink -> destination``.
-    ``$HOME``, ``$XDG_CONFIG_HOME``, and ``~`` are expanded in destinations.
+    ``$HOME``, the XDG base directory variables, and a leading ``~`` are
+    expanded in destinations.
     """
     topic_dir = Path(topic_dir)
     mappings = {}
@@ -526,9 +532,13 @@ def load_symlink_mappings(topic_dir):
         src_name = src_name.strip()
         dst_path = dst_path.strip()
 
-        dst_path = dst_path.replace("~", HOME_STR)
+        if dst_path == "~" or dst_path.startswith("~/"):
+            dst_path = HOME_STR + dst_path[1:]
         dst_path = dst_path.replace("$HOME", HOME_STR)
         dst_path = dst_path.replace("$XDG_CONFIG_HOME", XDG_CONFIG_HOME_STR)
+        dst_path = dst_path.replace("$XDG_DATA_HOME", XDG_DATA_HOME_STR)
+        dst_path = dst_path.replace("$XDG_CACHE_HOME", XDG_CACHE_HOME_STR)
+        dst_path = dst_path.replace("$XDG_STATE_HOME", XDG_STATE_HOME_STR)
 
         mappings[src_name] = Path(dst_path)
 

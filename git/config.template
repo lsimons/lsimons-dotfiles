@@ -10,7 +10,7 @@
 
 [gpg "ssh"]
 	program = {gpg_ssh_program}
-	allowedSignersFile = ~/.config/git/allowed-signers
+	allowedSignersFile = {allowed_signers_file}
 
 [user]
 	name = {name}

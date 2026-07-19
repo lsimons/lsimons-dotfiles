@@ -73,6 +73,7 @@ The installation script (`./script/install.py`) will:
 | `ghostty/` | Ghostty terminal |
 | `git/` | Git (via Homebrew) |
 | `jdk/` | OpenJDK (via mise) |
+| `jq/` | jq JSON processor (used by the Claude statusline) |
 | `lsimons-agent/` | LLM agent environment configuration |
 | `mise/` | mise (polyglot tool version manager) |
 | `node/` | Node.js (via mise) + pnpm (via corepack) |
@@ -123,7 +124,9 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 - `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic-specific installation script
 
-Loading order: `*.sh` files first, then shell-specific files (`*.zsh` or `*.bash`), so shell-specific config can override shared defaults.
+Loading order: shared and shell-specific `path.*` files first, ordinary shared
+and shell-specific files second, then shared and shell-specific `completion.*`
+files.
 
 ## XDG Base Directory Compliance
 

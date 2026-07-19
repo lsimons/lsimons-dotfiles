@@ -2,7 +2,7 @@
 ruff = "latest"
 
 [tasks.check]
-description = "Run lsimons-dotfiles quality checks (py_compile, ruff, JSON, install.py --dry-run)"
+description = "Compile and lint all Python, validate JSON/machines, run tests, and dry-run install"
 run = "python3 script/check.py"
 
 [tasks.install]

@@ -58,6 +58,8 @@ if [ -d "$DOTFILES" ]; then
   done
 fi
 
-# Initialize completion system if not already done
-autoload -Uz compinit
-compinit -d "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"
+# Initialize the completion system when no sourced completion config did so.
+if (( ! $+functions[compdef] )); then
+  autoload -Uz compinit
+  compinit -d "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"
+fi

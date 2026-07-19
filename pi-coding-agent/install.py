@@ -3,6 +3,7 @@
 
 import json
 import os
+import shlex
 import sys
 from pathlib import Path
 
@@ -64,7 +65,7 @@ def configure_agent():
     # so export it via shellCommandPrefix, which runs before every bash command.
     xdg_config_home = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config'))
     git_config_ai = xdg_config_home / 'git' / 'config.ai'
-    shell_command_prefix = f'export GIT_CONFIG_GLOBAL={json.dumps(str(git_config_ai))}'
+    shell_command_prefix = f'export GIT_CONFIG_GLOBAL={shlex.quote(str(git_config_ai))}'
 
     # Configure non-volatile settings in settings.json (preserves lastChangelogVersion)
     default_settings = {

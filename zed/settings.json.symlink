@@ -132,7 +132,7 @@
   "terminal": {
     "font_family": "Lilex Nerd Font",
     "env": {
-      "PATH": "${HOME}/.local/share/mise/shims:${HOME}/.local/bin:${PATH}"
+      "PATH": "${HOME}/.local/bin:${PATH}"
     }
   },
   "ui_font_size": 16,

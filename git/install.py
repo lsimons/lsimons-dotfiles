@@ -112,6 +112,7 @@ def generate_config():
 
     main_content = _render_config(
         template,
+        allowed_signers_file=str(_xdg_git_dir() / "allowed-signers"),
         name=git_user["name"],
         email=git_user["email"],
         signingkey=signing_key_pub,
@@ -121,6 +122,7 @@ def generate_config():
     )
     ai_content = _render_config(
         template,
+        allowed_signers_file=str(_xdg_git_dir() / "allowed-signers"),
         name=git_user["name"],
         email=git_user["email"],
         signingkey=str(AI_KEY_PUB_PATH),

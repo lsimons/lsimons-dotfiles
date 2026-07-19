@@ -176,13 +176,11 @@ def install_python():
 
     if check_homebrew_python():
         success("Python is already installed via Homebrew")
-        # Get python3 path
-        result = run_command(['which', 'python3'], capture_output=True)
-        python_path = result.stdout.strip()
+        python_path = get_homebrew_python()
         info(f"Python location: {python_path}")
 
         # Get Python version
-        result = run_command(['python3', '--version'], capture_output=True)
+        result = run_command([python_path, '--version'], capture_output=True)
         python_version = result.stdout.strip()
         info(f"Python version: {python_version}")
         return True
@@ -194,7 +192,8 @@ def install_python():
         success("Python installed successfully")
 
         # Verify installation
-        result = run_command(['python3', '--version'], capture_output=True)
+        python_path = get_homebrew_python()
+        result = run_command([python_path, '--version'], capture_output=True)
         python_version = result.stdout.strip()
         success(f"Installed: {python_version}")
 
@@ -208,8 +207,8 @@ def get_homebrew_python():
     """Get the path to Homebrew Python"""
     if is_dry_run():
         return sys.executable
-    result = run_command(['which', 'python3'], capture_output=True)
-    return result.stdout.strip()
+    result = run_command(['brew', '--prefix', 'python@3'], capture_output=True)
+    return str(Path(result.stdout.strip()) / 'bin' / 'python3')
 
 
 def create_dotfiles_symlink(dotfiles_root):
@@ -234,7 +233,7 @@ def create_dotfiles_symlink(dotfiles_root):
             response = input("Remove and recreate symlink? (y/N): ")
             if response.lower() != 'y':
                 info("Skipping symlink creation")
-                return True
+                return False
             symlink_path.unlink()
 
     # Check if a regular directory exists at ~/.dotfiles
@@ -307,17 +306,25 @@ def topological_sort(topics, dependencies):
     dependencies: dict of topic_name -> list of dependency topic names
     Returns: list of topic names in installation order
     """
+    unknown = sorted(
+        (topic, dep)
+        for topic, deps in dependencies.items()
+        for dep in deps
+        if dep not in topics
+    )
+    if unknown:
+        for topic, dep in unknown:
+            error(f"Topic '{topic}' depends on unknown topic '{dep}'")
+        return None
+
     # Build in-degree map and adjacency list
     in_degree = {topic: 0 for topic in topics}
     dependents = {topic: [] for topic in topics}
 
     for topic, deps in dependencies.items():
         for dep in deps:
-            if dep in topics:
-                in_degree[topic] += 1
-                dependents[dep].append(topic)
-            else:
-                warn(f"Topic '{topic}' depends on '{dep}' which has no installer")
+            in_degree[topic] += 1
+            dependents[dep].append(topic)
 
     # Kahn's algorithm for topological sort
     queue = [topic for topic, degree in in_degree.items() if degree == 0]
@@ -435,8 +442,8 @@ def main():
     info("=" * 50)
 
     # Get dotfiles root directory
-    script_dir = Path(__file__).parent
-    dotfiles_root = script_dir.parent
+    script_dir = Path(__file__).resolve().parent
+    dotfiles_root = script_dir.parent.resolve()
     info(f"Dotfiles root: {dotfiles_root}")
 
     # Step 1: Check macOS

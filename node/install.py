@@ -13,7 +13,7 @@ def main():
     parse_dry_run()
     info("Installing Node.js via mise...")
 
-    if not command_exists('mise'):
+    if not command_exists('mise') and not is_dry_run():
         error("mise not found; install the 'mise' topic first")
         return 1
 

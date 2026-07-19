@@ -14,7 +14,7 @@ export JUPYTER_CONFIG_DIR="$XDG_CONFIG_HOME/jupyter"
 
 # pip configuration
 export PIP_CONFIG_FILE="$XDG_CONFIG_HOME/pip/pip.conf"
-export PIP_LOG_FILE="$XDG_CACHE_HOME/pip/log"
+export PIP_LOG="$XDG_CACHE_HOME/pip/log"
 
 # Add Python user bin to PATH
 if [ -d "$PYTHONUSERBASE/bin" ]; then

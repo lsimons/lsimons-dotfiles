@@ -17,6 +17,7 @@ from helpers import (
     error,
     info,
     install_symlinks,
+    is_dry_run,
     mise_use,
     parse_dry_run,
     success,
@@ -38,7 +39,7 @@ def install_homebrew_python():
 
 
 def install_mise_python():
-    if not command_exists('mise'):
+    if not command_exists('mise') and not is_dry_run():
         error("mise not found; install the 'mise' topic first")
         return False
 

@@ -184,11 +184,14 @@ def import_profile(profile):
             text=True,
         )
         if result.returncode != 0:
-            error(f"defaults export failed: {result.stderr.strip()}")
-            return False
-
-        with open(tmp_path, "rb") as f:
-            prefs = plistlib.load(f)
+            if "does not exist" in (result.stderr or "").lower():
+                prefs = {}
+            else:
+                error(f"defaults export failed: {result.stderr.strip()}")
+                return False
+        else:
+            with open(tmp_path, "rb") as f:
+                prefs = plistlib.load(f)
 
         prefs.setdefault("Window Settings", {})[PROFILE_NAME] = profile
         prefs["Default Window Settings"] = PROFILE_NAME
