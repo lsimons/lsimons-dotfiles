@@ -69,7 +69,7 @@ def configure_agent():
     # Configure non-volatile settings in settings.json (preserves lastChangelogVersion)
     default_settings = {
         "defaultProvider": "github-copilot",
-        "defaultModel": "gemini-3-flash-preview",
+        "defaultModel": "claude-opus-4.8",
         "defaultThinkingLevel": "off",
         "theme": "lsd-warm-light",
         "shellCommandPrefix": shell_command_prefix,
