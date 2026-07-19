@@ -70,7 +70,7 @@ def configure_agent():
     default_settings = {
         "defaultProvider": "github-copilot",
         "defaultModel": "claude-opus-4.8",
-        "defaultThinkingLevel": "off",
+        "defaultThinkingLevel": "low",
         "theme": "lsd-warm-light",
         "shellCommandPrefix": shell_command_prefix,
         # Load the shared skills dir (same skills as the claude/codex/copilot/
