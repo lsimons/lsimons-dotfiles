@@ -51,7 +51,6 @@ def configure_opencode():
 
     link_file(claude_md_source, agents_md)
     link_file(config_json_source, config_json)
-    info("Create ~/.config/opencode/sbp.ai.key with your sbp.ai API key.")
 
 
 def main():

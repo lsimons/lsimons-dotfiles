@@ -1,54 +1,35 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "share": "disabled",
+  "model": "azure/gpt-5-6-sol",
+  "small_model": "azure/gpt-5-6-luna",
   "provider": {
     "litelm": {
-      "npm": "@ai-sdk/openai-compatible",
+      "npm": "@ai-sdk/openai",
       "name": "sbp",
       "options": {
         "baseURL": "https://litellm.sbp.ai/v1",
-        "apiKey": "{file:./sbp.ai.key}"
+        "apiKey": "{env:SBP_AI_API_KEY}"
       },
       "models": {
-        "aws/claude-4-6-opus": {
-          "name": "aws/claude-4-6-opus",
+        "azure/gpt-5-6-sol": {
+          "name": "azure/gpt-5-6-sol",
           "limit": {
-            "context": 1000000,
+            "context": 1050000,
             "output": 128000
           }
         },
-        "aws/claude-4-6-sonnet": {
-          "name": "aws/claude-4-6-sonnet",
+        "azure/gpt-5-6-terra": {
+          "name": "azure/gpt-5-6-terra",
           "limit": {
-            "context": 200000,
-            "output": 64000
-          }
-        },
-        "aws/claude-4-5-haiku": {
-          "name": "aws/claude-4-5-haiku",
-          "limit": {
-            "context": 200000,
-            "output": 64000
-          }
-        },
-        "azure/gpt-5-1": {
-          "name": "azure/gpt-5-1",
-          "limit": {
-            "context": 272000,
+            "context": 1050000,
             "output": 128000
           }
         },
-        "azure/gpt-5-mini": {
-          "name": "azure/gpt-5-mini",
+        "azure/gpt-5-6-luna": {
+          "name": "azure/gpt-5-6-luna",
           "limit": {
-            "context": 272000,
-            "output": 128000
-          }
-        },
-        "azure/gpt-5-nano": {
-          "name": "azure/gpt-5-nano",
-          "limit": {
-            "context": 272000,
+            "context": 1050000,
             "output": 128000
           }
         }
