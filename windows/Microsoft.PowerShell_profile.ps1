@@ -61,6 +61,17 @@ if ((Test-Path $dotnetTools) -and ($env:PATH -notlike "*$dotnetTools*")) {
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 
+# --- pnpm ---
+# Mirror node/path.sh. Setting PNPM_HOME makes pnpm use it directly as the
+# global bin directory (where `pnpm add -g` binaries land), matching the POSIX
+# setup; without it pnpm falls back to a `pnpm\bin` subdir that isn't on PATH,
+# and `pnpm -g` aborts.
+$env:PNPM_HOME = Join-Path $env:XDG_DATA_HOME 'pnpm'
+if (-not (Test-Path $env:PNPM_HOME)) { New-Item -ItemType Directory -Force -Path $env:PNPM_HOME | Out-Null }
+if ($env:PATH -notlike "*$env:PNPM_HOME*") {
+  $env:PATH = "$env:PNPM_HOME;$env:PATH"
+}
+
 # --- mise (polyglot tool version manager) ---
 # mise's pwsh chpwd hook requires PowerShell 7+; activating under Windows
 # PowerShell 5.1 only emits a warning, so gate it on the major version.
