@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Installation script for Codex CLI."""
 
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -17,6 +19,7 @@ from helpers import (
     parse_dry_run,
     render_agents_md,
     success,
+    write_file,
 )
 
 
@@ -36,19 +39,39 @@ def install_codex():
     return 1
 
 
+def write_config(codex_dir, topic_dir):
+    """Write ~/.codex/config.toml with the AI-specific git config."""
+    config_path = codex_dir / "config.toml"
+    config = (topic_dir / "config.toml.base").read_text()
+    xdg_config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    git_config = xdg_config_home / "git" / "config.ai"
+    config += (
+        "\n[shell_environment_policy]\n"
+        f"set = {{ GIT_CONFIG_GLOBAL = {json.dumps(str(git_config))} }}\n"
+    )
+
+    if config_path.is_symlink() and not is_dry_run():
+        config_path.unlink()
+
+    write_file(config_path, config)
+    success(f"Wrote: {config_path}")
+
+
 def configure_codex():
-    """Configure Codex symlinks."""
+    """Configure Codex."""
     home = Path.home()
     dotfiles = home / ".dotfiles"
     codex_dir = home / ".codex"
     agents_md = codex_dir / "AGENTS.md"
+    topic_dir = Path(__file__).resolve().parent
 
     if not is_dry_run():
         codex_dir.mkdir(parents=True, exist_ok=True)
 
     render_agents_md(agents_md)
-    link_file(dotfiles / "codex" / "config.toml.symlink", codex_dir / "config.toml")
+    write_config(codex_dir, topic_dir)
     link_file(dotfiles / "codex" / "models.json.symlink", codex_dir / "models.json")
+    link_directory(dotfiles / "codex" / "rules", codex_dir / "rules")
     link_directory(SKILLS_DIR, codex_dir / "skills")
 
 
