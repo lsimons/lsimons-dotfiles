@@ -1,0 +1,22 @@
+model = "azure/gpt-5-6-sol"
+model_provider = "sbpai"
+model_catalog_json = "/Users/lsimons/.codex/models.json"
+personality = "pragmatic"
+model_reasoning_effort = "low"
+
+[model_providers.sbpai]
+name = "SBP AI"
+base_url = "https://litellm.sbp.ai"
+env_key = "OPENAI_API_KEY"
+# wire_api = "chat"
+
+[projects."/Users/lsimons/sbp/conf2share"]
+trust_level = "trusted"
+
+[projects."/Users/lsimons/git/lsimons/lsimons-dotfiles"]
+trust_level = "trusted"
+
+[tui.model_availability_nux]
+"azure/gpt-5-6-sol" = 2
+"gpt-5.5" = 2
+"gpt-5.6-sol" = 4

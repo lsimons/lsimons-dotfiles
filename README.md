@@ -60,6 +60,7 @@ The installation script (`./script/install.py`) will:
 | `bash-it/` | Bash-it framework (prompt, plugins) |
 | `claude/` | Claude Code CLI and configuration |
 | `colors/` | `pastel` color CLI + docs for theme/palette files across tools |
+| `codex/` | OpenAI Codex CLI and configuration |
 | `copilot/` | GitHub Copilot CLI |
 | `docker/` | Docker |
 | `dock/` | Pins apps to the macOS Dock via dockutil (runs last) |
