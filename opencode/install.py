@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     brew_install,
     brew_is_installed,
+    dry,
     error,
     info,
     SKILLS_DIR,
@@ -45,15 +46,27 @@ def configure_opencode():
     dotfiles = home / ".dotfiles"
     opencode_dir = xdg_config_home / "opencode"
     agents_md = opencode_dir / "AGENTS.md"
-    config_json = opencode_dir / "config.json"
-    config_json_source = dotfiles / "opencode" / "config.json.symlink"
+    config_json = opencode_dir / "opencode.json"
+    config_json_source = dotfiles / "opencode" / "opencode.json.symlink"
+    legacy_config_json = opencode_dir / "config.json"
+    tui_json = opencode_dir / "tui.json"
+    tui_json_source = dotfiles / "opencode" / "tui.json.symlink"
+    themes_source = dotfiles / "opencode" / "themes"
 
     if not is_dry_run():
         opencode_dir.mkdir(parents=True, exist_ok=True)
 
     render_agents_md(agents_md)
     link_file(config_json_source, config_json)
+    link_file(tui_json_source, tui_json)
+    link_directory(themes_source, opencode_dir / "themes")
     link_directory(SKILLS_DIR, opencode_dir / "skills")
+
+    if legacy_config_json.is_symlink():
+        if is_dry_run():
+            dry(f"would remove legacy symlink {legacy_config_json}")
+        else:
+            legacy_config_json.unlink()
 
 
 def main():

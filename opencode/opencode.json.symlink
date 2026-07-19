@@ -1,0 +1,189 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "share": "disabled",
+  "model": "azure/gpt-5-6-sol",
+  "small_model": "azure/gpt-5-6-luna",
+  "permission": {
+    "bash": {
+      "*": "ask",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "git branch*": "allow",
+      "git remote -v": "allow",
+      "git add*": "allow",
+      "git commit*": "allow",
+      "git rm*": "allow",
+      "git pull --rebase*": "allow",
+      "git push": "allow",
+      "gh issue list*": "allow",
+      "gh issue view*": "allow",
+      "gh issue status": "allow",
+      "gh pr list*": "allow",
+      "gh pr view*": "allow",
+      "gh pr diff*": "allow",
+      "gh pr checks*": "allow",
+      "gh pr status": "allow",
+      "gh run list*": "allow",
+      "gh run view*": "allow",
+      "gh run watch*": "allow",
+      "gh workflow list*": "allow",
+      "gh workflow view*": "allow",
+      "gh release list*": "allow",
+      "gh release view*": "allow",
+      "gh repo view*": "allow",
+      "gh search issues*": "allow",
+      "gh search prs*": "allow",
+      "gh search repos*": "allow",
+      "gh search commits*": "allow",
+      "gh auth status": "allow",
+      "gh api repos/*/contents/*": "allow",
+      "gh api repos/*/releases/latest*": "allow",
+      "gh api repos/*/commits/*": "allow",
+      "gh api repos/*/git/refs/*": "allow",
+      "gh api repos/*/git/tags/*": "allow",
+      "gh api repos/*/actions/runs*": "allow",
+      "gh api repos/*/actions/permissions*": "allow",
+      "ls*": "allow",
+      "wc*": "allow",
+      "which*": "allow",
+      "head*": "allow",
+      "find*": "allow",
+      "mise --version": "allow",
+      "mise doctor*": "allow",
+      "mise tasks list": "allow",
+      "mise tasks ls": "allow",
+      "uv run ruff check*": "allow",
+      "uv run ruff format --check*": "allow",
+      "uv run basedpyright*": "allow",
+      "uv run pytest*": "allow",
+      "pnpm lint*": "allow",
+      "pnpm typecheck*": "allow",
+      "pnpm build*": "allow",
+      "pnpm test*": "allow",
+      "go test*": "allow",
+      "go vet*": "allow",
+      "go build*": "allow",
+      "go version": "allow",
+      "go env*": "allow",
+      "cargo check*": "allow",
+      "cargo test*": "allow",
+      "cargo fmt --check*": "allow",
+      "cargo clippy*": "allow",
+      "cargo build*": "allow",
+      "cargo doc*": "allow",
+      "cargo --version": "allow",
+      "npm view *": "allow",
+      "python3 -m py_compile*": "allow",
+      "python3 --version": "allow",
+      "node --version": "allow",
+      "rustc --version": "allow",
+      "gh --version": "allow",
+      "git commit --amend*": "deny",
+      "git commit --no-verify*": "deny",
+      "git push --force*": "deny",
+      "git push -f*": "deny",
+      "git push --delete*": "deny",
+      "git push -d*": "deny",
+      "git push --prune*": "deny",
+      "git push * --force*": "deny",
+      "git push * -f*": "deny",
+      "git push * --delete*": "deny",
+      "git push * -d*": "deny",
+      "git push * --prune*": "deny",
+      "git reset --hard*": "deny",
+      "git clean -f*": "deny",
+      "rm -rf /*": "deny",
+      "rm -rf ~*": "deny",
+      "rm -rf $HOME*": "deny",
+      "find * -delete*": "deny",
+      "find * -exec *": "deny",
+      "find * -execdir *": "deny"
+    }
+  },
+  "provider": {
+    "litelm": {
+      "npm": "@ai-sdk/openai",
+      "name": "sbp",
+      "options": {
+        "baseURL": "https://litellm.sbp.ai/v1",
+        "apiKey": "{env:SBP_AI_API_KEY}"
+      },
+      "models": {
+        "azure/gpt-5-6-sol": {
+          "name": "azure/gpt-5-6-sol",
+          "limit": {
+            "context": 1050000,
+            "output": 128000
+          },
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            }
+          }
+        },
+        "azure/gpt-5-6-terra": {
+          "name": "azure/gpt-5-6-terra",
+          "limit": {
+            "context": 1050000,
+            "output": 128000
+          },
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            }
+          }
+        },
+        "azure/gpt-5-6-luna": {
+          "name": "azure/gpt-5-6-luna",
+          "limit": {
+            "context": 1050000,
+            "output": 128000
+          },
+          "variants": {
+            "low": {
+              "reasoningEffort": "low",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "medium": {
+              "reasoningEffort": "medium",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            },
+            "high": {
+              "reasoningEffort": "high",
+              "textVerbosity": "low",
+              "reasoningSummary": "auto"
+            }
+          }
+        }
+      }
+    }
+  }
+}

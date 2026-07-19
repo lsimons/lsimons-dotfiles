@@ -131,10 +131,6 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true,
-    "rust-analyzer-lsp@claude-plugins-official": true
-  },
   "defaultMode": "acceptEdits",
   "model": "opus[1m]",
   "effortLevel": "high",

@@ -77,7 +77,7 @@ The installation script (`./script/install.py`) will:
 | `mise/` | mise (polyglot tool version manager) |
 | `node/` | Node.js (via mise) + pnpm (via corepack) |
 | `oh-my-zsh/` | Oh My Zsh |
-| `opencode/` | OpenCode CLI |
+| `opencode/` | OpenCode CLI (permissions, model variants, LSD Warm theme, git-config-ai routing) |
 | `openspec/` | openspec |
 | `pi-coding-agent/` | pi-coding-agent (settings, LSD Warm themes, git-config-ai routing) |
 | `python/` | Python (via mise) + XDG config |

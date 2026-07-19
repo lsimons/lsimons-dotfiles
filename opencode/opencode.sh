@@ -2,5 +2,7 @@
 # just before launch instead of sitting in a var or file. Requires `op`
 # signed in (see the 1password topic).
 opencode() {
-  SBP_AI_API_KEY=$(OP_ACCOUNT=schubergphilis op read "op://Employee/litellm-pat/token") command opencode "$@"
+  GIT_CONFIG_GLOBAL="${XDG_CONFIG_HOME:-$HOME/.config}/git/config.ai" \
+    SBP_AI_API_KEY=$(OP_ACCOUNT=schubergphilis op read "op://Employee/litellm-pat/token") \
+    command opencode "$@"
 }

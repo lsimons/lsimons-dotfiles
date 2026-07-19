@@ -16,4 +16,5 @@ python3 agents/sync-repo-config.py --dry-run
 ```
 
 Pass repository paths to sync only those repositories. The generated files are
-`.claude/settings.json` and `.codex/rules/mise.rules`.
+`.claude/settings.json`, `.codex/rules/mise.rules`, and
+`.opencode/opencode.json`.

@@ -6,6 +6,7 @@ the repositories root that has a .mise.toml or Claude override), write:
 
 * .claude/settings.json permissions for each mise task plus Claude overrides
 * .codex/rules/mise.rules prefix rules for each mise task
+* .opencode/opencode.json permissions for each mise task
 
 Claude overrides live in overrides/claude/<repo-name>.json. Their
 allow/deny/ask lists are merged with generated permissions and deduplicated.
@@ -77,6 +78,19 @@ def build_codex_rules(tasks: list[str]) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
+def build_opencode_config(tasks: list[str]) -> dict:
+    """Return OpenCode bash permissions for the given mise task names."""
+    bash = {
+        command: "allow"
+        for task in tasks
+        for command in (f"mise run {task}", f"mise run {task} *")
+    }
+    return {
+        "$schema": "https://opencode.ai/config.json",
+        "permission": {"bash": bash},
+    }
+
+
 DOTFILES_REPO = Path(__file__).resolve().parents[1]
 
 
@@ -129,6 +143,14 @@ def sync_repo(repo: Path, claude_overrides_dir: Path, dry_run: bool) -> bool:
     write_generated(
         repo / ".codex" / "rules" / "mise.rules",
         build_codex_rules(tasks),
+        dry_run,
+    )
+    opencode_rendered = (
+        json.dumps(build_opencode_config(tasks), indent=2) + "\n" if tasks else ""
+    )
+    write_generated(
+        repo / ".opencode" / "opencode.json",
+        opencode_rendered,
         dry_run,
     )
     return True
