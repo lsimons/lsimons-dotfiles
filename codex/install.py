@@ -10,9 +10,12 @@ from helpers import (
     brew_is_installed,
     error,
     info,
+    SKILLS_DIR,
     is_dry_run,
+    link_directory,
     link_file,
     parse_dry_run,
+    render_agents_md,
     success,
 )
 
@@ -38,12 +41,15 @@ def configure_codex():
     home = Path.home()
     dotfiles = home / ".dotfiles"
     codex_dir = home / ".codex"
+    agents_md = codex_dir / "AGENTS.md"
 
     if not is_dry_run():
         codex_dir.mkdir(parents=True, exist_ok=True)
 
+    render_agents_md(agents_md)
     link_file(dotfiles / "codex" / "config.toml.symlink", codex_dir / "config.toml")
     link_file(dotfiles / "codex" / "models.json.symlink", codex_dir / "models.json")
+    link_directory(SKILLS_DIR, codex_dir / "skills")
 
 
 def main():
