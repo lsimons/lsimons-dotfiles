@@ -62,14 +62,15 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
 
 # --- pnpm ---
-# Mirror node/path.sh. Setting PNPM_HOME makes pnpm use it directly as the
-# global bin directory (where `pnpm add -g` binaries land), matching the POSIX
-# setup; without it pnpm falls back to a `pnpm\bin` subdir that isn't on PATH,
-# and `pnpm -g` aborts.
+# pnpm installs `pnpm add -g` binaries into PNPM_HOME\bin and refuses to run
+# global commands unless that directory is on PATH. (On Windows pnpm's default
+# global-bin-dir is the `bin` subdir, not PNPM_HOME itself, so PNPM_HOME alone
+# on PATH is not enough.) Export PNPM_HOME and put the bin subdir on PATH.
 $env:PNPM_HOME = Join-Path $env:XDG_DATA_HOME 'pnpm'
-if (-not (Test-Path $env:PNPM_HOME)) { New-Item -ItemType Directory -Force -Path $env:PNPM_HOME | Out-Null }
-if ($env:PATH -notlike "*$env:PNPM_HOME*") {
-  $env:PATH = "$env:PNPM_HOME;$env:PATH"
+$pnpmBin = Join-Path $env:PNPM_HOME 'bin'
+if (-not (Test-Path $pnpmBin)) { New-Item -ItemType Directory -Force -Path $pnpmBin | Out-Null }
+if ($env:PATH -notlike "*$pnpmBin*") {
+  $env:PATH = "$pnpmBin;$env:PATH"
 }
 
 # --- mise (polyglot tool version manager) ---
