@@ -12,6 +12,8 @@ For the rationale (why native-only, why these tools, constraints), see
 | `bootstrap-phase1.ps1` | Unattended setup: winget + Scoop + registry + profiles + Claude Code |
 | `bootstrap-phase2.ps1` | Credential-coupled setup: SSH key + git signing + optional repo clones |
 | `bootstrap-phase3.ps1` | mise-managed runtimes and CLI tools (node, python, go, rust, …) |
+| `debloat.ps1` | Remove Win11 preinstalled bloat: OneDrive + personal (consumer) Teams |
+| `paretosecurity-tune.ps1` | Make Pareto Security green on this VM: screensaver resume-password + disable the BitLocker check |
 | `packages.winget.yaml` | Declarative winget manifest (GUI / MSI apps) |
 | `scoopfile.json` | Declarative Scoop manifest (CLI toolchain) |
 | `Microsoft.PowerShell_profile.ps1` | PowerShell profile (copied into `$PROFILE` paths) |
@@ -78,7 +80,10 @@ These cannot be scripted:
 3. Sign in to **Vivaldi** with the bot account.
 4. `gh auth login` — OAuth flow in the browser.
 5. `claude` → `/login` — OAuth flow in the browser.
-6. Run **Pareto Security**, remediate until green.
+6. Run `.\paretosecurity-tune.ps1` to apply the two VM-specific fixes needed to
+   reach green: the screensaver resume-password, and disabling the BitLocker
+   check (no TPM on this VM). Then run **Pareto Security** and remediate any
+   remaining checks. Both fixes are idempotent.
 7. Configure **Simplewall** rules, then switch to alert mode.
 
 ### Phase 2 — credentials
@@ -106,6 +111,22 @@ cd ~\git\lsimons-dotfiles\windows
 ```
 
 Tools that are not yet available for Windows/ARM64 via mise will warn and be skipped.
+
+### Debloat (optional)
+
+Remove the two apps Windows 11 auto-installs and pins for a personal account —
+OneDrive and the **personal** ("Chat") Teams app. The work/school Teams client
+(`Microsoft.Teams` under Program Files) is left untouched.
+
+```powershell
+cd ~\git\lsimons-dotfiles\windows
+.\debloat.ps1 -DryRun     # preview
+.\debloat.ps1             # per-user removal (run as admin to also deprovision)
+```
+
+The OneDrive step warns and pauses if Known Folder Move has redirected your
+Desktop/Documents/Pictures into OneDrive — download those files locally first,
+or you'll lose access to online-only copies.
 
 ### Keep tools up to date
 
