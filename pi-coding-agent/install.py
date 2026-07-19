@@ -12,9 +12,9 @@ from helpers import (
     error,
     info,
     is_dry_run,
-    link_file,
     npm_install_global,
     parse_dry_run,
+    render_agents_md,
     success,
     write_file,
 )
@@ -39,16 +39,14 @@ def install_npm_package():
 def configure_agent():
     """Configure AGENTS.md symlink and settings.json"""
     home = Path.home()
-    dotfiles = home / '.dotfiles'
     pi_agent_dir = home / '.pi' / 'agent'
     agents_md = pi_agent_dir / 'AGENTS.md'
     settings_json = pi_agent_dir / 'settings.json'
-    claude_md_source = dotfiles / 'claude' / 'CLAUDE.md.symlink'
 
     if not is_dry_run():
         pi_agent_dir.mkdir(parents=True, exist_ok=True)
 
-    link_file(claude_md_source, agents_md)
+    render_agents_md(agents_md)
 
     # Configure non-volatile settings in settings.json (preserves lastChangelogVersion)
     default_settings = {

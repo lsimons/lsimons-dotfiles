@@ -14,6 +14,7 @@ from helpers import (
     is_dry_run,
     link_file,
     parse_dry_run,
+    render_agents_md,
     success,
 )
 
@@ -43,13 +44,12 @@ def configure_opencode():
     opencode_dir = xdg_config_home / "opencode"
     agents_md = opencode_dir / "AGENTS.md"
     config_json = opencode_dir / "config.json"
-    claude_md_source = dotfiles / "claude" / "CLAUDE.md.symlink"
     config_json_source = dotfiles / "opencode" / "config.json.symlink"
 
     if not is_dry_run():
         opencode_dir.mkdir(parents=True, exist_ok=True)
 
-    link_file(claude_md_source, agents_md)
+    render_agents_md(agents_md)
     link_file(config_json_source, config_json)
 
 
