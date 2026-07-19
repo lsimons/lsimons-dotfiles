@@ -2,6 +2,7 @@
 """Installation script for pi-coding-agent"""
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from helpers import (
     error,
     info,
     is_dry_run,
+    link_directory,
     npm_install_global,
     parse_dry_run,
     render_agents_md,
@@ -37,8 +39,9 @@ def install_npm_package():
 
 
 def configure_agent():
-    """Configure AGENTS.md symlink and settings.json"""
+    """Configure AGENTS.md symlink, themes, and settings.json"""
     home = Path.home()
+    topic_dir = Path(__file__).resolve().parent
     pi_agent_dir = home / '.pi' / 'agent'
     agents_md = pi_agent_dir / 'AGENTS.md'
     settings_json = pi_agent_dir / 'settings.json'
@@ -48,11 +51,27 @@ def configure_agent():
 
     render_agents_md(agents_md)
 
+    # Link custom LSD warm themes (mirrors the Claude Code themes). Pi picks
+    # these up from ~/.pi/agent/themes/*.json; activate via /settings.
+    themes_src = topic_dir / 'themes'
+    if themes_src.exists():
+        link_directory(themes_src, pi_agent_dir / 'themes')
+
+    # Route git in pi sessions to the AI-specific git config (signs with an
+    # on-disk SSH key instead of op-ssh-sign, so no 1Password prompt mid-
+    # session). Matches the Claude Code and Codex topics. Pi has no env block,
+    # so export it via shellCommandPrefix, which runs before every bash command.
+    xdg_config_home = Path(os.environ.get('XDG_CONFIG_HOME', home / '.config'))
+    git_config_ai = xdg_config_home / 'git' / 'config.ai'
+    shell_command_prefix = f'export GIT_CONFIG_GLOBAL={json.dumps(str(git_config_ai))}'
+
     # Configure non-volatile settings in settings.json (preserves lastChangelogVersion)
     default_settings = {
         "defaultProvider": "github-copilot",
         "defaultModel": "gemini-3-flash-preview",
         "defaultThinkingLevel": "off",
+        "theme": "lsd-warm-light",
+        "shellCommandPrefix": shell_command_prefix,
     }
 
     if settings_json.exists():

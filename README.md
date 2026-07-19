@@ -79,7 +79,7 @@ The installation script (`./script/install.py`) will:
 | `oh-my-zsh/` | Oh My Zsh |
 | `opencode/` | OpenCode CLI |
 | `openspec/` | openspec |
-| `pi-coding-agent/` | pi-coding-agent |
+| `pi-coding-agent/` | pi-coding-agent (settings, LSD Warm themes, git-config-ai routing) |
 | `python/` | Python (via mise) + XDG config |
 | `ruby/` | Ruby (via mise) |
 | `rust/` | Rust (via mise) + CARGO_HOME |
