@@ -9,8 +9,10 @@ from helpers import (
     brew_install,
     brew_is_installed,
     error,
+    SKILLS_DIR,
     info,
     is_dry_run,
+    link_directory,
     parse_dry_run,
     render_agents_md,
     success,
@@ -44,6 +46,7 @@ def configure_copilot():
         copilot_dir.mkdir(parents=True, exist_ok=True)
 
     render_agents_md(instructions_md)
+    link_directory(SKILLS_DIR, copilot_dir / "skills")
 
 
 def main():

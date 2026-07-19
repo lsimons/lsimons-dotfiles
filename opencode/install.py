@@ -11,7 +11,9 @@ from helpers import (
     brew_is_installed,
     error,
     info,
+    SKILLS_DIR,
     is_dry_run,
+    link_directory,
     link_file,
     parse_dry_run,
     render_agents_md,
@@ -51,6 +53,7 @@ def configure_opencode():
 
     render_agents_md(agents_md)
     link_file(config_json_source, config_json)
+    link_directory(SKILLS_DIR, opencode_dir / "skills")
 
 
 def main():
