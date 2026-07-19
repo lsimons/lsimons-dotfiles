@@ -452,6 +452,11 @@ def build_attribution(email):
 # and gets attribution injected via ~/.claude/settings.json. Agents that have no
 # settings.json equivalent get a compiled copy from render_agents_md() instead,
 # with the machine-specific attribution line spelled out inline.
+# Agent skills (SKILL.md dirs) shared across every skill-capable coding agent.
+# Claude Code, opencode, gemini, and copilot each discover skills from their own
+# personal directory; link_directory() points each at this one source.
+SKILLS_DIR = DOTFILES_ROOT / "claude" / "skills"
+
 MASTER_AGENTS_MD = DOTFILES_ROOT / "claude" / "CLAUDE.md.symlink"
 _ATTRIBUTION_RE = re.compile(
     r"<!-- attribution:start -->.*?<!-- attribution:end -->", re.DOTALL
@@ -486,6 +491,39 @@ def render_agents_md(dst, mode=None):
 
     write_file(dst_path, content, mode=mode)
     success(f"Compiled agent instructions: {dst_path}")
+
+
+def link_directory(src, dst):
+    """Symlink a directory to dst, backing up anything already at dst."""
+    src_path = Path(src)
+    dst_path = Path(dst)
+
+    if dst_path.is_symlink():
+        if dst_path.resolve() == src_path.resolve():
+            success(f"Already linked: {dst}")
+            return True
+        if _DRY_RUN:
+            dry(f"would unlink {dst}")
+        else:
+            dst_path.unlink()
+    elif dst_path.exists():
+        backup = dst_path.with_suffix(".backup")
+        info(f"Backing up {dst} to {backup}")
+        if _DRY_RUN:
+            dry(f"would move {dst} -> {backup}")
+        else:
+            if backup.exists():
+                shutil.rmtree(backup)
+            shutil.move(str(dst_path), str(backup))
+
+    if _DRY_RUN:
+        dry(f"would link {dst} -> {src}")
+        return True
+
+    dst_path.parent.mkdir(parents=True, exist_ok=True)
+    dst_path.symlink_to(src_path)
+    success(f"Linked: {dst} -> {src}")
+    return True
 
 
 def load_symlink_mappings(topic_dir):

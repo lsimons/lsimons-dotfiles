@@ -11,7 +11,9 @@ from helpers import (
     command_exists,
     error,
     info,
+    SKILLS_DIR,
     is_dry_run,
+    link_directory,
     npm_install_global,
     parse_dry_run,
     render_agents_md,
@@ -29,6 +31,7 @@ def configure_gemini():
         gemini_dir.mkdir(parents=True, exist_ok=True)
 
     render_agents_md(gemini_md)
+    link_directory(SKILLS_DIR, gemini_dir / 'skills')
 
 
 def main():
