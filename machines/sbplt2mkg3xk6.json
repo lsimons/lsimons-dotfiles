@@ -12,7 +12,7 @@
         "fingerprint": "SHA256:tbLEmXrD7QldxpG4To761mX7vBs9m5Do0z7qCzXoNeA",
         "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICrOoAq07x+JHPvkiUfO1I3GokYRUP9VAh3zbkj/LLeP lsimons@op-sbp-emp",
         "op_vault": "Employee",
-        "op_account": "schubergphilis",
+        "op_account": "schubergphilis.1password.eu",
         "auth": true,
         "sign": true
       },
@@ -21,7 +21,7 @@
         "fingerprint": "SHA256:++kVOV1LgBHpdMeqMX5zgvWOGXdtTdz6+iTmuSnCYgA",
         "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICn1Kbnb4hR083mQjeZLjIIPQ7dVsP0M6YgANM/TSt2N lsimons_signing@op-sbp-emp",
         "op_vault": "Employee",
-        "op_account": "schubergphilis",
+        "op_account": "schubergphilis.1password.eu",
         "auth": false,
         "sign": true
       },
@@ -30,7 +30,7 @@
         "fingerprint": "SHA256:Eto0UQFw53l0VYP5W6hGnmjdkY+NNAcqVi7NSW1MSBA",
         "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOY6ZlumvmUGtZmWMzdcKsHVlqb/xkTrKgyV9p+l9lNx lsimons_ai@op-sbp-emp",
         "op_vault": "Employee",
-        "op_account": "schubergphilis",
+        "op_account": "schubergphilis.1password.eu",
         "auth": false,
         "sign": true
       },
@@ -39,7 +39,7 @@
         "fingerprint": "SHA256:HUn9PwXOevuImnVSi/oKHCMZHxq4lyf+Cpyn6TjEIbc",
         "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChIgVpQEQZ7xxOiOLi98uOydERLsKSpQeND7syB2utM lsimons@op-my-private",
         "op_vault": "Private",
-        "op_account": "my",
+        "op_account": "my.1password.eu",
         "auth": false,
         "sign": true
       }
