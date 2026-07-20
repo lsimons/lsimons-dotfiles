@@ -72,6 +72,16 @@ def install_1password_ssh_agent_config():
             continue
         item = ssh_key["name"]
         vault = ssh_key["op_vault"]
+        # agent.toml's `account` field only matches a full sign-in address,
+        # email, or account UUID (e.g. "my.1password.eu") — NOT the op-CLI
+        # shorthand ("my"). op_account must therefore be a sign-in address.
+        # History note: commit 1fa25f5 added this `account` line using the
+        # CLI shorthand, which resolves to zero identities ("agent contains
+        # no identities"); f889f7f fixed the machine configs. (That commit's
+        # message wrongly blamed a 1Password 8.12.28 update — it was this
+        # generator change, not the app.) The secrets loader uses the
+        # shorthand via `op read --account`, where it IS valid; the two
+        # fields look alike but accept different values.
         account = ssh_key["op_account"]
         content += (
             "[[ssh-keys]]\n"
