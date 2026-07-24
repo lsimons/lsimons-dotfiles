@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Installation script for Bash configuration"""
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))

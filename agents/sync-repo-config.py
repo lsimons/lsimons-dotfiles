@@ -20,8 +20,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 
 def parse_tasks(mise_toml: Path) -> list[str]:

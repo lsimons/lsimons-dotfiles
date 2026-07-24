@@ -14,7 +14,6 @@ from helpers import (
     success,
 )
 
-
 FONTS = [
     "font-cascadia-code",
     "font-iosevka",

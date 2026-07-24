@@ -6,10 +6,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
+    SKILLS_DIR,
     brew_install,
     brew_is_installed,
     error,
-    SKILLS_DIR,
     info,
     is_dry_run,
     link_directory,

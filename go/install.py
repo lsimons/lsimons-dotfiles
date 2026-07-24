@@ -5,7 +5,15 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import command_exists, error, info, is_dry_run, mise_use, parse_dry_run, success
+from helpers import (
+    command_exists,
+    error,
+    info,
+    is_dry_run,
+    mise_use,
+    parse_dry_run,
+    success,
+)
 
 
 def main():

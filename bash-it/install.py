@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Installation script for Bash-it"""
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))

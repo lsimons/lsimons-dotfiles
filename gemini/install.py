@@ -6,12 +6,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
+    SKILLS_DIR,
     brew_is_installed,
     brew_uninstall,
     command_exists,
     error,
     info,
-    SKILLS_DIR,
     is_dry_run,
     link_directory,
     npm_install_global,

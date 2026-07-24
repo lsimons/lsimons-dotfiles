@@ -16,13 +16,13 @@ propagated to each topic installer.
 
 import argparse
 import os
-import sys
-import subprocess
 import platform
+import subprocess
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from helpers import (  # noqa: E402
+from helpers import (
     dry,
     is_dry_run,
     set_dry_run,
@@ -251,7 +251,7 @@ def create_dotfiles_symlink(dotfiles_root):
         symlink_path.symlink_to(dotfiles_root)
         success(f"Created symlink: ~/.dotfiles -> {dotfiles_root}")
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - report any symlink failure, keep going
         error(f"Failed to create symlink: {e}")
         return False
 
@@ -510,7 +510,7 @@ if __name__ == '__main__':
         print()
         warn("Installation cancelled by user")
         sys.exit(130)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - top-level catch-all for clean exit
         error(f"Unexpected error: {e}")
         import traceback
         traceback.print_exc()

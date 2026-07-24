@@ -222,7 +222,7 @@ def regenerate_outputs(html: str) -> None:
     """Regenerate lsd-colors.md and lsd-colors.json from the just-saved HTML."""
     try:
         rows = extract_palette(html)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - tolerate any parse failure, just log
         sys.stderr.write(f"[serve] palette extract failed: {e}\n")
         return
     for target, render in (
@@ -234,7 +234,7 @@ def regenerate_outputs(html: str) -> None:
             tmp = target.with_suffix(target.suffix + ".tmp")
             tmp.write_text(content, encoding="utf-8")
             tmp.replace(target)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Don't break the save flow if a sidecar fails — just log.
             sys.stderr.write(f"[serve] {target.name} regen failed: {e}\n")
 
@@ -278,14 +278,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             payload = json.loads(body)
             html = payload["html"]
             if not isinstance(html, str):
-                raise ValueError("'html' must be a string")
+                raise TypeError("'html' must be a string")
             head = html.lstrip()[:64].lower()
             if not head.startswith("<!doctype html"):
                 raise ValueError("payload is not a complete HTML document")
             tmp = TARGET_HTML.with_suffix(".html.tmp")
             tmp.write_text(html, encoding="utf-8")
             tmp.replace(TARGET_HTML)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - any failure becomes a 400
             self.send_error(400, str(e))
             return
         regenerate_outputs(html)

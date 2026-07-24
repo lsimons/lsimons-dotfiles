@@ -9,13 +9,14 @@ import shutil
 import socket
 import subprocess
 import sys
-import tomllib
 from datetime import datetime
 from pathlib import Path
 
+import tomllib
+
 DOTFILES_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(DOTFILES_ROOT))
-from agents.shared import (  # noqa: E402, F401
+from agents.shared import (  # noqa: F401
     AGENTS_MD,
     SKILLS_DIR,
     build_attribution,
@@ -32,7 +33,8 @@ XDG_STATE_HOME_STR = os.environ.get("XDG_STATE_HOME", str(HOME / ".local/state")
 
 OP_DEFAULT_ACCOUNT = "my"
 
-NOW = datetime.now().strftime("%Y%m%d_%H%M%S")
+# Local wall-clock time is intentional for human-readable backup suffixes.
+NOW = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
 
 _DRY_RUN = False
 
@@ -131,7 +133,7 @@ def command_exists(cmd):
     if _DRY_RUN:
         dry(f"probe '{cmd}' as absent")
         return False
-    result = subprocess.run(["which", cmd], capture_output=True)
+    result = subprocess.run(["which", cmd], capture_output=True, check=False)
     return result.returncode == 0
 
 
@@ -183,7 +185,7 @@ def brew_is_installed(package):
     if _DRY_RUN:
         dry(f"probe brew package '{package}' as absent")
         return False
-    result = subprocess.run(["brew", "list", package], capture_output=True)
+    result = subprocess.run(["brew", "list", package], capture_output=True, check=False)
     return result.returncode == 0
 
 
@@ -196,7 +198,7 @@ def brew_uninstall(package):
     if _DRY_RUN:
         dry(f"would brew uninstall {package} if installed")
         return True
-    result = subprocess.run(["brew", "list", package], capture_output=True)
+    result = subprocess.run(["brew", "list", package], capture_output=True, check=False)
     if result.returncode != 0:
         return True
     try:
@@ -459,7 +461,10 @@ def link_file(src, dst):
 def get_git_email():
     """Return the global git user.email, or None if unset."""
     result = subprocess.run(
-        ["git", "config", "--get", "user.email"], capture_output=True, text=True
+        ["git", "config", "--get", "user.email"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     return result.stdout.strip() if result.returncode == 0 else None
 

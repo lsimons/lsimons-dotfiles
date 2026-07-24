@@ -182,6 +182,7 @@ def import_profile(profile):
             ["defaults", "export", TERMINAL_DOMAIN, str(tmp_path)],
             capture_output=True,
             text=True,
+            check=False,
         )
         if result.returncode != 0:
             if "does not exist" in (result.stderr or "").lower():
@@ -204,6 +205,7 @@ def import_profile(profile):
             ["defaults", "import", TERMINAL_DOMAIN, str(tmp_path)],
             capture_output=True,
             text=True,
+            check=False,
         )
         if result.returncode != 0:
             error(f"defaults import failed: {result.stderr.strip()}")
