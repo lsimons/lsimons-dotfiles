@@ -131,7 +131,7 @@
     "type": "command",
     "command": "~/.claude/statusline-command.sh"
   },
-  "defaultMode": "acceptEdits",
+  "defaultMode": "auto",
   "model": "opus[1m]",
   "effortLevel": "high",
   "theme": "custom:lsd-warm-light"
