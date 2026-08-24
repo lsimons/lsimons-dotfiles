@@ -78,6 +78,69 @@ def write_settings(claude_dir, topic_dir):
     success(f"Wrote: {settings_path}")
 
 
+def install_mcp_servers(topic_dir):
+    """Sync user-scope MCP servers from mcp-servers.json.
+
+    MCP servers do not live in settings.json — Claude Code keeps user-scope
+    servers in ~/.claude.json, which it owns and rewrites at runtime. So this
+    reads the current state from that file but makes changes through the
+    `claude mcp` CLI rather than writing the file directly. A server is only
+    removed and re-added when its config actually differs, because a
+    remove/add cycle discards any stored OAuth authorization for it.
+    """
+    source = topic_dir / "mcp-servers.json"
+    if not source.exists():
+        return
+
+    with open(source) as f:
+        wanted = json.load(f).get("mcpServers", {})
+
+    if not command_exists("claude"):
+        warn("claude CLI not on PATH; skipping MCP server config")
+        return
+
+    config_path = Path.home() / ".claude.json"
+    current = {}
+    if config_path.exists():
+        try:
+            with open(config_path) as f:
+                current = json.load(f).get("mcpServers", {})
+        except (OSError, json.JSONDecodeError):
+            warn(f"Could not read {config_path}; treating MCP config as empty")
+
+    for name, config in wanted.items():
+        if current.get(name) == config:
+            success(f"MCP server already configured: {name}")
+            continue
+
+        if is_dry_run():
+            dry(f"would configure MCP server {name}")
+            continue
+
+        if name in current:
+            info(f"Updating MCP server: {name}")
+            run_cmd(["claude", "mcp", "remove", "--scope", "user", name], check=False)
+        else:
+            info(f"Adding MCP server: {name}")
+
+        try:
+            run_cmd(
+                [
+                    "claude",
+                    "mcp",
+                    "add-json",
+                    "--scope",
+                    "user",
+                    name,
+                    json.dumps(config),
+                ],
+                check=True,
+            )
+            success(f"MCP server configured: {name}")
+        except subprocess.CalledProcessError:
+            warn(f"Failed to configure MCP server: {name}")
+
+
 def install_claude_history():
     """Install the claude-history TUI from its Homebrew tap.
 
@@ -147,6 +210,7 @@ def main():
         warn("Failed to install ccusage; status line cost segment will be hidden")
 
     install_claude_history()
+    install_mcp_servers(topic_dir)
 
     return 0
 
