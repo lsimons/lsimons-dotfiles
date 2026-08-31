@@ -23,11 +23,11 @@
     "ide": "#0045ae",
     "fastMode": "#906d00",
 
-    "diffAdded": "#8beed4",
+    "diffAdded": "#8beea5",
     "diffRemoved": "#ee8b8b",
-    "diffAddedDimmed": "#c1f6e8",
+    "diffAddedDimmed": "#c1f6cf",
     "diffRemovedDimmed": "#f6c1c1",
-    "diffAddedWord": "#55e7c0",
+    "diffAddedWord": "#55e77c",
     "diffRemovedWord": "#e75555",
 
     "userMessageBackground": "#f7e9d6",

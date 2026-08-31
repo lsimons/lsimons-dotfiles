@@ -23,12 +23,12 @@
     "ide": "#005fc9",
     "fastMode": "#eabb79",
 
-    "diffAdded": "#0d432f",
+    "diffAdded": "#0d4310",
     "diffRemoved": "#6e0619",
-    "diffAddedDimmed": "#103826",
+    "diffAddedDimmed": "#10380d",
     "diffRemovedDimmed": "#5d0714",
-    "diffAddedWord": "#00a37e",
-    "diffRemovedWord": "#e5003b",
+    "diffAddedWord": "#00661b",
+    "diffRemovedWord": "#a3002a",
 
     "userMessageBackground": "#1f1000",
     "userMessageBackgroundHover": "#30200d",
