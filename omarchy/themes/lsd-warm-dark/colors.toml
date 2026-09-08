@@ -1,0 +1,38 @@
+# LSD Warm Dark — the shared palette in colors/lsd-colors.json, mapped onto
+# Omarchy's theme keys. The sixteen ANSI entries match
+# ghostty/LSD-Warm-Dark.symlink exactly, including the deliberate choice to
+# repeat the normal colors as the bright ones.
+
+mode = "dark"
+
+accent = "#d79e59"
+selection = "#3a2b16"
+muted = "#5e4c38"
+
+# background is the palette's `bg`; the darker pair below are scaled from it,
+# since a near-black warm brown has no darker entry in the palette itself.
+background = "#1a0c00"
+dark_background = "#120800"
+darker_background = "#0c0500"
+lighter_background = "#30200d"
+
+foreground = "#dfcab2"
+dark_foreground = "#6b5b44"
+light_foreground = "#dfcab2"
+bright_foreground = "#ffebd2"
+
+red = "#c10032"
+yellow = "#815e00"
+orange = "#d84c00"
+green = "#007a5e"
+cyan = "#007980"
+blue = "#005fc9"
+magenta = "#c8005e"
+brown = "#5e4c38"
+
+bright_red = "#c10032"
+bright_yellow = "#815e00"
+bright_green = "#007a5e"
+bright_cyan = "#007980"
+bright_blue = "#005fc9"
+bright_magenta = "#c8005e"

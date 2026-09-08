@@ -1,0 +1,38 @@
+# LSD Warm Light — the shared palette in colors/lsd-colors.json, mapped onto
+# Omarchy's theme keys. The sixteen ANSI entries match
+# ghostty/LSD-Warm-Light.symlink exactly.
+
+mode = "light"
+
+accent = "#c17a23"
+selection = "#ebd3b4"
+muted = "#947b60"
+
+# In light mode these four run from the page colour to the strongest surface,
+# the way the stock `white` theme uses them — "dark"/"lighter" name the role,
+# not the direction.
+background = "#faf1f3"
+dark_background = "#f7e9d6"
+darker_background = "#f4e6d2"
+lighter_background = "#ebd3b4"
+
+foreground = "#241100"
+dark_foreground = "#947b60"
+light_foreground = "#241100"
+bright_foreground = "#241100"
+
+red = "#a10000"
+yellow = "#694700"
+orange = "#b52700"
+green = "#006248"
+cyan = "#006168"
+blue = "#0045ae"
+magenta = "#aa0048"
+brown = "#594329"
+
+bright_red = "#d01c25"
+bright_yellow = "#906d00"
+bright_green = "#00896d"
+bright_cyan = "#00888f"
+bright_blue = "#006eda"
+bright_magenta = "#da006c"
