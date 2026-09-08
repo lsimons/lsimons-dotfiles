@@ -8,35 +8,29 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     SKILLS_DIR,
-    brew_install,
-    brew_is_installed,
     dry,
-    error,
+    ensure_package,
     info,
     is_dry_run,
     link_directory,
     link_file,
     parse_dry_run,
     render_agents_md,
-    success,
 )
 
 
 def install_opencode():
-    """Install OpenCode via the anomalyco Homebrew tap."""
-    formula = "anomalyco/tap/opencode"
+    """Install OpenCode (anomalyco's fork) from brew or the AUR."""
     info("Installing OpenCode...")
 
-    if brew_is_installed(formula):
-        success("OpenCode already installed")
-        return 0
-
-    if brew_install(formula):
-        success("OpenCode installed")
-        return 0
-
-    error("Failed to install OpenCode")
-    return 1
+    if not ensure_package(
+        "OpenCode",
+        brew="anomalyco/tap/opencode",
+        aur="opencode-bin",
+        command="opencode",
+    ):
+        return 1
+    return 0
 
 
 def configure_opencode():

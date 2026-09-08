@@ -8,8 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
-    brew_install,
-    brew_is_installed,
+    ensure_package,
     error,
     info,
     install_symlinks,
@@ -52,14 +51,13 @@ def install_oh_my_zsh():
 def install_powerlevel10k():
     info("Installing powerlevel10k...")
 
-    if brew_is_installed('powerlevel10k'):
-        success("powerlevel10k already installed")
-        return True
-    if brew_install('powerlevel10k'):
-        success("powerlevel10k installed")
-        return True
-    error("Failed to install powerlevel10k")
-    return False
+    # Arch names the package after what it is rather than after the
+    # theme; oh-my-zsh/powerline10k.zsh knows both install prefixes.
+    return ensure_package(
+        'powerlevel10k',
+        brew='powerlevel10k',
+        aur='zsh-theme-powerlevel10k',
+    )
 
 
 def main():

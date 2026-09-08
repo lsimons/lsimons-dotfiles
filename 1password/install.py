@@ -7,11 +7,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     XDG_CONFIG_HOME,
-    brew_install,
     chmod,
-    command_exists,
     dry,
-    error,
+    ensure_package,
     get_machine_config,
     info,
     is_dry_run,
@@ -22,6 +20,9 @@ from helpers import (
     write_file,
 )
 
+# Both the macOS and the Linux desktop app read the agent config from
+# this XDG path, so nothing here is platform-specific. What does differ
+# is the agent socket, which ssh/ssh.sh points SSH_AUTH_SOCK at.
 OP_CONFIG_DIR = XDG_CONFIG_HOME / "1Password"
 OP_SSH_CONFIG_DIR = OP_CONFIG_DIR / "ssh"
 SSH_AGENT_TOML = OP_SSH_CONFIG_DIR / "agent.toml"
@@ -113,20 +114,24 @@ def main():
     migrate_legacy_config_dir()
     install_1password_ssh_agent_config()
 
-    if Path("/Applications/1Password.app").exists():
-        success("1Password app already installed")
-    elif brew_install("1password", cask=True):
-        success("1Password app installed")
-    else:
-        error("Failed to install 1Password app")
+    # Omarchy carries both of these in its own pacman repo, prebuilt for
+    # aarch64, so neither needs the AUR.
+    if not ensure_package(
+        "1Password app",
+        brew="1password",
+        cask=True,
+        macos_app="1Password",
+        pacman="1password",
+    ):
         return 1
 
-    if command_exists("op"):
-        success("1Password CLI already installed")
-    elif brew_install("1password-cli", cask=True):
-        success("1Password CLI installed")
-    else:
-        error("Failed to install 1Password CLI")
+    if not ensure_package(
+        "1Password CLI",
+        brew="1password-cli",
+        cask=True,
+        pacman="1password-cli",
+        command="op",
+    ):
         return 1
 
     return 0

@@ -5,26 +5,26 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
-from helpers import brew_install, brew_is_installed, error, info, parse_dry_run, success
+from helpers import ensure_package, error, info, parse_dry_run, success
 
-PACKAGES = ["ansible", "ansible-lint", "yamllint"]
+# (label, brew formula, pacman package) — the names happen to match on
+# both platforms, but keep them explicit so a divergence is a data change.
+PACKAGES = [
+    ("ansible", "ansible", "ansible"),
+    ("ansible-lint", "ansible-lint", "ansible-lint"),
+    ("yamllint", "yamllint", "yamllint"),
+]
 
 
 def main():
     parse_dry_run()
     info("Installing Ansible and related tools...")
 
-    failed = []
-    for package in PACKAGES:
-        if brew_is_installed(package):
-            success(f"{package} already installed")
-        else:
-            info(f"Installing {package} via Homebrew...")
-            if brew_install(package):
-                success(f"{package} installed")
-            else:
-                error(f"Failed to install {package}")
-                failed.append(package)
+    failed = [
+        label
+        for label, brew, pacman in PACKAGES
+        if not ensure_package(label, brew=brew, pacman=pacman)
+    ]
 
     if failed:
         error(f"Failed to install: {', '.join(failed)}")

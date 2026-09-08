@@ -8,10 +8,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     AI_KEY_PUB_PATH,
+    IS_MACOS,
     SSH_CONFIG_AI_PATH,
     backup_file,
-    brew_install,
-    brew_is_installed,
+    command_exists,
+    ensure_package,
     error,
     find_ssh_key,
     get_machine_config,
@@ -24,7 +25,39 @@ from helpers import (
     write_file,
 )
 
-GPG_SSH_PROGRAM_DEFAULT = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+# 1Password's SSH signing shim, shipped inside the desktop app. The macOS
+# path is inside the .app bundle; the Linux package installs it under
+# /opt alongside the rest of the app.
+GPG_SSH_PROGRAM_DEFAULT = (
+    "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+    if IS_MACOS
+    else "/opt/1Password/op-ssh-sign"
+)
+
+# Editors to try for `core.editor`, most preferred first. Zed is the
+# daily driver, but it has no aarch64 Linux build, so fall back rather
+# than configure git to launch a binary that is not there. Each entry is
+# (command, git core.editor value).
+EDITOR_CANDIDATES = [
+    ("zed", "zed --wait"),
+    ("zeditor", "zeditor --wait"),
+    ("nvim", "nvim"),
+    ("vim", "vim"),
+]
+EDITOR_FALLBACK = "vim"
+
+
+def resolve_editor():
+    """Return the `core.editor` value for the first editor present."""
+    for command, editor in EDITOR_CANDIDATES:
+        if command_exists(command):
+            return editor
+    warn(
+        "None of "
+        + ", ".join(command for command, _ in EDITOR_CANDIDATES)
+        + f" found; falling back to {EDITOR_FALLBACK} for core.editor"
+    )
+    return EDITOR_FALLBACK
 
 
 def _xdg_git_dir():
@@ -118,7 +151,7 @@ def generate_config():
         email=git_user["email"],
         signingkey=signing_key_pub,
         gpg_ssh_program=GPG_SSH_PROGRAM_DEFAULT,
-        editor="zed --wait",
+        editor=resolve_editor(),
         ssh_command_block="",
     )
     ai_content = _render_config(
@@ -197,37 +230,33 @@ def main():
     generate_config()
     generate_allowed_signers()
 
-    if brew_is_installed("git"):
-        success("Git already installed")
-    elif brew_install("git"):
-        success("Git installed")
-    else:
-        error("Failed to install Git")
+    if not ensure_package("Git", brew="git", pacman="git"):
         return 1
 
-    if brew_is_installed("git-credential-manager"):
-        success("Git Credential Manager already installed")
-    elif brew_install("git-credential-manager", cask=True):
-        success("Git Credential Manager installed")
-    else:
-        error("Failed to install Git Credential Manager")
+    # Optional on Linux: git-credential-manager publishes a .deb/.rpm and
+    # an AUR build that pulls in the whole .NET runtime. The credential
+    # helper is configured either way (see config.template); it simply
+    # does nothing until GCM is present.
+    if not ensure_package(
+        "Git Credential Manager",
+        brew="git-credential-manager",
+        cask=True,
+        aur="git-credential-manager",
+        command="git-credential-manager",
+        optional=True,
+    ):
         return 1
 
-    if brew_is_installed("git-filter-repo"):
-        success("git-filter-repo already installed")
-    elif brew_install("git-filter-repo"):
-        success("git-filter-repo installed")
-    else:
-        error("Failed to install git-filter-repo")
+    if not ensure_package(
+        "git-filter-repo",
+        brew="git-filter-repo",
+        pacman="git-filter-repo",
+        command="git-filter-repo",
+    ):
         return 1
 
-    lfs_already_installed = brew_is_installed("git-lfs")
-    if lfs_already_installed:
-        success("git-lfs already installed")
-    elif brew_install("git-lfs"):
-        success("git-lfs installed")
-    else:
-        error("Failed to install git-lfs")
+    lfs_already_installed = command_exists("git-lfs")
+    if not ensure_package("git-lfs", brew="git-lfs", pacman="git-lfs"):
         return 1
 
     # config.template already hardcodes the filter.lfs.* config this sets, so

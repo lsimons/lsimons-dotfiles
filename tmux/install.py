@@ -5,15 +5,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import (
-    brew_install,
-    command_exists,
-    error,
-    info,
-    install_symlinks,
-    parse_dry_run,
-    success,
-)
+from helpers import ensure_package, info, install_symlinks, parse_dry_run
 
 
 def main():
@@ -22,16 +14,9 @@ def main():
 
     info("Installing tmux...")
 
-    if command_exists('tmux'):
-        success("tmux already installed")
-        return 0
-
-    if brew_install('tmux'):
-        success("tmux installed")
-        return 0
-
-    error("Failed to install tmux")
-    return 1
+    if not ensure_package('tmux', brew='tmux', pacman='tmux', command='tmux'):
+        return 1
+    return 0
 
 
 if __name__ == '__main__':

@@ -1,4 +1,9 @@
 # Ghostty symlink destinations
-config.symlink -> $HOME/Library/Application Support/com.mitchellh.ghostty/config
+#
+# Ghostty reads its config from the platform's native app-support
+# location on macOS and from XDG on Linux; the themes directory is XDG
+# on both.
+macos: config.symlink -> $HOME/Library/Application Support/com.mitchellh.ghostty/config
+linux: config.symlink -> $XDG_CONFIG_HOME/ghostty/config
 LSD-Warm-Dark.symlink -> $XDG_CONFIG_HOME/ghostty/themes/LSD Warm Dark
 LSD-Warm-Light.symlink -> $XDG_CONFIG_HOME/ghostty/themes/LSD Warm Light

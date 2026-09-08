@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import platform as platform_module
 import re
 import shlex
 import shutil
@@ -46,6 +47,62 @@ AI_KEY_FILE = "ai_ed25519"
 AI_KEY_PATH = SSH_CONFIG_DIR / AI_KEY_FILE
 AI_KEY_PUB_FILE = AI_KEY_FILE + ".pub"
 AI_KEY_PUB_PATH = SSH_CONFIG_DIR / AI_KEY_PUB_FILE
+
+
+# --- Platform detection -------------------------------------------------
+#
+# These dotfiles target macOS and Arch-based Linux (specifically Omarchy).
+# Topics declare which platforms they support in a `platforms.txt` file
+# next to their `install.py`; see script/install.py. Within an installer,
+# use `ensure_package()` rather than branching on these flags directly —
+# only genuinely platform-shaped work (LaunchAgents, systemd units, Dock)
+# should test them.
+
+SYSTEM = platform_module.system()
+IS_MACOS = SYSTEM == "Darwin"
+IS_LINUX = SYSTEM == "Linux"
+
+# The canonical platform name used by platforms.txt.
+PLATFORM = "macos" if IS_MACOS else "linux" if IS_LINUX else SYSTEM.lower()
+
+
+def _linux_distro_ids(os_release=Path("/etc/os-release")):
+    """Return the set of distro identifiers from /etc/os-release.
+
+    Includes both ``ID`` and every entry of ``ID_LIKE``, so Arch
+    derivatives (Omarchy, EndeavourOS, Manjaro, Arch Linux ARM) all
+    report "arch". Returns an empty set off Linux or when the file is
+    missing (some containers).
+    """
+    ids = set()
+    try:
+        text = os_release.read_text()
+    except OSError:
+        return ids
+    for raw in text.splitlines():
+        key, _, value = raw.partition("=")
+        if key not in ("ID", "ID_LIKE"):
+            continue
+        ids.update(value.strip().strip('"\'').split())
+    return ids
+
+
+LINUX_DISTRO_IDS = _linux_distro_ids() if IS_LINUX else set()
+
+# True on Arch and its derivatives, i.e. wherever pacman/yay are the
+# right package managers. Note this is False on the Ubuntu CI runner,
+# which is why every installer must stay dry-run-safe there.
+IS_ARCH = IS_LINUX and "arch" in LINUX_DISTRO_IDS
+
+# Omarchy ships its own config tree; its presence is what distinguishes
+# "an Arch box" from "the Omarchy desktop" for topics that theme it.
+OMARCHY_ROOT = XDG_CONFIG_HOME / "omarchy"
+OMARCHY_SHARE = Path(XDG_DATA_HOME_STR) / "omarchy"
+
+
+def is_omarchy():
+    """True when this machine runs Omarchy (its config tree is present)."""
+    return IS_LINUX and OMARCHY_SHARE.is_dir()
 
 
 def info(msg):
@@ -128,18 +185,26 @@ def run_cmd(cmd, check=True, capture_output=False, env=None, shell=False, cwd=No
 def command_exists(cmd):
     """Check if a command exists in PATH.
 
+    Uses shutil.which rather than shelling out to which(1): Arch does not
+    ship a `which` binary at all (it is a separate `which` package that
+    Omarchy does not install), so the subprocess form raised
+    FileNotFoundError for every probe on Linux.
+
     In dry-run mode, reports commands as absent so installers exercise
     their installation paths without running anything.
     """
     if _DRY_RUN:
         dry(f"probe '{cmd}' as absent")
         return False
-    result = subprocess.run(["which", cmd], capture_output=True, check=False)
-    return result.returncode == 0
+    return shutil.which(cmd) is not None
 
 
 def app_exists(app_name):
     """Check if a macOS app exists in /Applications.
+
+    macOS-only by construction: /Applications does not exist elsewhere,
+    so this is always False on Linux. Cross-platform installers should
+    probe with `ensure_package(..., command=...)` instead.
 
     Args:
         app_name: Name without .app suffix (e.g., 'Brave Browser')
@@ -148,6 +213,19 @@ def app_exists(app_name):
         dry(f"probe '{app_name}.app' as absent")
         return False
     return Path(f"/Applications/{app_name}.app").exists()
+
+
+def _brew_available():
+    """True when Homebrew is on PATH.
+
+    Every brew_* helper checks this rather than assuming macOS. The
+    Homebrew-only topics never run on Linux (they declare `macos` in
+    their platforms.txt), but a few portable topics still ask "is the
+    legacy Homebrew copy of X installed?" as a migration step, and
+    shelling out to a `brew` that does not exist would raise
+    FileNotFoundError instead of answering "no".
+    """
+    return shutil.which("brew") is not None
 
 
 def brew_install(package, cask=False):
@@ -164,6 +242,10 @@ def brew_install(package, cask=False):
         suffix = " (cask)" if cask else ""
         dry(f"would brew install {package}{suffix}")
         return True
+
+    if not _brew_available():
+        error(f"Homebrew not found; cannot install {package}")
+        return False
 
     cmd = ["brew", "install"]
     if cask:
@@ -186,6 +268,8 @@ def brew_is_installed(package):
     if _DRY_RUN:
         dry(f"probe brew package '{package}' as absent")
         return False
+    if not _brew_available():
+        return False
     result = subprocess.run(["brew", "list", package], capture_output=True, check=False)
     return result.returncode == 0
 
@@ -199,6 +283,8 @@ def brew_uninstall(package):
     if _DRY_RUN:
         dry(f"would brew uninstall {package} if installed")
         return True
+    if not _brew_available():
+        return True
     result = subprocess.run(["brew", "list", package], capture_output=True, check=False)
     if result.returncode != 0:
         return True
@@ -207,6 +293,171 @@ def brew_uninstall(package):
         return True
     except subprocess.CalledProcessError:
         return False
+
+
+def pacman_is_installed(package):
+    """Check whether an Arch package is installed locally.
+
+    In dry-run mode, reports packages as absent so the install path is
+    exercised without changing the system.
+    """
+    if _DRY_RUN:
+        dry(f"probe pacman package '{package}' as absent")
+        return False
+    result = subprocess.run(["pacman", "-Qi", package], capture_output=True, check=False)
+    return result.returncode == 0
+
+
+def pacman_repo_has(package):
+    """Check whether `package` exists in a configured pacman repository.
+
+    Omarchy configures an `[aur]` binary repo alongside core/extra, so a
+    good many nominally-AUR packages resolve here and never need yay.
+    """
+    if _DRY_RUN:
+        dry(f"probe pacman repos for '{package}' as absent")
+        return False
+    result = subprocess.run(["pacman", "-Si", package], capture_output=True, check=False)
+    return result.returncode == 0
+
+
+def pacman_install(package):
+    """Install a package from the configured pacman repositories.
+
+    `--needed` makes this idempotent and `--noconfirm` keeps pacman from
+    prompting; `sudo` may still ask for a password once per session, the
+    same way a Homebrew cask does on macOS.
+
+    Returns True on success, False on failure.
+    """
+    if _DRY_RUN:
+        dry(f"would pacman -S {package}")
+        return True
+    try:
+        subprocess.run(
+            ["sudo", "pacman", "-S", "--needed", "--noconfirm", package], check=True
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+def aur_has(package):
+    """Check whether yay can resolve `package` at all (repos or AUR)."""
+    result = subprocess.run(["yay", "-Si", package], capture_output=True, check=False)
+    return result.returncode == 0
+
+
+def aur_install(package):
+    """Install a package with yay, which covers both the AUR and the repos.
+
+    Returns True on success, False on failure.
+    """
+    if _DRY_RUN:
+        dry(f"would yay -S {package}")
+        return True
+    if not command_exists("yay"):
+        error(f"yay not found; cannot install AUR package {package}")
+        return False
+    # Resolve the name first. Without this, a package that simply does not
+    # exist under this name reaches yay as a build request and reports it
+    # as a build failure, which reads as "it broke" rather than "there is
+    # no such package".
+    if not aur_has(package):
+        error(f"No AUR or repository package named {package}")
+        return False
+    try:
+        subprocess.run(
+            ["yay", "-S", "--needed", "--noconfirm", package], check=True
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def _linux_install(pacman=None, aur=None):
+    """Install an Arch package, preferring a repo copy over an AUR build."""
+    if pacman and pacman_repo_has(pacman):
+        return pacman_install(pacman)
+    if aur:
+        return aur_install(aur)
+    if pacman:
+        # Not in any configured repo, and no separate AUR name was given.
+        # yay can still find it in the AUR under the same name.
+        return aur_install(pacman)
+    return False
+
+
+def ensure_package(
+    label,
+    *,
+    brew=None,
+    cask=False,
+    pacman=None,
+    aur=None,
+    command=None,
+    macos_app=None,
+    optional=False,
+):
+    """Install `label` with this platform's package manager, if it is missing.
+
+    Presence is probed in this order, using whichever probes apply:
+    `command` (a binary on PATH), `macos_app` (an /Applications bundle,
+    macOS only), then the platform's own package database.
+
+    Package names are per-platform: `brew`/`cask` for macOS, `pacman`/`aur`
+    for Arch. A platform with no name given has no package for `label`;
+    that is an error unless `optional` is set, which downgrades it to a
+    warning so a mostly-portable topic can still install its config.
+
+    Returns True when the package is present afterwards.
+    """
+    if command and command_exists(command):
+        success(f"{label} already installed")
+        return True
+    if macos_app and IS_MACOS and app_exists(macos_app):
+        success(f"{label} already installed")
+        return True
+
+    if IS_MACOS:
+        if not brew:
+            return _no_package_for_platform(label, optional)
+        if brew_is_installed(brew):
+            success(f"{label} already installed")
+            return True
+        info(f"Installing {label} via Homebrew...")
+        installed = brew_install(brew, cask=cask)
+    elif IS_LINUX:
+        if not (pacman or aur):
+            return _no_package_for_platform(label, optional)
+        if pacman and pacman_is_installed(pacman):
+            success(f"{label} already installed")
+            return True
+        if aur and pacman_is_installed(aur):
+            success(f"{label} already installed")
+            return True
+        info(f"Installing {label} via pacman/yay...")
+        installed = _linux_install(pacman=pacman, aur=aur)
+    else:
+        return _no_package_for_platform(label, optional)
+
+    if installed:
+        success(f"{label} installed")
+        return True
+
+    if optional:
+        warn(f"Failed to install {label}; continuing")
+        return True
+    error(f"Failed to install {label}")
+    return False
+
+
+def _no_package_for_platform(label, optional):
+    if optional:
+        warn(f"No {PLATFORM} package configured for {label}; skipping")
+        return True
+    error(f"No {PLATFORM} package configured for {label}")
+    return False
 
 
 def npm_install_global(package):
@@ -514,14 +765,25 @@ def link_directory(src, dst):
     return True
 
 
-def load_symlink_mappings(topic_dir):
+def load_symlink_mappings(topic_dir, platform=None):
     """Load symlink destination overrides from <topic>/symlinks.txt.
 
     Each non-comment line has the form ``source.symlink -> destination``.
     ``$HOME``, the XDG base directory variables, and a leading ``~`` are
     expanded in destinations.
+
+    A line may be prefixed with ``<platform>:`` to restrict it to one
+    platform, e.g.::
+
+        macos: config.symlink -> $HOME/Library/Application Support/x/config
+        linux: config.symlink -> $XDG_CONFIG_HOME/x/config
+
+    Unprefixed lines apply everywhere. Lines for another platform are
+    dropped, so the same source file can land in different places on
+    macOS and Linux.
     """
     topic_dir = Path(topic_dir)
+    platform = PLATFORM if platform is None else platform
     mappings = {}
     symlinks_file = topic_dir / "symlinks.txt"
     if not symlinks_file.exists():
@@ -533,6 +795,15 @@ def load_symlink_mappings(topic_dir):
             continue
         if " -> " not in line:
             continue
+
+        prefix, sep, remainder = line.partition(":")
+        # Only treat this as a platform prefix when it precedes the
+        # mapping arrow; a Windows-style destination path would also
+        # contain a colon, and must not be mistaken for one.
+        if sep and " -> " not in prefix:
+            if prefix.strip() != platform:
+                continue
+            line = remainder.strip()
 
         src_name, dst_path = line.split(" -> ", 1)
         src_name = src_name.strip()

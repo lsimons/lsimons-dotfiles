@@ -172,7 +172,8 @@ class GitInstallerEnrollmentTests(unittest.TestCase):
             mock.patch.object(git_installer, "migrate_legacy_files") as migrate,
             mock.patch.object(git_installer, "generate_config") as generate,
             mock.patch.object(git_installer, "generate_allowed_signers") as signers,
-            mock.patch.object(git_installer, "brew_is_installed", return_value=True),
+            mock.patch.object(git_installer, "ensure_package", return_value=True),
+            mock.patch.object(git_installer, "command_exists", return_value=True),
             # main() ends by shelling out to `git lfs install --skip-repo`.
             # Left unmocked that is a real subprocess: it fails this test on
             # any machine without git-lfs, and on a machine *with* git-lfs it
@@ -224,7 +225,7 @@ class OnePasswordInstallerEnrollmentTests(unittest.TestCase):
                 onepassword, "install_1password_ssh_agent_config"
             ) as install_agent,
             mock.patch("pathlib.Path.exists", return_value=True),
-            mock.patch.object(onepassword, "command_exists", return_value=True),
+            mock.patch.object(onepassword, "ensure_package", return_value=True),
         ):
             result = onepassword.main()
 

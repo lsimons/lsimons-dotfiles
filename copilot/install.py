@@ -7,32 +7,27 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     SKILLS_DIR,
-    brew_install,
-    brew_is_installed,
-    error,
+    ensure_package,
     info,
     is_dry_run,
     link_directory,
     parse_dry_run,
     render_agents_md,
-    success,
 )
 
 
 def install_copilot_cli():
-    """Install copilot-cli via Homebrew"""
+    """Install the GitHub Copilot CLI."""
     info("Installing copilot-cli...")
 
-    if brew_is_installed("copilot-cli"):
-        success("copilot-cli already installed")
-        return 0
-
-    if brew_install("copilot-cli"):
-        success("copilot-cli installed")
-        return 0
-
-    error("Failed to install copilot-cli")
-    return 1
+    if not ensure_package(
+        "copilot-cli",
+        brew="copilot-cli",
+        pacman="github-copilot-cli",
+        command="copilot",
+    ):
+        return 1
+    return 0
 
 
 def configure_copilot():

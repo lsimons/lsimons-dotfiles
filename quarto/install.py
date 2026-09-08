@@ -5,25 +5,27 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
-from helpers import brew_install, command_exists, error, info, parse_dry_run, success
+from helpers import ensure_package, info, parse_dry_run
 
 
 def main():
     parse_dry_run()
     info("Installing Quarto...")
 
-    if command_exists("quarto"):
-        success("Quarto already installed")
-        return 0
-
-    # quarto is a cask whose pkg installer requires sudo; brew will prompt
+    # macOS: a cask whose pkg installer requires sudo; brew will prompt
     # for the password interactively.
-    if brew_install("quarto", cask=True):
-        success("Quarto installed")
-        return 0
-
-    error("Failed to install Quarto")
-    return 1
+    # Linux: quarto-cli-bin repackages upstream's x86_64 tarball, so it is
+    # optional — there is nothing to install on aarch64.
+    if not ensure_package(
+        "Quarto",
+        brew="quarto",
+        cask=True,
+        aur="quarto-cli-bin",
+        command="quarto",
+        optional=True,
+    ):
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

@@ -6,10 +6,11 @@ Code, Codex, Cursor, OpenCode, Pi, OpenClaw, Copilot CLI), plus a herdr
 plugin that turns its TUI into a session desk.
 
 Indexing is deliberately left to the herdr plugin's session-start hook
-rather than the launchd index-service: `index_on_startup` defaults to true
-in the plugin, so every herdr session kicks off a background incremental
-index. Run `memex index-service enable` by hand if a always-on daemon is
-ever wanted instead.
+rather than memex's own index-service (a launchd agent on macOS, a
+systemd user unit on Linux): `index_on_startup` defaults to true in the
+plugin, so every herdr session kicks off a background incremental index.
+Run `memex index-service enable` by hand if a always-on daemon is ever
+wanted instead.
 
 The memex-search and instruction-improver skills are vendored in the
 lsimons-skills repository (see `agents/README.md`), not installed by
@@ -22,10 +23,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
-    brew_install,
-    brew_is_installed,
+    IS_MACOS,
     command_exists,
     dry,
+    ensure_package,
     error,
     info,
     is_dry_run,
@@ -37,30 +38,39 @@ from helpers import (
 
 TAP = "nicosuave/tap"
 FORMULA = "nicosuave/tap/memex"
+AUR_PACKAGE = "memex"
 
 HERDR_PLUGIN = "nicosuave/memex"
 HERDR_PLUGIN_ID = "nicosuave.memex"
 
 
-def install_memex():
-    """Install the memex CLI from its Homebrew tap."""
-    if brew_is_installed(FORMULA):
-        success("memex already installed")
-        return True
+def add_tap():
+    """Tap and trust nicosuave/tap.
 
+    Homebrew refuses to load untrusted third-party taps, so `brew trust`
+    is required before installing the formula.
+    """
     try:
         run_cmd(["brew", "tap", TAP])
         run_cmd(["brew", "trust", "--tap", TAP])
+        return True
     except subprocess.CalledProcessError:
         error(f"Failed to tap {TAP}")
         return False
 
-    if brew_install(FORMULA):
-        success("memex installed")
+
+def install_memex():
+    """Install the memex CLI (Homebrew tap on macOS, AUR on Arch)."""
+    if command_exists("memex"):
+        success("memex already installed")
         return True
 
-    error("Failed to install memex")
-    return False
+    if IS_MACOS and not is_dry_run() and not add_tap():
+        return False
+
+    return ensure_package(
+        "memex", brew=FORMULA, aur=AUR_PACKAGE, command="memex"
+    )
 
 
 def herdr_plugin_installed():

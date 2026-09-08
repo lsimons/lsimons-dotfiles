@@ -7,9 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
-    brew_install,
-    command_exists,
-    error,
+    ensure_package,
     info,
     is_dry_run,
     parse_dry_run,
@@ -63,12 +61,9 @@ def main():
     parse_dry_run()
     info("Installing GitHub CLI...")
 
-    if command_exists('gh'):
-        success("GitHub CLI already installed")
-    elif brew_install('gh'):
-        success("GitHub CLI installed")
-    else:
-        error("Failed to install GitHub CLI")
+    if not ensure_package(
+        'GitHub CLI', brew='gh', pacman='github-cli', command='gh'
+    ):
         return 1
 
     install_extensions()

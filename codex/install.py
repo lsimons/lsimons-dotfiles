@@ -9,9 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     SKILLS_DIR,
-    brew_install,
-    brew_is_installed,
-    error,
+    ensure_package,
     info,
     is_dry_run,
     link_directory,
@@ -24,19 +22,19 @@ from helpers import (
 
 
 def install_codex():
-    """Install Codex via Homebrew."""
+    """Install the Codex CLI."""
     info("Installing Codex...")
 
-    if brew_is_installed("codex"):
-        success("Codex already installed")
-        return 0
-
-    if brew_install("codex", cask=True):
-        success("Codex installed")
-        return 0
-
-    error("Failed to install Codex")
-    return 1
+    # Omarchy's pacman repo carries openai-codex-bin, prebuilt for aarch64.
+    if not ensure_package(
+        "Codex",
+        brew="codex",
+        cask=True,
+        pacman="openai-codex-bin",
+        command="codex",
+    ):
+        return 1
+    return 0
 
 
 def write_config(codex_dir, topic_dir):

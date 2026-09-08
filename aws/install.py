@@ -8,9 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
-    brew_install,
-    brew_is_installed,
     command_exists,
+    ensure_package,
     error,
     info,
     is_dry_run,
@@ -92,14 +91,10 @@ def main():
     parse_dry_run()
     info("Installing AWS CLI...")
 
-    if brew_is_installed("awscli"):
-        success("awscli already installed")
-    else:
-        info("Installing awscli via Homebrew...")
-        if not brew_install("awscli"):
-            error("Failed to install awscli")
-            return 1
-        success("awscli installed")
+    if not ensure_package(
+        "awscli", brew="awscli", pacman="aws-cli-v2", command="aws"
+    ):
+        return 1
 
     if AWS_CONFIG_FILE.exists():
         success(f"{AWS_CONFIG_FILE} already exists, skipping")
@@ -109,14 +104,10 @@ def main():
         success(f"Created {AWS_CONFIG_FILE}")
 
     info("Installing saml2aws...")
-    if brew_is_installed("saml2aws"):
-        success("saml2aws already installed")
-    else:
-        info("Installing saml2aws via Homebrew...")
-        if not brew_install("saml2aws"):
-            error("Failed to install saml2aws")
-            return 1
-        success("saml2aws installed")
+    if not ensure_package(
+        "saml2aws", brew="saml2aws", aur="saml2aws", command="saml2aws"
+    ):
+        return 1
 
     for key, value in SAML2AWS_SETTINGS.items():
         set_ini_value(SAML2AWS_CONFIG_FILE, "default", key, value)
