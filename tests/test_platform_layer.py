@@ -6,6 +6,7 @@ destinations — rather than any one topic's installer.
 """
 
 import importlib.util
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -74,7 +75,7 @@ class EnsurePackageTests(unittest.TestCase):
             ), mock.patch.object(
                 helpers, "pacman_is_installed", return_value=False
             ), mock.patch.object(
-                helpers, "pacman_repo_has", return_value=True
+                helpers, "pacman_repo_of", return_value="extra"
             ), mock.patch.object(
                 helpers, "brew_install", return_value=True
             ) as brew, mock.patch.object(
@@ -87,7 +88,7 @@ class EnsurePackageTests(unittest.TestCase):
                     brew.assert_called_once_with("gh", cask=False)
                     pacman.assert_not_called()
                 else:
-                    pacman.assert_called_once_with("github-cli")
+                    pacman.assert_called_once_with("extra/github-cli")
                     brew.assert_not_called()
 
     def test_aur_fallback_when_the_package_is_in_no_repo(self):
@@ -96,7 +97,7 @@ class EnsurePackageTests(unittest.TestCase):
         ), mock.patch.object(
             helpers, "pacman_is_installed", return_value=False
         ), mock.patch.object(
-            helpers, "pacman_repo_has", return_value=False
+            helpers, "pacman_repo_of", return_value=None
         ), mock.patch.object(
             helpers, "pacman_install"
         ) as pacman, mock.patch.object(
@@ -129,7 +130,7 @@ class EnsurePackageTests(unittest.TestCase):
         ), mock.patch.object(
             helpers, "pacman_is_installed", return_value=False
         ), mock.patch.object(
-            helpers, "pacman_repo_has", return_value=False
+            helpers, "pacman_repo_of", return_value=None
         ), mock.patch.object(helpers, "aur_install", return_value=False):
             self.assertTrue(
                 helpers.ensure_package("ghostty", pacman="ghostty", optional=True)
@@ -143,6 +144,81 @@ class EnsurePackageTests(unittest.TestCase):
                 helpers.ensure_package("jq", brew="jq", pacman="jq", command="jq")
             )
         run.assert_not_called()
+
+
+class PacmanTargetQualificationTests(unittest.TestCase):
+    """Repo targets must be installed as ``<repo>/<package>``.
+
+    A repository can set `Usage` in pacman.conf to exclude `Install`, and
+    Omarchy's own repo does (`Usage = Sync`). Under that setting
+    `pacman -Si 1password` describes the package but `pacman -S
+    1password` fails with "target not found" — only
+    `pacman -S omarchy/1password` works. Installing by bare name made
+    every Omarchy-repo package look absent and fall through to an AUR
+    source build, or fail outright.
+    """
+
+    def setUp(self):
+        helpers.set_dry_run(False)
+
+    def _completed(self, returncode, stdout=""):
+        return subprocess.CompletedProcess([], returncode, stdout=stdout, stderr="")
+
+    def test_repo_is_read_from_pacman_si_output(self):
+        output = (
+            "Repository      : omarchy\n"
+            "Name            : 1password\n"
+            "Version         : 8.12.34-35\n"
+        )
+        with mock.patch.object(
+            helpers.subprocess, "run", return_value=self._completed(0, output)
+        ):
+            self.assertEqual(helpers.pacman_repo_of("1password"), "omarchy")
+
+    def test_unknown_package_has_no_repo(self):
+        with mock.patch.object(
+            helpers.subprocess, "run", return_value=self._completed(1)
+        ):
+            self.assertIsNone(helpers.pacman_repo_of("nope"))
+
+    def test_install_target_carries_the_repo_prefix(self):
+        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
+            helpers, "IS_LINUX", True
+        ), mock.patch.object(
+            helpers, "command_exists", return_value=False
+        ), mock.patch.object(
+            helpers, "pacman_is_installed", return_value=False
+        ), mock.patch.object(
+            helpers, "pacman_repo_of", return_value="omarchy"
+        ), mock.patch.object(
+            helpers, "pacman_install", return_value=True
+        ) as pacman, mock.patch.object(helpers, "aur_install") as aur:
+            self.assertTrue(
+                helpers.ensure_package("1Password app", pacman="1password")
+            )
+        pacman.assert_called_once_with("omarchy/1password")
+        aur.assert_not_called()
+
+    def test_an_aur_name_carried_by_a_repo_skips_the_source_build(self):
+        """Omarchy prebuilds plenty of AUR packages; prefer those."""
+        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
+            helpers, "IS_LINUX", True
+        ), mock.patch.object(
+            helpers, "command_exists", return_value=False
+        ), mock.patch.object(
+            helpers, "pacman_is_installed", return_value=False
+        ), mock.patch.object(
+            helpers,
+            "pacman_repo_of",
+            side_effect=lambda name: "omarchy" if name == "mise-bin" else None,
+        ), mock.patch.object(
+            helpers, "pacman_install", return_value=True
+        ) as pacman, mock.patch.object(helpers, "aur_install") as aur:
+            self.assertTrue(
+                helpers.ensure_package("mise", pacman="mise", aur="mise-bin")
+            )
+        pacman.assert_called_once_with("omarchy/mise-bin")
+        aur.assert_not_called()
 
 
 class BrewWithoutHomebrewTests(unittest.TestCase):

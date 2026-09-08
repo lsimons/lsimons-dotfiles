@@ -42,7 +42,13 @@ ENVIRONMENT_D_FILE = XDG_CONFIG_HOME / 'environment.d' / '10-mise-shims.conf'
 
 
 def install_mise():
-    return ensure_package('mise', brew='mise', pacman='mise', command='mise')
+    # Arch ships `mise` in extra on x86_64 only; Omarchy carries a
+    # prebuilt `mise-bin` for aarch64 in its own repo. ensure_package
+    # checks both names against the configured repos before it would
+    # reach for a source build, so this covers either machine.
+    return ensure_package(
+        'mise', brew='mise', pacman='mise', aur='mise-bin', command='mise'
+    )
 
 
 def shims_path():
