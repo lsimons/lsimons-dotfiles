@@ -2,7 +2,7 @@
 
 Homedir setup for @lsimons (and @lsimons-bot)
 
-A modular dotfiles configuration for macOS, featuring ZSH and Bash support, XDG Base Directory compliance, and 1Password CLI integration for secure secret management.
+A modular dotfiles configuration for macOS and Arch-based Linux ([Omarchy](https://omarchy.org/)), featuring ZSH and Bash support, XDG Base Directory compliance, and 1Password CLI integration for secure secret management.
 
 ## Features
 
@@ -12,7 +12,9 @@ A modular dotfiles configuration for macOS, featuring ZSH and Bash support, XDG 
 - **ZSH configuration** - Clean, modular ZSH setup with Oh My Zsh
 - **Bash configuration** - Modular Bash setup with the same topic-based loading
 - **Python-based installation** - Idempotent installation automation
-- **Homebrew integration** - Automatically installs packages via Homebrew
+- **Cross-platform packaging** - One package name per platform: Homebrew
+  on macOS, pacman/yay on Arch. Topics that only make sense on one
+  platform declare it in a `platforms.txt` and are skipped elsewhere
 - **Development tools** - Includes editors, terminals, CLI tools, and coding agents
 
 ## Quick Start
@@ -20,7 +22,8 @@ A modular dotfiles configuration for macOS, featuring ZSH and Bash support, XDG 
 For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./docs/AGENT_SETUP.md) first.
 For the Windows 11 ARM64 sandbox variant, see [AGENT_WINDOWS_SETUP.md](./docs/AGENT_WINDOWS_SETUP.md) and [windows/README.md](./windows/README.md).
 
-On an existing macOS system with Homebrew:
+On an existing macOS system with Homebrew, or an Arch-based Linux
+(Omarchy) system:
 
 ```bash
 mkdir -p ~/git/lsimons && cd ~/git/lsimons
@@ -31,8 +34,12 @@ source ~/.zshrc
 ```
 
 The installer needs **Python 3.11 or newer**. macOS only ships 3.9 in
-the Command Line Tools, so on a fresh machine run `brew install python`
+the Command Line Tools, so on a fresh Mac run `brew install python`
 first; the installer says so and stops if the interpreter is too old.
+Arch is a rolling release, so its `python` is always new enough.
+
+Installing packages needs root on Linux, so `sudo` may ask for your
+password once — the same way a Homebrew cask does on macOS.
 
 Once mise is installed you can also use `mise run install` (add
 `-- --dry-run` to preview) and `mise run check` for subsequent runs.
@@ -51,12 +58,13 @@ workflow audit — and `mise run ci-watch` follows the real run on GitHub.
 
 The installation script (`./script/install.py`) will:
 
-1. **Install Homebrew** (if not present)
-2. **Install Python** via Homebrew (if not present)
-3. **Create `~/.dotfiles` symlink** pointing to this repository
-4. **Set up XDG directories** (`~/.config`, `~/.local/share`, `~/.cache`, `~/.local/state`)
-5. **Symlink dotfiles** to appropriate locations
-6. **Run topic installers** for development tools:
+1. **Bootstrap the package manager** — Homebrew plus `python@3` on macOS;
+   the `base-devel`/`git`/`python` prerequisites plus `yay` on Arch
+2. **Create `~/.dotfiles` symlink** pointing to this repository
+3. **Set up XDG directories** (`~/.config`, `~/.local/share`, `~/.cache`, `~/.local/state`)
+4. **Symlink dotfiles** to appropriate locations
+5. **Run topic installers** for development tools, skipping any whose
+   `platforms.txt` excludes the current platform:
 
 | Topic | Installs |
 |-------|----------|
@@ -71,16 +79,16 @@ The installation script (`./script/install.py`) will:
 | `colors/` | `pastel` color CLI + docs for theme/palette files across tools |
 | `codex/` | OpenAI Codex CLI and configuration |
 | `copilot/` | GitHub Copilot CLI (git-config-ai routing) |
-| `docker/` | Docker |
-| `dock/` | Pins apps to the macOS Dock via dockutil (runs last) |
+| `docker/` | Rancher Desktop on macOS; the docker engine, compose and buildx on Linux |
+| `dock/` | Pins apps to the macOS Dock via dockutil (runs last). **macOS only** |
 | `gemini/` | Gemini CLI |
 | `fnox/` | fnox (1Password secret injection, via mise) |
 | `fonts/` | Fonts (Cascadia Code, Iosevka, JetBrains Mono, Lilex, Lilex Nerd Font) |
 | `gh/` | GitHub CLI + extensions (`gh stack`) |
 | `glab/` | GitLab CLI (`glab`) |
 | `go/` | Go (via mise) |
-| `ghostty/` | Ghostty terminal |
-| `git/` | Git (via Homebrew) + Git Credential Manager, git-filter-repo, Git LFS (installed and initialized) |
+| `ghostty/` | Ghostty terminal (no aarch64 Linux build — config only there) |
+| `git/` | Git + Git Credential Manager, git-filter-repo, Git LFS (installed and initialized) |
 | `herdr/` | herdr terminal agent multiplexer + LSD Warm Light theme |
 | `jdk/` | OpenJDK (via mise) |
 | `jq/` | jq JSON processor (used by the Claude statusline) |
@@ -88,27 +96,28 @@ The installation script (`./script/install.py`) will:
 | `memex/` | memex agent-transcript search + its herdr plugin |
 | `mise/` | mise (polyglot tool version manager) |
 | `node/` | Node.js (via mise) + pnpm (via corepack) |
-| `oh-my-zsh/` | Oh My Zsh |
+| `oh-my-zsh/` | Oh My Zsh + powerlevel10k |
+| `omarchy/` | LSD Warm Dark/Light Omarchy themes, an extra Hyprland keybinding layer, and Omarchy's default-app selection. **Linux only** |
 | `opencode/` | OpenCode CLI (permissions, model variants, LSD Warm theme, git-config-ai routing) |
 | `openspec/` | openspec |
 | `pi-coding-agent/` | pi-coding-agent (settings, LSD Warm themes, git-config-ai routing) |
 | `python/` | Python (via mise) + XDG config |
-| `quarto/` | Quarto (via Homebrew cask) |
+| `quarto/` | Quarto (Homebrew cask; `quarto-cli-bin` from the AUR) |
 | `ruby/` | Ruby (via mise) |
 | `rust/` | Rust (via mise) + CARGO_HOME |
 | `sh/` | Shared shell configuration (PATH, XDG, settings) |
 | `ssh/` | SSH configuration (post-quantum warning, 1Password agent) |
-| `swiftdialog/` | swiftDialog (via Homebrew cask; skipped if already present, e.g. via MDM) |
-| `terminal/` | macOS Terminal.app "LSD Warm Light" profile (mirrors Ghostty) |
+| `swiftdialog/` | swiftDialog (via Homebrew cask; skipped if already present, e.g. via MDM). **macOS only** |
+| `terminal/` | macOS Terminal.app "LSD Warm Light" profile (mirrors Ghostty). **macOS only** |
 | `terraform/` | tfenv and Terraform |
-| `timeout/` | `timeout` command for macOS (via the `aisk/tap` Homebrew tap) |
+| `timeout/` | `timeout` command for macOS (via the `aisk/tap` Homebrew tap). **macOS only** — Linux coreutils already has it |
 | `tmux/` | tmux |
 | `topgrade/` | topgrade (automated updates) |
 | `uv/` | uv (Python package manager) |
-| `vivaldi/` | Vivaldi Browser |
+| `vivaldi/` | Vivaldi Browser (no aarch64 Linux build) |
 | `wordpress/` | WordPress shell environment |
-| `zed/` | Zed editor |
-| `zsh/` | ZSH directories |
+| `zed/` | Zed editor (`zeditor` on Linux; no aarch64 build — config only there) |
+| `zsh/` | ZSH itself (Arch has no zsh by default) and its directories |
 
 ## For AI Agents
 
@@ -137,10 +146,45 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 - `path.sh` / `path.zsh` / `path.bash` - Loaded first, for PATH configuration
 - `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic-specific installation script
+- `dependencies.txt` - Other topics that must install first, one per line
+- `platforms.txt` - Platforms this topic supports (`macos`, `linux`), one
+  per line. Absent means every platform, which is the usual case
 
 Loading order: shared and shell-specific `path.*` files first, ordinary shared
 and shell-specific files second, then shared and shell-specific `completion.*`
 files.
+
+## Platform Support
+
+macOS and Arch-based Linux, the latter meaning [Omarchy](https://omarchy.org/)
+in practice (its config tree is what the `omarchy/` topic detects). Arch
+derivatives are recognised through `ID_LIKE` in `/etc/os-release`, so Arch
+Linux ARM counts too.
+
+Topic installers should not branch on the platform themselves. Call
+`ensure_package()` from `script/helpers.py` with a package name per
+platform, and let it pick the manager:
+
+```python
+ensure_package("GitHub CLI", brew="gh", pacman="github-cli", command="gh")
+ensure_package("topgrade", brew="topgrade", aur="topgrade", command="topgrade")
+ensure_package("Ghostty", brew="ghostty", cask=True, pacman="ghostty",
+               command="ghostty", optional=True)
+```
+
+`command=` (or `macos_app=`) is the presence probe; `optional=True` turns
+"no package for this platform" and "the install failed" into warnings,
+which is how the topics for software with no aarch64 Linux build —
+Ghostty, Zed, Vivaldi, Quarto — avoid failing the whole run.
+
+Work that is genuinely platform-shaped, rather than just a different
+package name, is the exception and does test `IS_MACOS` / `IS_LINUX`:
+the mise GUI PATH hook (a LaunchAgent vs. a systemd `environment.d`
+drop-in), the 1Password SSH agent socket, and the docker engine.
+
+A whole topic that only belongs on one platform says so in a
+`platforms.txt` instead. `script/install.py` skips the others and drops
+any dependency on a skipped topic.
 
 ## XDG Base Directory Compliance
 
@@ -231,13 +275,27 @@ The installer needs Python 3.11 or newer, and macOS ships 3.9 in the
 Command Line Tools. Install a newer Python and re-run:
 
 ```bash
-brew install python
+brew install python      # macOS
+sudo pacman -S python    # Arch
 ./script/install.py
 ```
 
-On a machine with no Homebrew either, install Homebrew first (see
+On a Mac with no Homebrew either, install Homebrew first (see
 https://brew.sh). The installer does that itself normally, but it cannot
 get that far on Python 3.9.
+
+### A topic was skipped on Linux
+
+Expected for `dock`, `terminal`, `swiftdialog` and `timeout` — see
+Platform Support above. The installer names every topic it skips and
+why.
+
+### Commit signing fails on Linux
+
+Git signs through 1Password's `op-ssh-sign`, which needs the desktop app
+running with the SSH agent enabled (Settings → Developer → Use the SSH
+agent). `~/.ssh/config.agent`, generated by `ssh/install.py`, points ssh
+at `~/.1password/agent.sock`.
 
 ### XDG directories not created
 

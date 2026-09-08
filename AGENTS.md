@@ -2,7 +2,7 @@
 
 > This file (`AGENTS.md`) is the canonical agent configuration. `CLAUDE.md` is a symlink to this file.
 
-Personal dotfiles repository for macOS. Topic-based structure inspired by [holman/dotfiles](https://github.com/holman/dotfiles).
+Personal dotfiles repository for macOS and Arch-based Linux ([Omarchy](https://omarchy.org/)). Topic-based structure inspired by [holman/dotfiles](https://github.com/holman/dotfiles).
 
 ## Quick Reference
 
@@ -44,6 +44,41 @@ Machine-specific config lives in `machines/` as JSON files. Use `get_machine_con
 - `path.sh` / `path.zsh` / `path.bash` - Loaded first (PATH config)
 - `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic installation script
+- `dependencies.txt` - Topics that must install first, one per line
+- `platforms.txt` - Platforms this topic supports (`macos`, `linux`).
+  Absent means every platform
+
+## Platforms
+
+macOS and Arch-based Linux (Omarchy). **Do not branch on the platform
+inside a topic installer.** Use `ensure_package()` from
+`script/helpers.py`, which takes a package name per platform:
+
+```python
+ensure_package("GitHub CLI", brew="gh", pacman="github-cli", command="gh")
+ensure_package("topgrade", brew="topgrade", aur="topgrade", command="topgrade")
+```
+
+- `command=` / `macos_app=` are presence probes, checked before any
+  package manager runs.
+- `aur=` goes through yay; `pacman=` prefers a configured repo and falls
+  back to yay. Omarchy ships an `[aur]` binary repo, so many nominally
+  AUR packages resolve without a build.
+- `optional=True` downgrades "no package for this platform" and "install
+  failed" to warnings. Use it for software with no aarch64 Linux build
+  (Ghostty, Zed, Vivaldi, Quarto), not to paper over a real failure.
+
+`IS_MACOS` / `IS_LINUX` / `IS_ARCH` exist for work that is genuinely
+platform-shaped rather than a renamed package — LaunchAgents vs. systemd
+units, the 1Password agent socket, the Dock. A topic that belongs on one
+platform entirely gets a `platforms.txt` instead.
+
+symlinks.txt lines may carry a `macos:` / `linux:` prefix when a config
+file's destination differs per platform.
+
+When touching `~/.config/hypr` or `~/.config/omarchy` on a Linux machine,
+use the `omarchy` skill. The `omarchy/` topic only adds to Omarchy's own
+config; it never replaces a stock file or writes to `/usr/share/omarchy`.
 
 ## Guidelines
 
@@ -60,7 +95,8 @@ Machine-specific config lives in `machines/` as JSON files. Use `get_machine_con
 **Installation scripts must be:**
 - Idempotent
 - Non-interactive
-- Use Homebrew for packages that aren't language runtimes
+- Use `ensure_package()` for packages that aren't language runtimes
+  (Homebrew on macOS, pacman/yay on Arch)
 - Use `mise use -g <tool>@<version>` for language runtimes and for tools
   that benefit from per-project version pinning (node, python, rust, go,
   ruby, jdk, fnox, etc.)
@@ -75,6 +111,8 @@ newtopic/
 ├── newtopic.zsh          # ZSH-specific config (optional)
 ├── newtopic.bash         # Bash-specific config (optional)
 ├── newtopicrc.symlink    # Config to symlink
+├── dependencies.txt      # Topics to install first (optional)
+├── platforms.txt         # macos / linux (optional; omit for both)
 └── install.py            # Optional installer
 ```
 
