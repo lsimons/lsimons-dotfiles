@@ -308,21 +308,41 @@ def pacman_is_installed(package):
     return result.returncode == 0
 
 
-def pacman_repo_has(package):
-    """Check whether `package` exists in a configured pacman repository.
+def pacman_repo_of(package):
+    """Return the repository holding `package`, or None if no repo has it.
 
-    Omarchy configures an `[aur]` binary repo alongside core/extra, so a
-    good many nominally-AUR packages resolve here and never need yay.
+    Omarchy configures an `[aur]` binary repo alongside core/extra, plus
+    its own `[omarchy]` repo, so a good many nominally-AUR packages
+    resolve here and never need a yay build.
     """
     if _DRY_RUN:
         dry(f"probe pacman repos for '{package}' as absent")
-        return False
-    result = subprocess.run(["pacman", "-Si", package], capture_output=True, check=False)
-    return result.returncode == 0
+        return None
+    result = subprocess.run(
+        ["pacman", "-Si", package], capture_output=True, text=True, check=False
+    )
+    if result.returncode != 0:
+        return None
+    # `pacman -Si` prints one block per repo carrying the name, in
+    # pacman.conf order, each starting with "Repository : <name>". The
+    # first is the one pacman itself would install from.
+    for line in (result.stdout or "").splitlines():
+        key, separator, value = line.partition(":")
+        if separator and key.strip() == "Repository":
+            return value.strip()
+    return None
 
 
-def pacman_install(package):
-    """Install a package from the configured pacman repositories.
+def pacman_install(target):
+    """Install a fully qualified ``<repo>/<package>`` pacman target.
+
+    The repo prefix is not cosmetic. A repository may set `Usage` in
+    pacman.conf to something that excludes `Install`, and Omarchy's own
+    repo does exactly that (`Usage = Sync`): `pacman -S 1password` fails
+    with "target not found" even though `pacman -Si 1password` describes
+    the package, while `pacman -S omarchy/1password` installs it. Passing
+    a bare name would make every Omarchy-repo package look absent and
+    fall through to an AUR source build.
 
     `--needed` makes this idempotent and `--noconfirm` keeps pacman from
     prompting; `sudo` may still ask for a password once per session, the
@@ -331,11 +351,11 @@ def pacman_install(package):
     Returns True on success, False on failure.
     """
     if _DRY_RUN:
-        dry(f"would pacman -S {package}")
+        dry(f"would pacman -S {target}")
         return True
     try:
         subprocess.run(
-            ["sudo", "pacman", "-S", "--needed", "--noconfirm", package], check=True
+            ["sudo", "pacman", "-S", "--needed", "--noconfirm", target], check=True
         )
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -376,14 +396,23 @@ def aur_install(package):
 
 
 def _linux_install(pacman=None, aur=None):
-    """Install an Arch package, preferring a repo copy over an AUR build."""
-    if pacman and pacman_repo_has(pacman):
-        return pacman_install(pacman)
+    """Install an Arch package, preferring a repo copy over an AUR build.
+
+    Both candidate names are checked against the repos first: Omarchy
+    ships prebuilt copies of plenty of nominally-AUR packages, and taking
+    one of those beats spending minutes on a source build.
+    """
+    for name in (pacman, aur):
+        if not name:
+            continue
+        repo = pacman_repo_of(name)
+        if repo:
+            return pacman_install(f"{repo}/{name}")
     if aur:
         return aur_install(aur)
     if pacman:
-        # Not in any configured repo, and no separate AUR name was given.
-        # yay can still find it in the AUR under the same name.
+        # In no configured repo, and no separate AUR name was given. yay
+        # can still find it in the AUR under the same name.
         return aur_install(pacman)
     return False
 
