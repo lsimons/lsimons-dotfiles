@@ -9,11 +9,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
+    IS_MACOS,
     SKILLS_DIR,
-    brew_install,
-    brew_is_installed,
     command_exists,
     dry,
+    ensure_package,
     error,
     get_machine_config,
     info,
@@ -34,6 +34,7 @@ from helpers import (
 # scrollback holds the residue rather than the conversation.
 CLAUDE_HISTORY_TAP = "raine/claude-history"
 CLAUDE_HISTORY_FORMULA = "raine/claude-history/claude-history"
+CLAUDE_HISTORY_AUR = "claude-history"
 
 
 def write_settings(claude_dir, topic_dir):
@@ -142,26 +143,31 @@ def install_mcp_servers(topic_dir):
 
 
 def install_claude_history():
-    """Install the claude-history TUI from its Homebrew tap.
+    """Install the claude-history TUI (Homebrew tap on macOS, AUR on Arch).
 
     Homebrew refuses to load untrusted third-party taps, so `brew trust`
-    is required before installing the formula.
+    is required before installing the formula. Optional on both platforms:
+    it is a convenience TUI, not something the rest of the setup needs.
     """
-    if brew_is_installed(CLAUDE_HISTORY_FORMULA):
+    if command_exists("claude-history"):
         success("claude-history already installed")
         return
 
-    try:
-        run_cmd(["brew", "tap", CLAUDE_HISTORY_TAP])
-        run_cmd(["brew", "trust", "--tap", CLAUDE_HISTORY_TAP])
-    except subprocess.CalledProcessError:
-        warn(f"Failed to tap {CLAUDE_HISTORY_TAP}; skipping claude-history")
-        return
+    if IS_MACOS and not is_dry_run():
+        try:
+            run_cmd(["brew", "tap", CLAUDE_HISTORY_TAP])
+            run_cmd(["brew", "trust", "--tap", CLAUDE_HISTORY_TAP])
+        except subprocess.CalledProcessError:
+            warn(f"Failed to tap {CLAUDE_HISTORY_TAP}; skipping claude-history")
+            return
 
-    if brew_install(CLAUDE_HISTORY_FORMULA):
-        success("claude-history installed")
-    else:
-        warn("Failed to install claude-history")
+    ensure_package(
+        "claude-history",
+        brew=CLAUDE_HISTORY_FORMULA,
+        aur=CLAUDE_HISTORY_AUR,
+        command="claude-history",
+        optional=True,
+    )
 
 
 def main():

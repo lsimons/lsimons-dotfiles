@@ -14,10 +14,15 @@ if [ -d "$ZSH" ]; then
     # Plugin configuration
     plugins=(
         git
-        brew
-        macos
         uv
     )
+
+    # brew and macos are macOS-only plugins: the macos plugin defines
+    # aliases around Finder/Quick Look/pbcopy, and the brew plugin's
+    # completions error out with no brew on PATH.
+    if [[ "$OSTYPE" == darwin* ]]; then
+        plugins+=(brew macos)
+    fi
 
     # Disable auto-update prompts (use topgrade instead)
     zstyle ':omz:update' mode disabled

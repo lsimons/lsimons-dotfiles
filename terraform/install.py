@@ -7,8 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
-    brew_install,
-    brew_is_installed,
+    ensure_package,
     error,
     info,
     parse_dry_run,
@@ -21,14 +20,10 @@ def main():
     parse_dry_run()
     info("Installing tfenv and Terraform...")
 
-    if brew_is_installed('tfenv'):
-        success("tfenv already installed")
-    else:
-        info("Installing tfenv via Homebrew...")
-        if not brew_install('tfenv'):
-            error("Failed to install tfenv")
-            return 1
-        success("tfenv installed")
+    if not ensure_package(
+        'tfenv', brew='tfenv', aur='tfenv', command='tfenv'
+    ):
+        return 1
 
     info("Installing latest stable Terraform...")
     try:

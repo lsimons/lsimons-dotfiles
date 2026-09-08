@@ -3,12 +3,19 @@
 Installation script for lsimons-dotfiles
 This script is safe to run multiple times (idempotent)
 
+Supports macOS and Arch-based Linux (Omarchy).
+
 Steps:
-1. Install Homebrew (if not present)
-2. Install Python via Homebrew (if not present)
-3. Create ~/.dotfiles symlink
-4. Setup XDG directories
-5. Run topic-specific installation scripts (each installs its own symlinks)
+1. Bootstrap the platform package manager and a modern Python
+   (Homebrew + python@3 on macOS; pacman prerequisites + yay on Arch)
+2. Create ~/.dotfiles symlink
+3. Setup XDG directories
+4. Run topic-specific installation scripts (each installs its own symlinks)
+
+Topics that only make sense on one platform declare that in a
+``platforms.txt`` file next to their ``install.py``; topics without one
+run everywhere. Unsupported topics are skipped, and any dependency on a
+skipped topic is dropped rather than treated as an error.
 
 Pass --dry-run to preview without touching the system. The flag is
 propagated to each topic installer.
@@ -17,6 +24,7 @@ propagated to each topic installer.
 import argparse
 import os
 import platform
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -33,20 +41,33 @@ from pathlib import Path
 # and can report the problem.
 MIN_PYTHON = (3, 11)
 if sys.version_info < MIN_PYTHON:
+    if platform.system() == 'Darwin':
+        _hint = (
+            "Install a newer Python first, then re-run this script:\n"
+            "  brew install python\n"
+            "If Homebrew is not installed yet either, install it first -- see\n"
+            "https://brew.sh. This script installs Homebrew itself, but cannot\n"
+            "get far enough to do so on this interpreter.\n"
+        )
+    else:
+        _hint = (
+            "Install a newer Python first, then re-run this script:\n"
+            "  sudo pacman -S python\n"
+        )
     sys.stderr.write(
         f"lsimons-dotfiles needs Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]} or newer, "
         f"but this is {platform.python_version()}.\n"
         f"  interpreter: {sys.executable}\n"
-        "Install a newer Python first, then re-run this script:\n"
-        "  brew install python\n"
-        "If Homebrew is not installed yet either, install it first -- see\n"
-        "https://brew.sh. This script installs Homebrew itself, but cannot\n"
-        "get far enough to do so on this interpreter.\n"
+        + _hint
     )
     raise SystemExit(1)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from helpers import (
+    IS_ARCH,
+    IS_LINUX,
+    IS_MACOS,
+    PLATFORM,
     dry,
     is_dry_run,
     set_dry_run,
@@ -111,26 +132,39 @@ def run_command(cmd, check=True, capture_output=False, shell=False):
         return e
 
 
-def check_macos():
-    """Verify we're running on macOS"""
-    if platform.system() != 'Darwin':
-        warn("This installation is designed for macOS")
-        warn(f"Detected: {platform.system()}")
-        if is_dry_run():
-            dry("non-macOS platform OK for dry-run")
-            return
-        response = input("Continue anyway? (y/N): ")
-        if response.lower() != 'y':
-            info("Installation cancelled")
-            sys.exit(0)
-    else:
+def check_platform():
+    """Verify we're on a supported platform (macOS or Arch-based Linux).
+
+    Anything else still installs — the config-only topics are portable —
+    but the package-installing ones have no package manager to reach for,
+    so confirm first. In dry-run mode nothing is confirmed, because CI
+    runs this on an Ubuntu runner that is deliberately neither.
+    """
+    if IS_MACOS:
         success("Running on macOS")
+        return
+    if IS_LINUX:
+        if IS_ARCH:
+            success("Running on Arch-based Linux")
+            return
+        warn("This is Linux, but not an Arch derivative")
+        warn("Topics that install packages expect pacman/yay and will fail")
+    else:
+        warn("These dotfiles target macOS and Arch-based Linux")
+        warn(f"Detected: {platform.system()}")
+
+    if is_dry_run():
+        dry(f"unsupported platform '{PLATFORM}' OK for dry-run")
+        return
+    response = input("Continue anyway? (y/N): ")
+    if response.lower() != 'y':
+        info("Installation cancelled")
+        sys.exit(0)
 
 
 def check_homebrew():
     """Check if Homebrew is installed"""
-    result = run_command(['which', 'brew'], check=False, capture_output=True)
-    return result.returncode == 0
+    return shutil.which('brew') is not None
 
 
 def install_homebrew():
@@ -143,10 +177,7 @@ def install_homebrew():
 
     if check_homebrew():
         success("Homebrew is already installed")
-        # Get brew path
-        result = run_command(['which', 'brew'], capture_output=True)
-        brew_path = result.stdout.strip()
-        info(f"Homebrew location: {brew_path}")
+        info(f"Homebrew location: {shutil.which('brew')}")
         return True
 
     info("Installing Homebrew...")
@@ -235,6 +266,95 @@ def get_homebrew_python():
     return str(Path(result.stdout.strip()) / 'bin' / 'python3')
 
 
+# Packages every Arch install needs before the first topic installer runs:
+# base-devel and git are what yay needs to build anything from the AUR, and
+# python is the interpreter the topic installers run under.
+LINUX_BOOTSTRAP_PACKAGES = ['base-devel', 'git', 'python']
+
+
+def pacman_has(package):
+    """True if `package` is installed locally (pacman -Qi)."""
+    result = run_command(
+        ['pacman', '-Qi', package], check=False, capture_output=True
+    )
+    return result.returncode == 0
+
+
+def bootstrap_linux():
+    """Install the pacman prerequisites and yay, the AUR helper.
+
+    Unlike the macOS bootstrap this cannot install its own package
+    manager: pacman comes with the distro. A non-Arch Linux is therefore
+    a warning rather than a failure — config-only topics still work
+    there, which is what keeps `--dry-run` meaningful on the CI runner.
+    """
+    info("Checking Arch package prerequisites...")
+
+    if is_dry_run():
+        dry("assume pacman prerequisites and yay are installed; skipping bootstrap")
+        return True
+
+    if shutil.which('pacman') is None:
+        warn("pacman not found; skipping the Arch package bootstrap")
+        warn("Topics that install packages will fail on this system")
+        return True
+
+    missing = [pkg for pkg in LINUX_BOOTSTRAP_PACKAGES if not pacman_has(pkg)]
+    if missing:
+        info(f"Installing prerequisites: {', '.join(missing)}")
+        try:
+            run_command(
+                ['sudo', 'pacman', '-S', '--needed', '--noconfirm', *missing]
+            )
+        except subprocess.CalledProcessError:
+            error("Failed to install Arch prerequisites")
+            return False
+        success("Arch prerequisites installed")
+    else:
+        success("Arch prerequisites already installed")
+
+    if shutil.which('yay') is not None:
+        success("yay already installed")
+        return True
+
+    info("Installing yay (AUR helper)...")
+    try:
+        run_command(['sudo', 'pacman', '-S', '--needed', '--noconfirm', 'yay'])
+        success("yay installed")
+    except subprocess.CalledProcessError:
+        warn("Could not install yay from a configured repository")
+        warn("AUR-only packages will fail; see https://github.com/Jguer/yay")
+
+    return True
+
+
+def bootstrap_platform():
+    """Install the platform package manager and a modern Python.
+
+    Returns the interpreter path the topic installers should run under,
+    or None if the bootstrap failed.
+    """
+    if IS_MACOS:
+        if not install_homebrew():
+            error("Homebrew installation failed. Cannot continue.")
+            return None
+        if not install_python():
+            error("Python installation failed. Cannot continue.")
+            return None
+        return get_homebrew_python()
+
+    if IS_LINUX:
+        if not bootstrap_linux():
+            return None
+        # pacman's `python` is current (Arch is a rolling release) and the
+        # guard at the top of this file has already vetted this
+        # interpreter, so there is nothing to install a newer one *for*.
+        return sys.executable
+
+    warn(f"No package-manager bootstrap for platform '{PLATFORM}'")
+    return sys.executable
+
+
 def create_dotfiles_symlink(dotfiles_root):
     """Create ~/.dotfiles symlink if it doesn't already exist"""
     home = Path.home()
@@ -309,18 +429,40 @@ def setup_xdg():
 FINAL_TOPICS = ['dock']
 
 
-def get_topic_dependencies(topic_dir):
-    """Read dependencies from a topic's dependencies.txt file"""
-    deps_file = topic_dir / 'dependencies.txt'
-    if not deps_file.exists():
+def _read_list_file(path):
+    """Read a one-entry-per-line config file, ignoring blanks and comments."""
+    if not path.exists():
         return []
-
-    dependencies = []
-    for line in deps_file.read_text().strip().split('\n'):
+    entries = []
+    for line in path.read_text().strip().split('\n'):
         line = line.strip()
         if line and not line.startswith('#'):
-            dependencies.append(line)
-    return dependencies
+            entries.append(line)
+    return entries
+
+
+def get_topic_dependencies(topic_dir):
+    """Read dependencies from a topic's dependencies.txt file"""
+    return _read_list_file(topic_dir / 'dependencies.txt')
+
+
+def get_topic_platforms(topic_dir):
+    """Read the platforms a topic supports from its platforms.txt file.
+
+    Returns None when the file is absent, which means "every platform" —
+    that is the case for the large majority of topics, so only the ones
+    that are genuinely platform-bound need to say anything.
+    """
+    platforms_file = topic_dir / 'platforms.txt'
+    if not platforms_file.exists():
+        return None
+    return set(_read_list_file(platforms_file))
+
+
+def topic_supported(topic_dir):
+    """True if this topic should be installed on the current platform."""
+    platforms = get_topic_platforms(topic_dir)
+    return platforms is None or PLATFORM in platforms
 
 
 def topological_sort(topics, dependencies):
@@ -380,6 +522,7 @@ def run_topic_installers(dotfiles_root, python_path):
 
     topics = {}  # topic_name -> install_script_path
     dependencies = {}  # topic_name -> list of dependencies
+    skipped = []  # topic names excluded on this platform
 
     # Find all install.py scripts and their dependencies
     for topic_dir in dotfiles_root.iterdir():
@@ -391,8 +534,31 @@ def run_topic_installers(dotfiles_root, python_path):
             install_py = topic_dir / 'install.py'
             if install_py.exists():
                 topic_name = topic_dir.name
+                if not topic_supported(topic_dir):
+                    skipped.append(topic_name)
+                    continue
                 topics[topic_name] = install_py
                 dependencies[topic_name] = get_topic_dependencies(topic_dir)
+
+    if skipped:
+        info(
+            f"Skipping {len(skipped)} topic(s) not supported on {PLATFORM}: "
+            f"{', '.join(sorted(skipped))}"
+        )
+
+    # A dependency on a topic that is skipped on this platform is not an
+    # error: the dependent topic just loses an ordering constraint it no
+    # longer needs. Dropping it here keeps topological_sort's genuine
+    # "depends on a topic that does not exist" check meaningful.
+    skipped_set = set(skipped)
+    for topic_name, deps in dependencies.items():
+        dropped = [dep for dep in deps if dep in skipped_set]
+        if dropped:
+            info(
+                f"{topic_name}: dropping dependency on "
+                f"{', '.join(sorted(dropped))} (skipped on {PLATFORM})"
+            )
+            dependencies[topic_name] = [d for d in deps if d not in skipped_set]
 
     if not topics:
         info("No topic install.py scripts found")
@@ -431,8 +597,12 @@ def run_final_topics(dotfiles_root, python_path):
     child_args = ['--dry-run'] if is_dry_run() else []
 
     for topic in FINAL_TOPICS:
-        script = dotfiles_root / topic / 'install.py'
+        topic_dir = dotfiles_root / topic
+        script = topic_dir / 'install.py'
         if not script.exists():
+            continue
+        if not topic_supported(topic_dir):
+            info(f"Skipping final topic {topic}: not supported on {PLATFORM}")
             continue
         info(f"Running final installer for: {topic}")
         try:
@@ -470,33 +640,25 @@ def main():
     dotfiles_root = script_dir.parent.resolve()
     info(f"Dotfiles root: {dotfiles_root}")
 
-    # Step 1: Check macOS
-    check_macos()
+    # Step 1: Check the platform
+    check_platform()
 
-    # Step 2: Install Homebrew
-    if not install_homebrew():
-        error("Homebrew installation failed. Cannot continue.")
+    # Step 2: Bootstrap the package manager and a modern Python
+    python_path = bootstrap_platform()
+    if python_path is None:
         sys.exit(1)
-
-    # Step 3: Install Python
-    if not install_python():
-        error("Python installation failed. Cannot continue.")
-        sys.exit(1)
-
-    # Step 4: Get Homebrew Python path
-    python_path = get_homebrew_python()
     success(f"Using Python: {python_path}")
 
-    # Step 5: Create ~/.dotfiles symlink
+    # Step 3: Create ~/.dotfiles symlink
     info("=" * 50)
     if not create_dotfiles_symlink(dotfiles_root):
         error("Failed to create ~/.dotfiles symlink")
         sys.exit(1)
 
-    # Step 6: Setup XDG directories
+    # Step 4: Setup XDG directories
     setup_xdg()
 
-    # Step 7: Add mise shims to PATH so topic installers can find mise-managed
+    # Step 5: Add mise shims to PATH so topic installers can find mise-managed
     # tools (e.g. npm) even before the shell config topics have been sourced.
     xdg_data_home = Path(os.environ.get('XDG_DATA_HOME', Path.home() / '.local/share'))
     mise_shims = str(xdg_data_home / 'mise' / 'shims')
@@ -504,13 +666,13 @@ def main():
         os.environ['PATH'] = f"{mise_shims}:{os.environ['PATH']}"
         info(f"Added mise shims to PATH: {mise_shims}")
 
-    # Step 8: Run topic installers (each installs its own .symlink files)
+    # Step 6: Run topic installers (each installs its own .symlink files)
     info("=" * 50)
     if not run_topic_installers(dotfiles_root, python_path):
         error("Some topic installations failed")
         sys.exit(1)
 
-    # Step 9: Run final topics (e.g. dock) after everything else
+    # Step 7: Run final topics (e.g. dock) after everything else
     if not run_final_topics(dotfiles_root, python_path):
         error("Some topic installations failed")
         sys.exit(1)
@@ -523,8 +685,11 @@ def main():
         success("Installation complete!")
         info("")
         info("Next steps:")
-        info("  1. Run 'source ~/.zshrc' to load the configuration")
+        info("  1. Restart your shell (or 'source ~/.zshrc') to load the config")
         info("  2. Configure 1Password CLI for secret management")
+        if IS_LINUX:
+            info("  3. Enable the 1Password SSH agent in the desktop app's")
+            info("     Developer settings, so git commit signing works")
 
 
 if __name__ == '__main__':

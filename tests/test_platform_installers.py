@@ -1,4 +1,4 @@
-"""Focused tests for macOS installer failure and first-run behavior."""
+"""Focused tests for platform-specific installer failure and first-run behavior."""
 
 import importlib.util
 import subprocess
@@ -59,19 +59,52 @@ class MiseInstallerTests(unittest.TestCase):
             mise_installer, "install_mise", return_value=True
         ), mock.patch.object(
             mise_installer, "ensure_minimum_release_age", return_value=False
-        ), mock.patch.object(mise_installer, "install_launch_agent") as launch:
+        ), mock.patch.object(mise_installer, "install_gui_path_hook") as hook:
             self.assertEqual(mise_installer.main(), 1)
-            launch.assert_not_called()
+            hook.assert_not_called()
 
-    def test_platform_mise_main_propagates_launch_agent_failure(self):
+    def test_platform_mise_main_propagates_gui_path_hook_failure(self):
         with mock.patch.object(mise_installer, "parse_dry_run"), mock.patch.object(
             mise_installer, "install_mise", return_value=True
         ), mock.patch.object(
             mise_installer, "ensure_minimum_release_age", return_value=True
         ), mock.patch.object(
-            mise_installer, "install_launch_agent", return_value=False
+            mise_installer, "install_gui_path_hook", return_value=False
         ):
             self.assertEqual(mise_installer.main(), 1)
+
+    def test_platform_mise_gui_path_hook_dispatches_per_platform(self):
+        """macOS gets the LaunchAgent, Linux the environment.d drop-in."""
+        for is_macos, expected, other in (
+            (True, "install_launch_agent", "install_environment_d"),
+            (False, "install_environment_d", "install_launch_agent"),
+        ):
+            with self.subTest(macos=is_macos), mock.patch.object(
+                mise_installer, "IS_MACOS", is_macos
+            ), mock.patch.object(
+                mise_installer, "IS_LINUX", not is_macos
+            ), mock.patch.object(
+                mise_installer, expected, return_value=True
+            ) as chosen, mock.patch.object(mise_installer, other) as skipped:
+                self.assertTrue(mise_installer.install_gui_path_hook())
+                chosen.assert_called_once()
+                skipped.assert_not_called()
+
+    def test_platform_mise_environment_d_prepends_to_existing_path(self):
+        """The drop-in must extend systemd's PATH, not replace it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "environment.d" / "10-mise-shims.conf"
+            with mock.patch.object(
+                mise_installer, "ENVIRONMENT_D_FILE", target
+            ), mock.patch.object(mise_installer, "is_dry_run", return_value=False):
+                self.assertTrue(mise_installer.install_environment_d())
+                first = target.read_text()
+                # Second run must be a no-op, not a duplicated entry.
+                self.assertTrue(mise_installer.install_environment_d())
+
+        self.assertIn("mise/shims", first)
+        self.assertTrue(first.rstrip().endswith(":${PATH}"))
+        self.assertEqual(first.count("PATH="), 1)
 
 
 class PrerequisiteGuardTests(unittest.TestCase):

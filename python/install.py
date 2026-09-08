@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Install Python.
 
-Installs python@3 via Homebrew so other Homebrew packages that depend on it
-continue to work. Then installs Python via mise so mise shims take precedence
-in interactive shells, giving the user the mise-managed version.
+Installs the distribution's Python (Homebrew's python@3 on macOS, pacman's
+python on Arch) so other native packages that depend on it keep working.
+Then installs Python via mise so mise shims take precedence in interactive
+shells, giving the user the mise-managed version.
 """
 
 import sys
@@ -11,9 +12,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
-    brew_install,
-    brew_is_installed,
     command_exists,
+    ensure_package,
     error,
     info,
     install_symlinks,
@@ -24,18 +24,8 @@ from helpers import (
 )
 
 
-def install_homebrew_python():
-    if brew_is_installed('python@3'):
-        info("Homebrew python@3 already installed")
-        return True
-
-    info("Installing python@3 via Homebrew...")
-    if not brew_install('python@3'):
-        error("Failed to install python@3 via Homebrew")
-        return False
-
-    success("Homebrew python@3 installed")
-    return True
+def install_system_python():
+    return ensure_package('System Python', brew='python@3', pacman='python')
 
 
 def install_mise_python():
@@ -56,7 +46,7 @@ def main():
     parse_dry_run()
     install_symlinks(Path(__file__).resolve().parent)
 
-    if not install_homebrew_python():
+    if not install_system_python():
         return 1
     if not install_mise_python():
         return 1

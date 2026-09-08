@@ -5,27 +5,17 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
-from helpers import (
-    brew_install,
-    command_exists,
-    error,
-    info,
-    install_symlinks,
-    parse_dry_run,
-    success,
-)
+from helpers import ensure_package, info, install_symlinks, parse_dry_run
 
 
 def main():
     parse_dry_run()
     info("Installing topgrade...")
 
-    if command_exists('topgrade'):
-        success("topgrade already installed")
-    elif brew_install('topgrade'):
-        success("topgrade installed")
-    else:
-        error("Failed to install topgrade")
+    # No Arch repo carries topgrade; it is an AUR build.
+    if not ensure_package(
+        'topgrade', brew='topgrade', aur='topgrade', command='topgrade'
+    ):
         return 1
 
     if not install_symlinks(Path(__file__).resolve().parent):
