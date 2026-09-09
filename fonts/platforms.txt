@@ -1,0 +1,4 @@
+# Needs a graphical session of its own: skipped under WSL, where the
+# Windows host owns the desktop.
+macos
+linux-desktop

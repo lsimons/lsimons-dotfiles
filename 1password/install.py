@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
+    IS_WSL,
     XDG_CONFIG_HOME,
     chmod,
     dry,
@@ -112,19 +113,26 @@ def main():
     get_machine_config()
 
     migrate_legacy_config_dir()
-    install_1password_ssh_agent_config()
 
-    # Omarchy carries both of these in its own pacman repo, prebuilt for
-    # aarch64, so neither needs the AUR.
-    if not ensure_package(
-        "1Password app",
-        brew="1password",
-        cask=True,
-        macos_app="1Password",
-        pacman="1password",
-        apt="1password",
-    ):
-        return 1
+    # Under WSL the 1Password app runs on the Windows host, so neither the
+    # Linux app nor agent.toml (which only that app reads) belongs here;
+    # the CLI still does.
+    if IS_WSL:
+        info("WSL: the Windows host runs the 1Password app; skipping app and agent.toml")
+    else:
+        install_1password_ssh_agent_config()
+
+        # Omarchy carries both of these in its own pacman repo, prebuilt
+        # for aarch64, so neither needs the AUR.
+        if not ensure_package(
+            "1Password app",
+            brew="1password",
+            cask=True,
+            macos_app="1Password",
+            pacman="1password",
+            apt="1password",
+        ):
+            return 1
 
     if not ensure_package(
         "1Password CLI",

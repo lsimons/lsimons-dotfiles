@@ -1,3 +1,3 @@
 # Omarchy is an Arch-based Linux desktop; there is nothing here to install
 # on macOS.
-linux
+linux-desktop

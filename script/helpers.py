@@ -120,6 +120,13 @@ def _running_in_wsl(proc_version=Path("/proc/version")):
 # consult this rather than the distro flags.
 IS_WSL = IS_LINUX and _running_in_wsl()
 
+# Every platforms.txt value this host satisfies. `linux-desktop` is a
+# Linux with a graphical session of its own; WSL has none, so a desktop
+# topic lists `linux-desktop` rather than `linux` and is skipped there.
+HOST_PLATFORMS = {PLATFORM}
+if IS_LINUX and not IS_WSL:
+    HOST_PLATFORMS.add("linux-desktop")
+
 # Omarchy ships its own config tree; its presence is what distinguishes
 # "an Arch box" from "the Omarchy desktop" for topics that theme it.
 OMARCHY_ROOT = XDG_CONFIG_HOME / "omarchy"

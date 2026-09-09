@@ -45,8 +45,10 @@ Machine-specific config lives in `machines/` as JSON files. Use `get_machine_con
 - `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic installation script
 - `dependencies.txt` - Topics that must install first, one per line
-- `platforms.txt` - Platforms this topic supports (`macos`, `linux`).
-  Absent means every platform
+- `platforms.txt` - Platforms this topic supports: `macos`, `linux`, or
+  `linux-desktop` for a Linux with its own graphical session (excludes
+  WSL, where the Windows host owns the desktop). Absent means every
+  platform
 
 ## Platforms
 
@@ -82,7 +84,8 @@ ensure_package("topgrade", brew="topgrade", aur="topgrade", mise="topgrade", com
 work that is genuinely platform-shaped rather than a renamed package —
 LaunchAgents vs. systemd units, the 1Password agent socket, the Dock. A
 topic that belongs on one platform entirely gets a `platforms.txt`
-instead.
+instead; a desktop topic (editor, browser, fonts, Omarchy theming) lists
+`linux-desktop` rather than `linux` so it stays off WSL.
 
 symlinks.txt lines may carry a `macos:` / `linux:` prefix when a config
 file's destination differs per platform.

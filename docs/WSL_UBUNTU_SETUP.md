@@ -109,12 +109,15 @@ Landed in `script/helpers.py` / `script/install.py`:
 
 ### 3. WSL-specific behaviour
 
-- Skip desktop topics when `IS_WSL`: `zed`, `ghostty`, `vivaldi`, `fonts`,
-  `1password` desktop app, `omarchy`, `dock`. The Windows host owns those.
-  Either a `platforms.txt` value distinguishing `linux` from `linux-desktop`,
-  or an `IS_WSL` gate in `check_platform()`. Prefer whichever keeps
-  `platforms.txt` declarative.
-- `1password/`: install only `op` CLI. For desktop-app integration (biometric
+- Desktop topics: **done**. `platforms.txt` gained a `linux-desktop` value
+  (a Linux with its own graphical session); `HOST_PLATFORMS` in
+  `helpers.py` includes it on Linux unless `IS_WSL`. `zed`, `ghostty`,
+  `vivaldi`, `fonts` now list `macos` + `linux-desktop`, `omarchy` lists
+  `linux-desktop`, so all five are skipped under WSL (`dock` was macOS-only
+  already). `1password/install.py` skips the app and `agent.toml` when
+  `IS_WSL` and installs only the CLI; that is the one `IS_WSL` gate inside a
+  topic, because the CLI is still wanted there.
+- `1password/`: install only `op` CLI (done, see above). For desktop-app integration (biometric
   unlock) the Linux `op` cannot talk to the Windows app; alias `op` to
   `op.exe` (on PATH via `/mnt/c/...` interop) when `IS_WSL`. Affects
   `op_read_command()` and `ssh/install.py:op_write_secret()`.
@@ -153,7 +156,7 @@ Once `IS_DEBIAN` exists it can run a real install of a few cheap topics
    (non-dry) install of `jq`, `tmux`, `zsh`, `git` topics as the smoke test:
    pending (needs sudo).
 3. Package mapping topic by topic, mise-first.
-4. WSL gating of desktop topics.
+4. WSL gating of desktop topics: **done 2026-09-09**.
 5. 1Password agent bridge.
 6. CI + docs.
 

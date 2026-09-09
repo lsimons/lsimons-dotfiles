@@ -15,9 +15,11 @@ Steps:
 4. Run topic-specific installation scripts (each installs its own symlinks)
 
 Topics that only make sense on one platform declare that in a
-``platforms.txt`` file next to their ``install.py``; topics without one
-run everywhere. Unsupported topics are skipped, and any dependency on a
-skipped topic is dropped rather than treated as an error.
+``platforms.txt`` file next to their ``install.py`` (values: ``macos``,
+``linux``, ``linux-desktop`` for a Linux with its own graphical session,
+which excludes WSL); topics without one run everywhere. Unsupported
+topics are skipped, and any dependency on a skipped topic is dropped
+rather than treated as an error.
 
 Pass --dry-run to preview without touching the system. The flag is
 propagated to each topic installer.
@@ -68,6 +70,7 @@ if sys.version_info < MIN_PYTHON:
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from helpers import (
+    HOST_PLATFORMS,
     IS_ARCH,
     IS_DEBIAN,
     IS_LINUX,
@@ -658,7 +661,7 @@ def get_topic_platforms(topic_dir):
 def topic_supported(topic_dir):
     """True if this topic should be installed on the current platform."""
     platforms = get_topic_platforms(topic_dir)
-    return platforms is None or PLATFORM in platforms
+    return platforms is None or bool(platforms & HOST_PLATFORMS)
 
 
 def topological_sort(topics, dependencies):

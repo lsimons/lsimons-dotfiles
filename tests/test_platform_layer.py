@@ -400,10 +400,32 @@ class TopicPlatformTests(unittest.TestCase):
             topic = Path(tmp)
             (topic / "platforms.txt").write_text("# only on a Mac\nmacos\n")
             self.assertEqual(installer.get_topic_platforms(topic), {"macos"})
-            with mock.patch.object(installer, "PLATFORM", "macos"):
+            with mock.patch.object(installer, "HOST_PLATFORMS", {"macos"}):
                 self.assertTrue(installer.topic_supported(topic))
-            with mock.patch.object(installer, "PLATFORM", "linux"):
+            with mock.patch.object(installer, "HOST_PLATFORMS", {"linux", "linux-desktop"}):
                 self.assertFalse(installer.topic_supported(topic))
+
+    def test_linux_desktop_topics_are_skipped_under_wsl(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            topic = Path(tmp)
+            (topic / "platforms.txt").write_text("macos\nlinux-desktop\n")
+            with mock.patch.object(installer, "HOST_PLATFORMS", {"linux", "linux-desktop"}):
+                self.assertTrue(installer.topic_supported(topic))
+            with mock.patch.object(installer, "HOST_PLATFORMS", {"linux"}):
+                self.assertFalse(installer.topic_supported(topic))
+
+    def test_repo_desktop_topics_are_declared(self):
+        """The Windows host owns the editor, browser, fonts and desktop
+        theming under WSL, so these must never run there."""
+        for name in ("zed", "ghostty", "vivaldi", "fonts"):
+            with self.subTest(topic=name):
+                self.assertEqual(
+                    installer.get_topic_platforms(REPO_ROOT / name),
+                    {"macos", "linux-desktop"},
+                )
+        self.assertEqual(
+            installer.get_topic_platforms(REPO_ROOT / "omarchy"), {"linux-desktop"}
+        )
 
     def test_repo_macos_only_topics_are_declared(self):
         """These topics drive Dock/Terminal.app/swiftDialog or replace a

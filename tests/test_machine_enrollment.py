@@ -220,18 +220,44 @@ class OnePasswordInstallerEnrollmentTests(unittest.TestCase):
             mock.patch.object(
                 onepassword, "get_machine_config", return_value=(machine, "known-laptop")
             ),
+            mock.patch.object(onepassword, "IS_WSL", False),
             mock.patch.object(onepassword, "migrate_legacy_config_dir") as migrate,
             mock.patch.object(
                 onepassword, "install_1password_ssh_agent_config"
             ) as install_agent,
             mock.patch("pathlib.Path.exists", return_value=True),
-            mock.patch.object(onepassword, "ensure_package", return_value=True),
+            mock.patch.object(onepassword, "ensure_package", return_value=True) as ensure,
         ):
             result = onepassword.main()
 
         self.assertEqual(result, 0)
         migrate.assert_called_once()
         install_agent.assert_called_once()
+        self.assertEqual(
+            [call.args[0] for call in ensure.call_args_list],
+            ["1Password app", "1Password CLI"],
+        )
+
+    def test_main_installs_only_the_cli_under_wsl(self):
+        """The Windows host runs the app, so WSL gets neither it nor agent.toml."""
+        machine = {"ssh": {"keys": []}}
+        with (
+            mock.patch.object(
+                onepassword, "get_machine_config", return_value=(machine, "poppy")
+            ),
+            mock.patch.object(onepassword, "IS_WSL", True),
+            mock.patch.object(onepassword, "migrate_legacy_config_dir"),
+            mock.patch.object(
+                onepassword, "install_1password_ssh_agent_config"
+            ) as install_agent,
+            mock.patch("pathlib.Path.exists", return_value=True),
+            mock.patch.object(onepassword, "ensure_package", return_value=True) as ensure,
+        ):
+            result = onepassword.main()
+
+        self.assertEqual(result, 0)
+        install_agent.assert_not_called()
+        self.assertEqual([call.args[0] for call in ensure.call_args_list], ["1Password CLI"])
 
 
 if __name__ == "__main__":
