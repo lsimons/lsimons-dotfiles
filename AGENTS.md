@@ -2,7 +2,7 @@
 
 > This file (`AGENTS.md`) is the canonical agent configuration. `CLAUDE.md` is a symlink to this file.
 
-Personal dotfiles repository for macOS and Arch-based Linux ([Omarchy](https://omarchy.org/)). Topic-based structure inspired by [holman/dotfiles](https://github.com/holman/dotfiles).
+Personal dotfiles repository for macOS, Arch-based Linux ([Omarchy](https://omarchy.org/)) and Ubuntu (including WSL2). Topic-based structure inspired by [holman/dotfiles](https://github.com/holman/dotfiles).
 
 ## Quick Reference
 
@@ -10,7 +10,9 @@ Personal dotfiles repository for macOS and Arch-based Linux ([Omarchy](https://o
 - **Preview install**: `mise run install -- --dry-run`
 - **Quality checks**: `mise run check` (or `python3 script/check.py`)
 - **Workflow audit**: `mise run audit` (zizmor)
-- **Everything CI runs**: `mise run ci` (= `check` + `audit`)
+- **Everything CI runs locally**: `mise run ci` (= `check` + `audit`).
+  CI additionally does a real Ubuntu smoke install (Debian bootstrap plus
+  the `jq`, `tmux`, `zsh`, `mise` topics), which has no local equivalent
 - **Watch CI**: `mise run ci-watch`
 - **Test ZSH**: `zsh -c 'source ~/.zshrc && echo "Success"'`
 

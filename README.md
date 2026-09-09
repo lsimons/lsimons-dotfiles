@@ -2,7 +2,7 @@
 
 Homedir setup for @lsimons (and @lsimons-bot)
 
-A modular dotfiles configuration for macOS and Arch-based Linux ([Omarchy](https://omarchy.org/)), featuring ZSH and Bash support, XDG Base Directory compliance, and 1Password CLI integration for secure secret management.
+A modular dotfiles configuration for macOS, Arch-based Linux ([Omarchy](https://omarchy.org/)) and Ubuntu (including under WSL2), featuring ZSH and Bash support, XDG Base Directory compliance, and 1Password CLI integration for secure secret management.
 
 ## Features
 
@@ -13,8 +13,9 @@ A modular dotfiles configuration for macOS and Arch-based Linux ([Omarchy](https
 - **Bash configuration** - Modular Bash setup with the same topic-based loading
 - **Python-based installation** - Idempotent installation automation
 - **Cross-platform packaging** - One package name per platform: Homebrew
-  on macOS, pacman/yay on Arch. Topics that only make sense on one
-  platform declare it in a `platforms.txt` and are skipped elsewhere
+  on macOS, pacman/yay on Arch, apt on Ubuntu with mise filling the gaps
+  in its archive. Topics that only make sense on one platform declare it
+  in a `platforms.txt` and are skipped elsewhere
 - **Development tools** - Includes editors, terminals, CLI tools, and coding agents
 
 ## Quick Start
@@ -22,8 +23,8 @@ A modular dotfiles configuration for macOS and Arch-based Linux ([Omarchy](https
 For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./docs/AGENT_SETUP.md) first.
 For the Windows 11 ARM64 sandbox variant, see [AGENT_WINDOWS_SETUP.md](./docs/AGENT_WINDOWS_SETUP.md) and [windows/README.md](./windows/README.md).
 
-On an existing macOS system with Homebrew, or an Arch-based Linux
-(Omarchy) system:
+On an existing macOS system with Homebrew, an Arch-based Linux (Omarchy)
+system, or an Ubuntu system (a WSL2 distro included):
 
 ```bash
 mkdir -p ~/git/lsimons && cd ~/git/lsimons
@@ -36,7 +37,8 @@ source ~/.zshrc
 The installer needs **Python 3.11 or newer**. macOS only ships 3.9 in
 the Command Line Tools, so on a fresh Mac run `brew install python`
 first; the installer says so and stops if the interpreter is too old.
-Arch is a rolling release, so its `python` is always new enough.
+Arch is a rolling release, so its `python` is always new enough, and
+Ubuntu 24.04's `python3` (3.12) is new enough too.
 
 Installing packages needs root on Linux, so `sudo` may ask for your
 password once — the same way a Homebrew cask does on macOS.
@@ -59,7 +61,10 @@ workflow audit — and `mise run ci-watch` follows the real run on GitHub.
 The installation script (`./script/install.py`) will:
 
 1. **Bootstrap the package manager** — Homebrew plus `python@3` on macOS;
-   the `base-devel`/`git`/`python` prerequisites plus `yay` on Arch
+   the `base-devel`/`git`/`python` prerequisites plus `yay` on Arch; on
+   Ubuntu the build prerequisites plus the vendor apt repositories for
+   mise, GitHub CLI and 1Password, which Ubuntu's own archive lacks or
+   ships stale
 2. **Create `~/.dotfiles` symlink** pointing to this repository
 3. **Set up XDG directories** (`~/.config`, `~/.local/share`, `~/.cache`, `~/.local/state`)
 4. **Symlink dotfiles** to appropriate locations
@@ -68,7 +73,7 @@ The installation script (`./script/install.py`) will:
 
 | Topic | Installs |
 |-------|----------|
-| `1password/` | 1Password app and CLI (`op`) |
+| `1password/` | 1Password app and CLI (`op`). Under WSL: no app, but a systemd user service bridging the Windows app's SSH agent into `~/.1password/agent.sock`, and `op` running the Windows `op.exe` |
 | `agents/` | Shared coding-agent instructions, links to the [lsimons-skills](https://github.com/lsimons/lsimons-skills) collection, and repository config sync |
 | `ansible/` | Ansible and related tools |
 | `aws/` | AWS CLI (`awscli`) + default `~/.aws/config`; `saml2aws` configured with the Browser provider for Okta OIE |
@@ -83,7 +88,7 @@ The installation script (`./script/install.py`) will:
 | `dock/` | Pins apps to the macOS Dock via dockutil (runs last). **macOS only** |
 | `gemini/` | Gemini CLI |
 | `fnox/` | fnox (1Password secret injection, via mise) |
-| `fonts/` | Fonts (Cascadia Code, Iosevka, JetBrains Mono, Lilex, Lilex Nerd Font) |
+| `fonts/` | Fonts (Cascadia Code, Iosevka, JetBrains Mono, Lilex, Lilex Nerd Font). **Desktop only** |
 | `gh/` | GitHub CLI + extensions (`gh stack`) |
 | `glab/` | GitLab CLI (`glab`) |
 | `go/` | Go (via mise) |
@@ -147,8 +152,10 @@ If you're an AI coding agent (GitHub Copilot, Claude Code, etc.) working on this
 - `completion.sh` / `completion.zsh` / `completion.bash` - Loaded last
 - `install.py` - Topic-specific installation script
 - `dependencies.txt` - Other topics that must install first, one per line
-- `platforms.txt` - Platforms this topic supports (`macos`, `linux`), one
-  per line. Absent means every platform, which is the usual case
+- `platforms.txt` - Platforms this topic supports, one per line: `macos`,
+  `linux`, or `linux-desktop` for a Linux with a graphical session of its
+  own (everything but WSL). Absent means every platform, which is the
+  usual case
 
 Loading order: shared and shell-specific `path.*` files first, ordinary shared
 and shell-specific files second, then shared and shell-specific `completion.*`
@@ -156,35 +163,44 @@ files.
 
 ## Platform Support
 
-macOS and Arch-based Linux, the latter meaning [Omarchy](https://omarchy.org/)
-in practice (its config tree is what the `omarchy/` topic detects). Arch
-derivatives are recognised through `ID_LIKE` in `/etc/os-release`, so Arch
-Linux ARM counts too.
+| Platform | Packages from | Desktop topics | Notes |
+|----------|---------------|----------------|-------|
+| macOS | Homebrew | yes | |
+| Arch-based Linux | pacman, yay for the AUR | yes | [Omarchy](https://omarchy.org/) in practice; its config tree is what the `omarchy/` topic detects. Derivatives are recognised through `ID_LIKE` in `/etc/os-release`, so Arch Linux ARM counts too |
+| Ubuntu / Debian | apt, mise for the rest | on a desktop | Ubuntu's archive has no mise or 1Password CLI and a stale gh; the bootstrap adds the vendors' apt repositories for those |
+| Ubuntu under WSL2 | apt, mise for the rest | no | The Windows host owns editor, browser, fonts and the 1Password app; the `1password/` topic bridges the Windows app's SSH agent and CLI into WSL. See [docs/WSL_UBUNTU_SETUP.md](./docs/WSL_UBUNTU_SETUP.md) and [windows/README.md](./windows/README.md) |
 
 Topic installers should not branch on the platform themselves. Call
 `ensure_package()` from `script/helpers.py` with a package name per
 platform, and let it pick the manager:
 
 ```python
-ensure_package("GitHub CLI", brew="gh", pacman="github-cli", command="gh")
-ensure_package("topgrade", brew="topgrade", aur="topgrade", command="topgrade")
+ensure_package("GitHub CLI", brew="gh", pacman="github-cli", apt="gh", command="gh")
+ensure_package("topgrade", brew="topgrade", aur="topgrade", mise="topgrade",
+               command="topgrade")
 ensure_package("Ghostty", brew="ghostty", cask=True, pacman="ghostty",
                command="ghostty", optional=True)
 ```
 
-`command=` (or `macos_app=`) is the presence probe; `optional=True` turns
-"no package for this platform" and "the install failed" into warnings,
-which is how the topics for software with no aarch64 Linux build —
-Ghostty, Zed, Vivaldi, Quarto — avoid failing the whole run.
+`command=` (or `macos_app=`) is the presence probe. `apt=` is for what
+Debian and Ubuntu package well; `mise=` names a tool in the mise
+registry (or a `github:owner/repo` release) and is the fallback wherever
+no native name is given, which on Ubuntu is most developer CLIs.
+`optional=True` turns "no package for this platform" and "the install
+failed" into warnings, which is how the topics for software with no
+aarch64 Linux build — Ghostty, Zed, Vivaldi, Quarto — avoid failing the
+whole run.
 
 Work that is genuinely platform-shaped, rather than just a different
-package name, is the exception and does test `IS_MACOS` / `IS_LINUX`:
-the mise GUI PATH hook (a LaunchAgent vs. a systemd `environment.d`
-drop-in), the 1Password SSH agent socket, and the docker engine.
+package name, is the exception and does test `IS_MACOS` / `IS_LINUX` /
+`IS_WSL`: the mise GUI PATH hook (a LaunchAgent vs. a systemd
+`environment.d` drop-in), the 1Password SSH agent socket and its WSL
+bridge, and the docker engine.
 
 A whole topic that only belongs on one platform says so in a
-`platforms.txt` instead. `script/install.py` skips the others and drops
-any dependency on a skipped topic.
+`platforms.txt` instead; a desktop topic lists `linux-desktop` rather
+than `linux` so it stays off WSL. `script/install.py` skips the others
+and drops any dependency on a skipped topic.
 
 ## XDG Base Directory Compliance
 
@@ -275,8 +291,9 @@ The installer needs Python 3.11 or newer, and macOS ships 3.9 in the
 Command Line Tools. Install a newer Python and re-run:
 
 ```bash
-brew install python      # macOS
-sudo pacman -S python    # Arch
+brew install python              # macOS
+sudo pacman -S python            # Arch
+sudo apt-get install -y python3  # Debian/Ubuntu
 ./script/install.py
 ```
 
@@ -286,7 +303,8 @@ get that far on Python 3.9.
 
 ### A topic was skipped on Linux
 
-Expected for `dock`, `terminal`, `swiftdialog` and `timeout` — see
+Expected for `dock`, `terminal`, `swiftdialog` and `timeout`, and under
+WSL also for `fonts`, `ghostty`, `omarchy`, `vivaldi` and `zed` — see
 Platform Support above. The installer names every topic it skips and
 why.
 
@@ -296,6 +314,14 @@ Git signs through 1Password's `op-ssh-sign`, which needs the desktop app
 running with the SSH agent enabled (Settings → Developer → Use the SSH
 agent). `~/.ssh/config.agent`, generated by `ssh/install.py`, points ssh
 at `~/.1password/agent.sock`.
+
+Under WSL there is no `op-ssh-sign`; git signs with `ssh-keygen` through
+the same socket, which the `1password-agent-bridge` systemd user service
+provides from the Windows app. Check it with
+`systemctl --user status 1password-agent-bridge` and
+`SSH_AUTH_SOCK=~/.1password/agent.sock ssh-add -l`. It needs `npiperelay`
+on the Windows side (`scoop install npiperelay`) and the SSH agent enabled
+in the Windows 1Password app.
 
 ### XDG directories not created
 

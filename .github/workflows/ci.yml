@@ -44,6 +44,45 @@ jobs:
       - name: Run checks
         run: mise run check
 
+  install-smoke:
+    name: Install smoke test (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # `check` only dry-runs the installer, so nothing there ever reaches
+      # a package manager. This job is where the Debian bootstrap and the
+      # apt backend run for real: the vendor repositories get added, apt
+      # installs happen, and the mise topic installs mise from mise's own
+      # repository. Deliberately NOT `script/install.py`, which would set
+      # the runner up as a workstation and needs an enrolled machine. The
+      # runner's stock Ubuntu python3 is exactly what a fresh WSL distro
+      # has, which is the point.
+      - name: Bootstrap Debian prerequisites and vendor repositories
+        run: |
+          python3 -c 'import sys; sys.path.insert(0, "script"); import install; sys.exit(0 if install.bootstrap_debian() else 1)'
+          apt-cache policy mise gh 1password-cli
+
+      - name: Install cheap topics for real
+        run: |
+          for topic in jq tmux zsh mise; do
+            python3 "$topic/install.py"
+          done
+          jq --version
+          tmux -V
+          zsh --version
+          mise --version
+
+      - name: Bootstrap is idempotent
+        run: |
+          python3 -c 'import sys; sys.path.insert(0, "script"); import install; sys.exit(0 if install.bootstrap_debian() else 1)' > second-run.log
+          cat second-run.log
+          ! grep -q 'Adding the' second-run.log
+
   zizmor:
     name: Zizmor (GitHub Actions audit)
     runs-on: ubuntu-latest

@@ -181,6 +181,25 @@ git commit --allow-empty -m 'test: signing'
 git log --show-signature -1
 ```
 
+## WSL2 (x64 workstation)
+
+On a bare-metal x64 machine WSL2 works, and the same dotfiles install
+inside an Ubuntu distro there (`wsl --install -d Ubuntu-24.04`). The
+Linux side is documented in [../docs/WSL_UBUNTU_SETUP.md](../docs/WSL_UBUNTU_SETUP.md);
+the Windows side needs two things this directory provides:
+
+- **`npiperelay`** (in `scoopfile.json`, extras bucket). The Linux
+  `1password` topic uses it, with socat, to bridge the Windows 1Password
+  SSH agent into `~/.1password/agent.sock` inside WSL, as a systemd user
+  service. Without it the topic warns and skips the bridge.
+- **1Password's SSH agent enabled** in the Windows app (Settings →
+  Developer → "Use the SSH agent"). The 1Password CLI installed by
+  phase 1 (`op.exe`) is what `op` inside WSL runs, so biometric unlock
+  works there too.
+
+Inside WSL, `git` signs through `ssh-keygen` against that bridged agent
+rather than through `op-ssh-sign`, which only ships with the desktop app.
+
 ## Idempotency
 
 Re-running either phase is safe. Each step checks before acting. File writes
@@ -192,7 +211,8 @@ are hash-compared so unchanged files don't get rewritten.
   expose nested virtualization, and even M3+ only exposes it for Linux guests.
   This VM cannot run WSL2 regardless of effort spent trying. Run a separate
   Linux UTM VM if you need containers. (Not a constraint on bare-metal x64,
-  but the scripts don't install any of these either way.)
+  where WSL2 works — see above — but the scripts don't install any of
+  these either way.)
 - **winget package IDs** may drift over time. If `winget configure` fails
   with "no package found", update the `id:` in `packages.winget.yaml`.
 - **Scoop refuses to run as admin.** Phase 1 enforces this — it throws if

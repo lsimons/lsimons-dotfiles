@@ -183,7 +183,11 @@ Once `IS_DEBIAN` exists it can run a real install of a few cheap topics
 4. WSL gating of desktop topics: **done 2026-09-09**.
 5. 1Password agent bridge: **code landed 2026-09-10**; real test on poppy
    pending (npiperelay on Windows, then `1password`, `ssh`, `git` topics).
-6. CI + docs.
+6. CI + docs: **done 2026-09-10**. `install-smoke` job in `ci.yml` runs the
+   Debian bootstrap and the `jq`/`tmux`/`zsh`/`mise` topics for real on
+   the Ubuntu runner and checks the bootstrap is idempotent. README has the
+   platform matrix, `windows/README.md` a WSL2 section. This file stays
+   until the bridge is verified on poppy, then gets deleted.
 
 Commit small; each step should leave `--dry-run` green on Ubuntu and on macOS
 (run the pytest suite: `tests/test_platform_layer.py` etc. cover the helpers).
