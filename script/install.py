@@ -285,9 +285,11 @@ ARCH_BOOTSTRAP_PACKAGES = ['base-devel', 'git', 'python']
 
 # The Debian/Ubuntu equivalent. build-essential and git are what mise's
 # cargo/pipx-style backends need to build anything; curl, ca-certificates
-# and gnupg fetch and verify the vendor repository keys below.
+# and gnupg fetch and verify the vendor repository keys below; unzip is
+# what tfenv (and other release-tarball tools) unpack with, and Ubuntu's
+# WSL image does not ship it.
 DEBIAN_BOOTSTRAP_PACKAGES = [
-    'build-essential', 'git', 'curl', 'ca-certificates', 'gnupg', 'python3',
+    'build-essential', 'git', 'curl', 'ca-certificates', 'gnupg', 'python3', 'unzip',
 ]
 
 # Third-party apt repositories the topics rely on. Ubuntu's own archive
