@@ -52,7 +52,7 @@
 
 [credential]
 	helper =
-	helper = manager
+	helper = {credential_helper}
 
 [credential "https://dev.azure.com"]
 	useHttpPath = true

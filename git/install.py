@@ -51,6 +51,17 @@ EDITOR_CANDIDATES = [
 ]
 EDITOR_FALLBACK = "vim"
 
+# Credential helpers. Git Credential Manager is preferred and main()
+# installs it where a package exists (Homebrew cask, AUR). Debian and
+# Ubuntu, WSL included, have no GCM package, so there the GitHub CLI
+# stands in: `gh auth git-credential` answers for github.com (and any
+# other host `gh auth login` was run for) with gh's own token and stays
+# silent for everything else, which then falls through to git's prompt.
+# gh is not probed for: the `gh` topic depends on this one and so runs
+# later, and git only invokes the helper at fetch/push time anyway.
+CREDENTIAL_HELPER_GCM = "manager"
+CREDENTIAL_HELPER_GH = "!gh auth git-credential"
+
 
 def resolve_editor():
     """Return the `core.editor` value for the first editor present."""
@@ -63,6 +74,17 @@ def resolve_editor():
         + f" found; falling back to {EDITOR_FALLBACK} for core.editor"
     )
     return EDITOR_FALLBACK
+
+
+def resolve_credential_helper():
+    """Return the `credential.helper` value: GCM if installed, else gh."""
+    if command_exists("git-credential-manager"):
+        return CREDENTIAL_HELPER_GCM
+    info(
+        "git-credential-manager not found; using "
+        f"'{CREDENTIAL_HELPER_GH}' as credential.helper"
+    )
+    return CREDENTIAL_HELPER_GH
 
 
 def _xdg_git_dir():
@@ -148,6 +170,7 @@ def generate_config():
 
     config_path = _xdg_git_dir() / "config"
     ai_path = _xdg_git_dir() / "config.ai"
+    credential_helper = resolve_credential_helper()
 
     main_content = _render_config(
         template,
@@ -157,6 +180,7 @@ def generate_config():
         signingkey=signing_key_pub,
         gpg_ssh_program=GPG_SSH_PROGRAM_DEFAULT,
         editor=resolve_editor(),
+        credential_helper=credential_helper,
         ssh_command_block="",
     )
     ai_content = _render_config(
@@ -167,6 +191,7 @@ def generate_config():
         signingkey=str(AI_KEY_PUB_PATH),
         gpg_ssh_program="ssh-keygen",
         editor="vim",
+        credential_helper=credential_helper,
         ssh_command_block=f"\tsshCommand = ssh -F {SSH_CONFIG_AI_PATH}\n",
     )
 
@@ -232,16 +257,15 @@ def main():
     get_machine_config()
 
     migrate_legacy_files()
-    generate_config()
-    generate_allowed_signers()
 
     if not ensure_package("Git", brew="git", pacman="git", apt="git"):
         return 1
 
     # Optional on Linux: git-credential-manager publishes a .deb/.rpm and
-    # an AUR build that pulls in the whole .NET runtime. The credential
-    # helper is configured either way (see config.template); it simply
-    # does nothing until GCM is present.
+    # an AUR build that pulls in the whole .NET runtime, and Debian/Ubuntu
+    # have no package at all. generate_config() below picks GCM when it
+    # is present and `gh auth git-credential` otherwise, which is why the
+    # config is written after this step rather than before.
     if not ensure_package(
         "Git Credential Manager",
         brew="git-credential-manager",
@@ -251,6 +275,9 @@ def main():
         optional=True,
     ):
         return 1
+
+    generate_config()
+    generate_allowed_signers()
 
     if not ensure_package(
         "git-filter-repo",

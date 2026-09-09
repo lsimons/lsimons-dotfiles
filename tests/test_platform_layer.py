@@ -566,5 +566,53 @@ class GitEditorFallbackTests(unittest.TestCase):
             self.assertEqual(self.git_installer.resolve_editor(), "vim")
 
 
+class GitCredentialHelperTests(unittest.TestCase):
+    """credential.helper must name a helper that can actually run.
+
+    Git Credential Manager has no Debian/Ubuntu package (so none under
+    WSL either), and the AUR build is optional. Where it is missing, gh
+    stands in; otherwise a non-interactive `git push` dies with
+    "'credential-manager' is not a git command".
+    """
+
+    def setUp(self):
+        self.git_installer = load_module(
+            "dotfiles_git_credential", REPO_ROOT / "git" / "install.py"
+        )
+
+    def test_prefers_git_credential_manager_when_present(self):
+        with mock.patch.object(
+            self.git_installer,
+            "command_exists",
+            lambda cmd: cmd == "git-credential-manager",
+        ):
+            self.assertEqual(self.git_installer.resolve_credential_helper(), "manager")
+
+    def test_falls_back_to_gh_when_gcm_is_missing(self):
+        with mock.patch.object(
+            self.git_installer, "command_exists", return_value=False
+        ):
+            self.assertEqual(
+                self.git_installer.resolve_credential_helper(),
+                "!gh auth git-credential",
+            )
+
+    def test_template_renders_the_resolved_helper(self):
+        template = (REPO_ROOT / "git" / "config.template").read_text()
+        rendered = self.git_installer._render_config(
+            template,
+            allowed_signers_file="/tmp/signers",
+            name="Test User",
+            email="t@example.com",
+            signingkey="",
+            gpg_ssh_program="ssh-keygen",
+            editor="vim",
+            credential_helper="!gh auth git-credential",
+            ssh_command_block="",
+        )
+        self.assertIn("\thelper =\n\thelper = !gh auth git-credential\n", rendered)
+        self.assertNotIn("helper = manager", rendered)
+
+
 if __name__ == "__main__":
     unittest.main()

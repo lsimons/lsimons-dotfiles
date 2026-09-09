@@ -78,6 +78,10 @@ ways:
   `gpg.ssh.program` is `~/.config/dotfiles/ssh-sign-1password-bridge.sh`,
   which runs `ssh-keygen` against the bridged agent. `user.signingkey` is
   the public key, which is what makes ssh-keygen ask the agent.
+- **Git credentials**: Ubuntu has no Git Credential Manager package, so
+  `credential.helper` is `!gh auth git-credential`. HTTPS fetches and
+  pushes to github.com use the token from `gh auth login`; other hosts
+  fall through to git's own username/password prompt.
 - **Docker**: `docker.io` from Ubuntu runs the daemon natively under WSL2
   with systemd. Docker Engine, the CLI, compose and buildx are Apache 2.0;
   only Docker Desktop is licensed, and it is not needed. Podman
@@ -112,6 +116,10 @@ be run (no interop socket), so check the bridge from a normal shell.
 - **`fatal: cannot exec '/opt/1Password/op-ssh-sign'`** on commit: the `git`
   topic ran before the `ssh` topic wrote the signing helper, or the machine
   was not detected as WSL. Re-run `python3 git/install.py`.
+- **`git: 'credential-manager' is not a git command`** on push, or a
+  username prompt for github.com: the config predates the gh fallback, or
+  gh is not logged in. Re-run `python3 git/install.py`, then `gh auth
+  login`.
 - **`ssh-add -l` says `Error connecting to agent`**: the bridge is down.
   `systemctl --user status 1password-agent-bridge`; check that
   `npiperelay.exe` exists (`scoop install npiperelay`) and that the SSH

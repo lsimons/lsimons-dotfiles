@@ -93,7 +93,7 @@ The installation script (`./script/install.py`) will:
 | `glab/` | GitLab CLI (`glab`) |
 | `go/` | Go (via mise) |
 | `ghostty/` | Ghostty terminal (no aarch64 Linux build — config only there) |
-| `git/` | Git + Git Credential Manager, git-filter-repo, Git LFS (installed and initialized) |
+| `git/` | Git + credential helper (Git Credential Manager where packaged, else `gh auth git-credential`), git-filter-repo, Git LFS (installed and initialized) |
 | `herdr/` | herdr terminal agent multiplexer + LSD Warm Light theme |
 | `jdk/` | OpenJDK (via mise) |
 | `jq/` | jq JSON processor (used by the Claude statusline) |
