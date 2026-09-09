@@ -25,6 +25,10 @@ Two uses drive this:
   `claude` installed via the native installer at `~/.local/bin/claude`,
   logged in, **`/sandbox` enabled and working**.
 - Repo cloned on the Linux FS at `~/git/lsimons/lsimons-dotfiles`.
+- Enrolled as `machines/poppy.json` (personal profile, same keys as
+  `paddo.json`). `mise` installed via `https://mise.run` into
+  `~/.local/bin`, `mise trust` + `mise install` done, so `mise run check`
+  works and passes.
 - Ubuntu Python is **3.12.3**. `script/install.py --dry-run` runs on it (the
   version guard passes), so the entry point is fine; individual topics that
   need 3.13/3.14 syntax are still to be discovered.
@@ -53,13 +57,12 @@ First dry-run on Ubuntu (2026-09-09) output, in order:
 
 ## Plan
 
-### 0. Enroll `poppy` (`machines/poppy.json`)
+### 0. Enroll `poppy` (`machines/poppy.json`) — done
 
-Blocker for everything else. Decide which identity this WSL is: personal
-(`paddo.json` shape: Private vault, `my.1password.eu`) or work
-(`sbplt2mkg3xk6.json` shape). Likely personal, mirroring the Windows side.
-Needs `git.user.signingkey`, `ssh.aiKey`, `ssh.keys[]` with `op_vault` /
-`op_account` / fingerprints. Copy from `paddo.json` and adjust.
+Personal identity (Private vault, `my.1password.eu`), a copy of
+`paddo.json`. With it in place `script/install.py --dry-run` gets through
+every topic on Ubuntu; the only platform noise left is the "not an Arch
+derivative" warning from `check_platform()`, which step 1 removes.
 
 ### 1. Debian/Ubuntu package backend (`script/helpers.py`, `script/install.py`)
 
@@ -128,8 +131,8 @@ Once `IS_DEBIAN` exists it can run a real install of a few cheap topics
 
 ## Suggested order
 
-1. `machines/poppy.json`, then re-run `python3 script/install.py --dry-run`
-   until it gets through every topic in dry-run.
+1. ~~`machines/poppy.json`, then re-run `python3 script/install.py --dry-run`
+   until it gets through every topic in dry-run.~~ Done 2026-09-09.
 2. `IS_DEBIAN` + `apt=` backend + `bootstrap_linux()` apt branch. Real
    (non-dry) install of `jq`, `tmux`, `zsh`, `git` topics as the smoke test.
 3. Package mapping topic by topic, mise-first.
@@ -140,10 +143,13 @@ Once `IS_DEBIAN` exists it can run a real install of a few cheap topics
 Commit small; each step should leave `--dry-run` green on Ubuntu and on macOS
 (run the pytest suite: `tests/test_platform_layer.py` etc. cover the helpers).
 
-## Open questions for Leo
+## Decisions (Leo, 2026-09-09)
 
-- Identity for `poppy.json`: personal keys (as Windows side) or work?
-- Is Omarchy/Arch support to be kept first-class alongside Ubuntu, or does
-  Ubuntu become the primary Linux target? Affects how much `IS_ARCH` gating
-  we keep testing.
-- claude-docker test: Docker Desktop (licence at work?) vs Podman in WSL.
+- **Identity for `poppy.json`:** personal keys, like `paddo`.
+- **Platform matrix:** Omarchy/Arch, Ubuntu and WSL are all wanted, and
+  Arch/Omarchy stays first-class. WSL means **Ubuntu on WSL only**; there is
+  no interest in Omarchy/Arch on WSL, so `IS_WSL` gating only has to be
+  exercised together with `IS_DEBIAN`.
+- **claude-docker runtime:** no Docker Desktop licence. Test with a free /
+  open-source runtime such as Podman inside WSL (Docker Engine in WSL with
+  systemd is the other free option).
