@@ -45,9 +45,11 @@ def install_mise():
     # Arch ships `mise` in extra on x86_64 only; Omarchy carries a
     # prebuilt `mise-bin` for aarch64 in its own repo. ensure_package
     # checks both names against the configured repos before it would
-    # reach for a source build, so this covers either machine.
+    # reach for a source build, so this covers either machine. On
+    # Debian/Ubuntu the package comes from mise's own apt repository,
+    # which script/install.py's bootstrap configures.
     return ensure_package(
-        'mise', brew='mise', pacman='mise', aur='mise-bin', command='mise'
+        'mise', brew='mise', pacman='mise', aur='mise-bin', apt='mise', command='mise'
     )
 
 

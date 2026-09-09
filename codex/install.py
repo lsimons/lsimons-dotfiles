@@ -31,6 +31,7 @@ def install_codex():
         brew="codex",
         cask=True,
         pacman="openai-codex-bin",
+        mise="codex",
         command="codex",
     ):
         return 1

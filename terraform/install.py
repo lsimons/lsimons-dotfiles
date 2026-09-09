@@ -21,7 +21,7 @@ def main():
     info("Installing tfenv and Terraform...")
 
     if not ensure_package(
-        'tfenv', brew='tfenv', aur='tfenv', command='tfenv'
+        'tfenv', brew='tfenv', aur='tfenv', mise='tfenv', command='tfenv'
     ):
         return 1
 

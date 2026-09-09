@@ -94,6 +94,32 @@ LINUX_DISTRO_IDS = _linux_distro_ids() if IS_LINUX else set()
 # which is why every installer must stay dry-run-safe there.
 IS_ARCH = IS_LINUX and "arch" in LINUX_DISTRO_IDS
 
+# True on Debian and its derivatives (Ubuntu), i.e. wherever apt is the
+# package manager. The CI runner is Ubuntu, so dry-run there exercises the
+# apt branch of every installer.
+IS_DEBIAN = IS_LINUX and bool({"debian", "ubuntu"} & LINUX_DISTRO_IDS)
+
+
+def _running_in_wsl(proc_version=Path("/proc/version")):
+    """True inside Windows Subsystem for Linux.
+
+    WSL exports ``WSL_DISTRO_NAME`` into every session it starts, and its
+    kernel identifies itself as Microsoft's in /proc/version, which also
+    covers sessions started some other way (cron, a systemd unit).
+    """
+    if os.environ.get("WSL_DISTRO_NAME"):
+        return True
+    try:
+        return "microsoft" in proc_version.read_text().lower()
+    except OSError:
+        return False
+
+
+# A WSL distro has no desktop of its own: the Windows host owns the
+# browser, editor, fonts and the 1Password app. Topics that install those
+# consult this rather than the distro flags.
+IS_WSL = IS_LINUX and _running_in_wsl()
+
 # Omarchy ships its own config tree; its presence is what distinguishes
 # "an Arch box" from "the Omarchy desktop" for topics that theme it.
 OMARCHY_ROOT = XDG_CONFIG_HOME / "omarchy"
@@ -395,6 +421,68 @@ def aur_install(package):
         return False
 
 
+def apt_is_installed(package):
+    """Check whether a Debian package is installed locally.
+
+    In dry-run mode, reports packages as absent so the install path is
+    exercised without changing the system.
+    """
+    if _DRY_RUN:
+        dry(f"probe apt package '{package}' as absent")
+        return False
+    result = subprocess.run(
+        ["dpkg-query", "-W", "-f=${Status}", package],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and "install ok installed" in (result.stdout or "")
+
+
+def apt_install(package):
+    """Install a Debian package with apt-get, non-interactively.
+
+    `--no-install-recommends` keeps a CLI install from dragging in a
+    desktop's worth of Recommends; the topics name what they need.
+    `sudo` may still ask for a password once per session.
+
+    Returns True on success, False on failure.
+    """
+    if _DRY_RUN:
+        dry(f"would apt-get install {package}")
+        return True
+    try:
+        subprocess.run(
+            [
+                "sudo",
+                "env",
+                "DEBIAN_FRONTEND=noninteractive",
+                "apt-get",
+                "install",
+                "-y",
+                "--no-install-recommends",
+                package,
+            ],
+            check=True,
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+def _mise_install(tool):
+    """Install a tool globally with mise, the fallback where no native
+    package exists (most CLI tools on Debian/Ubuntu, whose apt is stale).
+
+    `mise use -g` is idempotent, so no separate presence probe is needed
+    beyond the `command=` check the caller already made.
+    """
+    if not _DRY_RUN and not command_exists("mise"):
+        error(f"mise not found; install the 'mise' topic before {tool}")
+        return False
+    return mise_use(tool)
+
+
 def _linux_install(pacman=None, aur=None):
     """Install an Arch package, preferring a repo copy over an AUR build.
 
@@ -424,6 +512,8 @@ def ensure_package(
     cask=False,
     pacman=None,
     aur=None,
+    apt=None,
+    mise=None,
     command=None,
     macos_app=None,
     optional=False,
@@ -435,9 +525,13 @@ def ensure_package(
     macOS only), then the platform's own package database.
 
     Package names are per-platform: `brew`/`cask` for macOS, `pacman`/`aur`
-    for Arch. A platform with no name given has no package for `label`;
-    that is an error unless `optional` is set, which downgrades it to a
-    warning so a mostly-portable topic can still install its config.
+    for Arch, `apt` for Debian and Ubuntu. `mise` names a tool in the mise
+    registry (or a `github:owner/repo` spec) and is the fallback for any
+    platform without a native name: in practice Debian/Ubuntu, whose apt
+    carries few developer CLIs and old versions of those. A platform with
+    neither has no package for `label`; that is an error unless `optional`
+    is set, which downgrades it to a warning so a mostly-portable topic can
+    still install its config.
 
     Returns True when the package is present afterwards.
     """
@@ -448,17 +542,13 @@ def ensure_package(
         success(f"{label} already installed")
         return True
 
-    if IS_MACOS:
-        if not brew:
-            return _no_package_for_platform(label, optional)
+    if IS_MACOS and brew:
         if brew_is_installed(brew):
             success(f"{label} already installed")
             return True
         info(f"Installing {label} via Homebrew...")
         installed = brew_install(brew, cask=cask)
-    elif IS_LINUX:
-        if not (pacman or aur):
-            return _no_package_for_platform(label, optional)
+    elif IS_ARCH and (pacman or aur):
         if pacman and pacman_is_installed(pacman):
             success(f"{label} already installed")
             return True
@@ -467,6 +557,15 @@ def ensure_package(
             return True
         info(f"Installing {label} via pacman/yay...")
         installed = _linux_install(pacman=pacman, aur=aur)
+    elif IS_DEBIAN and apt:
+        if apt_is_installed(apt):
+            success(f"{label} already installed")
+            return True
+        info(f"Installing {label} via apt...")
+        installed = apt_install(apt)
+    elif mise:
+        info(f"Installing {label} via mise...")
+        installed = _mise_install(mise)
     else:
         return _no_package_for_platform(label, optional)
 
@@ -481,11 +580,23 @@ def ensure_package(
     return False
 
 
+def _package_manager_name():
+    """The package manager `ensure_package` would use here, for messages."""
+    if IS_MACOS:
+        return "Homebrew"
+    if IS_ARCH:
+        return "pacman/yay"
+    if IS_DEBIAN:
+        return "apt"
+    return PLATFORM
+
+
 def _no_package_for_platform(label, optional):
+    manager = _package_manager_name()
     if optional:
-        warn(f"No {PLATFORM} package configured for {label}; skipping")
+        warn(f"No {manager} package configured for {label}; skipping")
         return True
-    error(f"No {PLATFORM} package configured for {label}")
+    error(f"No {manager} package configured for {label}")
     return False
 
 

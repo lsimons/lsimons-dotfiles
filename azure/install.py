@@ -13,7 +13,7 @@ def main():
     info("Installing Azure CLI...")
 
     if not ensure_package(
-        "azure-cli", brew="azure-cli", pacman="azure-cli", command="az"
+        "azure-cli", brew="azure-cli", pacman="azure-cli", mise="azure-cli", command="az"
     ):
         return 1
     return 0

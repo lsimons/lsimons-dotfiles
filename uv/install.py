@@ -12,7 +12,7 @@ def main():
     parse_dry_run()
     info("Installing uv...")
 
-    if not ensure_package('uv', brew='uv', pacman='uv', command='uv'):
+    if not ensure_package('uv', brew='uv', pacman='uv', mise='uv', command='uv'):
         return 1
     return 0
 

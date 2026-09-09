@@ -14,7 +14,7 @@ def main():
 
     info("Installing tmux...")
 
-    if not ensure_package('tmux', brew='tmux', pacman='tmux', command='tmux'):
+    if not ensure_package('tmux', brew='tmux', pacman='tmux', apt='tmux', command='tmux'):
         return 1
     return 0
 

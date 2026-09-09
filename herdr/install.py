@@ -13,7 +13,9 @@ def main():
     info("Installing herdr...")
 
     # Omarchy ships herdr in its own pacman repo, prebuilt for aarch64.
-    if not ensure_package('herdr', brew='herdr', pacman='herdr', command='herdr'):
+    if not ensure_package(
+        'herdr', brew='herdr', pacman='herdr', mise='herdr', command='herdr'
+    ):
         return 1
 
     if not install_symlinks(Path(__file__).resolve().parent):

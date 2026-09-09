@@ -12,7 +12,7 @@ def main():
     parse_dry_run()
     info("Installing jq...")
 
-    if not ensure_package("jq", brew="jq", pacman="jq", command="jq"):
+    if not ensure_package("jq", brew="jq", pacman="jq", apt="jq", command="jq"):
         return 1
     return 0
 

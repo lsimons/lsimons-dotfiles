@@ -12,7 +12,9 @@ def main():
     parse_dry_run()
     info("Installing GitLab CLI...")
 
-    if not ensure_package('GitLab CLI', brew='glab', pacman='glab', command='glab'):
+    if not ensure_package(
+        'GitLab CLI', brew='glab', pacman='glab', mise='glab', command='glab'
+    ):
         return 1
     return 0
 

@@ -27,6 +27,7 @@ def install_opencode():
         "OpenCode",
         brew="anomalyco/tap/opencode",
         aur="opencode-bin",
+        mise="opencode",
         command="opencode",
     ):
         return 1

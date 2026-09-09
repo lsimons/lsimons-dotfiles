@@ -3,11 +3,13 @@
 Installation script for lsimons-dotfiles
 This script is safe to run multiple times (idempotent)
 
-Supports macOS and Arch-based Linux (Omarchy).
+Supports macOS, Arch-based Linux (Omarchy) and Debian-based Linux
+(Ubuntu, including under WSL2).
 
 Steps:
 1. Bootstrap the platform package manager and a modern Python
-   (Homebrew + python@3 on macOS; pacman prerequisites + yay on Arch)
+   (Homebrew + python@3 on macOS; pacman prerequisites + yay on Arch;
+   apt prerequisites + the vendor apt repositories on Debian/Ubuntu)
 2. Create ~/.dotfiles symlink
 3. Setup XDG directories
 4. Run topic-specific installation scripts (each installs its own symlinks)
@@ -27,6 +29,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 
 # Checked before importing helpers, which imports tomllib (new in 3.11).
@@ -52,7 +55,8 @@ if sys.version_info < MIN_PYTHON:
     else:
         _hint = (
             "Install a newer Python first, then re-run this script:\n"
-            "  sudo pacman -S python\n"
+            "  sudo pacman -S python              # Arch\n"
+            "  sudo apt-get install -y python3    # Debian/Ubuntu\n"
         )
     sys.stderr.write(
         f"lsimons-dotfiles needs Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]} or newer, "
@@ -65,9 +69,12 @@ if sys.version_info < MIN_PYTHON:
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from helpers import (
     IS_ARCH,
+    IS_DEBIAN,
     IS_LINUX,
     IS_MACOS,
+    IS_WSL,
     PLATFORM,
+    apt_is_installed,
     dry,
     is_dry_run,
     set_dry_run,
@@ -133,12 +140,11 @@ def run_command(cmd, check=True, capture_output=False, shell=False):
 
 
 def check_platform():
-    """Verify we're on a supported platform (macOS or Arch-based Linux).
+    """Verify we're on a supported platform: macOS, Arch- or Debian-based Linux.
 
     Anything else still installs — the config-only topics are portable —
     but the package-installing ones have no package manager to reach for,
-    so confirm first. In dry-run mode nothing is confirmed, because CI
-    runs this on an Ubuntu runner that is deliberately neither.
+    so confirm first. In dry-run mode nothing is confirmed.
     """
     if IS_MACOS:
         success("Running on macOS")
@@ -147,10 +153,13 @@ def check_platform():
         if IS_ARCH:
             success("Running on Arch-based Linux")
             return
-        warn("This is Linux, but not an Arch derivative")
-        warn("Topics that install packages expect pacman/yay and will fail")
+        if IS_DEBIAN:
+            success("Running on Debian-based Linux" + (" under WSL" if IS_WSL else ""))
+            return
+        warn("This is Linux, but neither an Arch nor a Debian derivative")
+        warn("Topics that install packages expect pacman/yay or apt and will fail")
     else:
-        warn("These dotfiles target macOS and Arch-based Linux")
+        warn("These dotfiles target macOS and Arch- or Debian-based Linux")
         warn(f"Detected: {platform.system()}")
 
     if is_dry_run():
@@ -269,7 +278,71 @@ def get_homebrew_python():
 # Packages every Arch install needs before the first topic installer runs:
 # base-devel and git are what yay needs to build anything from the AUR, and
 # python is the interpreter the topic installers run under.
-LINUX_BOOTSTRAP_PACKAGES = ['base-devel', 'git', 'python']
+ARCH_BOOTSTRAP_PACKAGES = ['base-devel', 'git', 'python']
+
+# The Debian/Ubuntu equivalent. build-essential and git are what mise's
+# cargo/pipx-style backends need to build anything; curl, ca-certificates
+# and gnupg fetch and verify the vendor repository keys below.
+DEBIAN_BOOTSTRAP_PACKAGES = [
+    'build-essential', 'git', 'curl', 'ca-certificates', 'gnupg', 'python3',
+]
+
+# Third-party apt repositories the topics rely on. Ubuntu's own archive
+# carries no mise and no 1Password CLI, and its gh is a year stale, so
+# these come from the vendors' repositories, each pinned to the vendor's
+# signing key. Adding them is the Debian analogue of installing yay: it is
+# what puts the rest of the packages within reach of `ensure_package`.
+#
+# `source` is formatted with the dpkg architecture and the keyring path.
+# `extra_files` are (path, url, dearmor) triples written once when absent.
+APT_KEYRINGS_DIR = Path('/etc/apt/keyrings')
+APT_SOURCES_DIR = Path('/etc/apt/sources.list.d')
+APT_REPOS = [
+    {
+        'name': 'mise',
+        'key_url': 'https://mise.jdx.dev/gpg-key.pub',
+        'keyring': APT_KEYRINGS_DIR / 'mise-archive-keyring.gpg',
+        'source': (
+            'deb [arch={arch} signed-by={keyring}] '
+            'https://mise.jdx.dev/deb stable main'
+        ),
+        'list': APT_SOURCES_DIR / 'mise.list',
+    },
+    {
+        'name': 'GitHub CLI',
+        'key_url': 'https://cli.github.com/packages/githubcli-archive-keyring.gpg',
+        'keyring': APT_KEYRINGS_DIR / 'githubcli-archive-keyring.gpg',
+        'source': (
+            'deb [arch={arch} signed-by={keyring}] '
+            'https://cli.github.com/packages stable main'
+        ),
+        'list': APT_SOURCES_DIR / 'github-cli.list',
+    },
+    {
+        'name': '1Password',
+        'key_url': 'https://downloads.1password.com/linux/keys/1password.asc',
+        'keyring': APT_KEYRINGS_DIR / '1password-archive-keyring.gpg',
+        'source': (
+            'deb [arch={arch} signed-by={keyring}] '
+            'https://downloads.1password.com/linux/debian/{arch} stable main'
+        ),
+        'list': APT_SOURCES_DIR / '1password.list',
+        # 1Password's .debs are also debsig-signed; this is the policy and
+        # key debsig-verify checks them against, per the vendor's docs.
+        'extra_files': [
+            (
+                Path('/etc/debsig/policies/AC2D62742012EA22/1password.pol'),
+                'https://downloads.1password.com/linux/debian/debsig/1password.pol',
+                False,
+            ),
+            (
+                Path('/usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg'),
+                'https://downloads.1password.com/linux/keys/1password.asc',
+                True,
+            ),
+        ],
+    },
+]
 
 
 def pacman_has(package):
@@ -281,25 +354,33 @@ def pacman_has(package):
 
 
 def bootstrap_linux():
-    """Install the pacman prerequisites and yay, the AUR helper.
+    """Install the distro's package prerequisites and its catch-all installer.
 
     Unlike the macOS bootstrap this cannot install its own package
-    manager: pacman comes with the distro. A non-Arch Linux is therefore
-    a warning rather than a failure — config-only topics still work
-    there, which is what keeps `--dry-run` meaningful on the CI runner.
+    manager: pacman or apt comes with the distro. Arch gets its build
+    prerequisites plus yay for the AUR; Debian/Ubuntu gets its build
+    prerequisites plus the vendor apt repositories for mise, GitHub CLI
+    and 1Password, mise being what installs most CLI tools there. Any
+    other Linux is a warning rather than a failure — config-only topics
+    still work there.
     """
+    if is_dry_run():
+        dry("assume package prerequisites and repositories are in place; skipping bootstrap")
+        return True
+    if IS_ARCH:
+        return bootstrap_arch()
+    if IS_DEBIAN:
+        return bootstrap_debian()
+    warn("Neither pacman nor apt found; skipping the Linux package bootstrap")
+    warn("Topics that install packages will fail on this system")
+    return True
+
+
+def bootstrap_arch():
+    """Install the pacman prerequisites and yay, the AUR helper."""
     info("Checking Arch package prerequisites...")
 
-    if is_dry_run():
-        dry("assume pacman prerequisites and yay are installed; skipping bootstrap")
-        return True
-
-    if shutil.which('pacman') is None:
-        warn("pacman not found; skipping the Arch package bootstrap")
-        warn("Topics that install packages will fail on this system")
-        return True
-
-    missing = [pkg for pkg in LINUX_BOOTSTRAP_PACKAGES if not pacman_has(pkg)]
+    missing = [pkg for pkg in ARCH_BOOTSTRAP_PACKAGES if not pacman_has(pkg)]
     if missing:
         info(f"Installing prerequisites: {', '.join(missing)}")
         try:
@@ -328,6 +409,120 @@ def bootstrap_linux():
     return True
 
 
+def dpkg_architecture():
+    """The dpkg architecture name (amd64, arm64) the apt sources need."""
+    result = run_command(['dpkg', '--print-architecture'], capture_output=True)
+    return result.stdout.strip()
+
+
+def fetch_url(url):
+    """Download `url` and return its bytes; raises on any HTTP or network error."""
+    with urllib.request.urlopen(url, timeout=60) as response:
+        return response.read()
+
+
+def dearmor(key):
+    """Turn an ASCII-armored OpenPGP key into the binary form apt wants.
+
+    Keys that are already binary (GitHub's) pass through unchanged.
+    """
+    if not key.lstrip().startswith(b'-----BEGIN'):
+        return key
+    result = subprocess.run(
+        ['gpg', '--dearmor'], input=key, capture_output=True, check=True
+    )
+    return result.stdout
+
+
+def sudo_write(path, data, mode='0644'):
+    """Write `data` to a root-owned `path`, creating parent directories."""
+    run_command(['sudo', 'install', '-d', '-m', '0755', str(path.parent)])
+    subprocess.run(
+        ['sudo', 'tee', str(path)], input=data, stdout=subprocess.DEVNULL, check=True
+    )
+    run_command(['sudo', 'chmod', mode, str(path)])
+
+
+def ensure_apt_repo(repo, arch):
+    """Add one vendor apt repository if it is not already configured.
+
+    The keyring and any extra files are written once and then left
+    alone; the sources entry is rewritten whenever it differs from the
+    expected line. Returns True when anything changed, so the caller
+    knows to refresh apt's package lists.
+    """
+    changed = False
+    keyring = repo['keyring']
+    if not keyring.exists():
+        info(f"Adding the {repo['name']} apt signing key...")
+        sudo_write(keyring, dearmor(fetch_url(repo['key_url'])))
+        changed = True
+
+    source = repo['source'].format(arch=arch, keyring=keyring) + '\n'
+    sources_list = repo['list']
+    if not sources_list.exists() or sources_list.read_text() != source:
+        info(f"Adding the {repo['name']} apt repository...")
+        sudo_write(sources_list, source.encode())
+        changed = True
+
+    for path, url, needs_dearmor in repo.get('extra_files', ()):
+        if path.exists():
+            continue
+        data = fetch_url(url)
+        sudo_write(path, dearmor(data) if needs_dearmor else data)
+        changed = True
+
+    if changed:
+        success(f"{repo['name']} apt repository configured")
+    else:
+        success(f"{repo['name']} apt repository already configured")
+    return changed
+
+
+def apt_update():
+    run_command(['sudo', 'apt-get', 'update'])
+
+
+def bootstrap_debian():
+    """Install the apt prerequisites and the vendor repositories."""
+    info("Checking Debian package prerequisites...")
+
+    missing = [pkg for pkg in DEBIAN_BOOTSTRAP_PACKAGES if not apt_is_installed(pkg)]
+    if missing:
+        info(f"Installing prerequisites: {', '.join(missing)}")
+        try:
+            apt_update()
+            run_command(
+                [
+                    'sudo', 'env', 'DEBIAN_FRONTEND=noninteractive',
+                    'apt-get', 'install', '-y', '--no-install-recommends', *missing,
+                ]
+            )
+        except subprocess.CalledProcessError:
+            error("Failed to install Debian prerequisites")
+            return False
+        success("Debian prerequisites installed")
+    else:
+        success("Debian prerequisites already installed")
+
+    arch = dpkg_architecture()
+    changed = False
+    for repo in APT_REPOS:
+        try:
+            changed = ensure_apt_repo(repo, arch) or changed
+        except (OSError, subprocess.CalledProcessError) as exc:
+            error(f"Failed to configure the {repo['name']} apt repository: {exc}")
+            return False
+
+    if changed:
+        try:
+            apt_update()
+        except subprocess.CalledProcessError:
+            error("apt-get update failed after adding repositories")
+            return False
+    return True
+
+
 def bootstrap_platform():
     """Install the platform package manager and a modern Python.
 
@@ -346,9 +541,10 @@ def bootstrap_platform():
     if IS_LINUX:
         if not bootstrap_linux():
             return None
-        # pacman's `python` is current (Arch is a rolling release) and the
-        # guard at the top of this file has already vetted this
-        # interpreter, so there is nothing to install a newer one *for*.
+        # pacman's `python` is current (Arch is a rolling release), Ubuntu
+        # 24.04's 3.12 clears the guard at the top of this file, and that
+        # guard has already vetted this interpreter, so there is nothing to
+        # install a newer one *for*.
         return sys.executable
 
     warn(f"No package-manager bootstrap for platform '{PLATFORM}'")

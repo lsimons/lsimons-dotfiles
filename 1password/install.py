@@ -122,6 +122,7 @@ def main():
         cask=True,
         macos_app="1Password",
         pacman="1password",
+        apt="1password",
     ):
         return 1
 
@@ -130,6 +131,7 @@ def main():
         brew="1password-cli",
         cask=True,
         pacman="1password-cli",
+        apt="1password-cli",
         command="op",
     ):
         return 1

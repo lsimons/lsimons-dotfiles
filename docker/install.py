@@ -27,16 +27,18 @@ from helpers import (
     warn,
 )
 
+# (label, pacman package, apt package). Ubuntu packages the engine as
+# docker.io and the compose plugin under its v2 name.
 LINUX_PACKAGES = [
-    ("docker", "docker"),
-    ("docker-compose", "docker-compose"),
-    ("docker-buildx", "docker-buildx"),
+    ("docker", "docker", "docker.io"),
+    ("docker-compose", "docker-compose", "docker-compose-v2"),
+    ("docker-buildx", "docker-buildx", "docker-buildx"),
 ]
 
 
 def install_linux_docker():
-    for label, package in LINUX_PACKAGES:
-        if not ensure_package(label, pacman=package):
+    for label, pacman, apt in LINUX_PACKAGES:
+        if not ensure_package(label, pacman=pacman, apt=apt):
             return False
     return enable_docker_service() and join_docker_group()
 

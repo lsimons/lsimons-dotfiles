@@ -64,33 +64,48 @@ Personal identity (Private vault, `my.1password.eu`), a copy of
 every topic on Ubuntu; the only platform noise left is the "not an Arch
 derivative" warning from `check_platform()`, which step 1 removes.
 
-### 1. Debian/Ubuntu package backend (`script/helpers.py`, `script/install.py`)
+### 1. Debian/Ubuntu package backend — code done, real install pending
 
-- `IS_DEBIAN = IS_LINUX and bool({"debian", "ubuntu"} & LINUX_DISTRO_IDS)`.
-- `IS_WSL` from `WSL_DISTRO_NAME` env or `microsoft` in `/proc/version`.
-- `ensure_package(..., apt=None)`; `apt_is_installed` via `dpkg-query -W`,
-  `apt_install` via `sudo apt-get install -y --no-install-recommends`.
-  Route `_linux_install` on `IS_ARCH` / `IS_DEBIAN`, not bare `IS_LINUX`.
-- `bootstrap_linux()`: apt branch. `apt-get update`, prerequisites
-  (`git curl ca-certificates gnupg build-essential`), and third-party apt
-  repos only where apt is the right tool: 1Password CLI, GitHub CLI (Ubuntu's
-  own `gh` is stale).
-- `bootstrap_platform()`: Arch returns `sys.executable`; Ubuntu 24.04 ships
-  3.12 so this probably needs to install a newer interpreter (deadsnakes PPA
-  or `uv python install`) if any topic turns out to need 3.13+. Verify first;
-  don't add it speculatively.
+Landed in `script/helpers.py` / `script/install.py`:
 
-### 2. Package mapping
+- `IS_DEBIAN` (from `ID`/`ID_LIKE`), `IS_WSL` (`WSL_DISTRO_NAME` or
+  `microsoft` in `/proc/version`).
+- `ensure_package(..., apt=, mise=)`. Routing is `IS_MACOS`+brew →
+  `IS_ARCH`+pacman/aur → `IS_DEBIAN`+apt → `mise` fallback → "no package".
+  `apt_is_installed` via `dpkg-query -W`, `apt_install` via
+  `sudo apt-get install -y --no-install-recommends`.
+- `bootstrap_linux()` dispatches to `bootstrap_arch()` / `bootstrap_debian()`.
+  The Debian branch installs `build-essential git curl ca-certificates gnupg
+  python3` and configures three vendor apt repositories (keyring under
+  `/etc/apt/keyrings`, one `.list` each, `apt-get update` only when something
+  changed): **mise** (`mise.jdx.dev/deb`), **GitHub CLI**
+  (`cli.github.com/packages`) and **1Password** (incl. its debsig policy).
+  mise via apt rather than `curl https://mise.run` so one mechanism covers all
+  three and upgrades ride `apt upgrade`; `mise self-update` is disabled for
+  package installs, which is fine.
+- Python: Ubuntu 24.04's 3.12 clears the guard and every topic imports on it;
+  no newer interpreter is installed.
 
-Ubuntu apt is old or missing for most of the CLI list (`mise`, `uv`, `herdr`,
-`glab`, `pastel`, `aws-cli-v2`, `azure-cli`, `codex`, `copilot`). Policy:
+### 2. Package mapping — done at the call sites
 
-- `apt=` only for what apt does well: `git`, `git-lfs`, `zsh`, `tmux`, `jq`,
-  `docker` (docker-ce repo).
-- Everything else via **mise** (`mise use -g`) or the vendor installer. Same
-  pattern `windows/bootstrap-phase3.ps1` already uses. Check the mise
-  registry per tool before deciding.
-- Mark GUI/desktop topics `optional=True` or skip via `platforms.txt` on WSL.
+- `apt=`: git, git-lfs, git-filter-repo, zsh, tmux, jq, python3, ansible,
+  ansible-lint, yamllint, docker.io / docker-compose-v2 / docker-buildx,
+  fonts-cascadia-code, fonts-jetbrains-mono, and from the vendor repos mise,
+  gh, 1password, 1password-cli.
+- `mise=`: herdr, glab, pastel, uv, aws-cli, saml2aws, azure-cli (pipx
+  backend; `azure/dependencies.txt` = `uv`), codex, copilot, opencode,
+  topgrade, tfenv, `github:nicosuave/memex` (no registry entry; upstream
+  ships linux tarballs). Each such topic now lists `mise` in
+  `dependencies.txt` so `minimum_release_age` is configured first.
+- powerlevel10k: no Ubuntu package. `oh-my-zsh/install.py` clones upstream
+  into `$XDG_DATA_HOME/powerlevel10k` when no packaged theme is found;
+  `powerline10k.zsh` searches that path too.
+- Left as `optional` warnings on Debian (no package, desktop, or WSL-irrelevant):
+  Ghostty, Zed, Vivaldi, Quarto, Iosevka, Lilex (now optional everywhere),
+  Git Credential Manager, claude-history.
+- Still to verify for real, not just dry-run: the mise `github:` backend
+  picking the right memex asset, `pipx:azure-cli` through uv, and whether
+  `tfenv` from mise behaves like the brew/AUR one.
 
 ### 3. WSL-specific behaviour
 
@@ -133,8 +148,10 @@ Once `IS_DEBIAN` exists it can run a real install of a few cheap topics
 
 1. ~~`machines/poppy.json`, then re-run `python3 script/install.py --dry-run`
    until it gets through every topic in dry-run.~~ Done 2026-09-09.
-2. `IS_DEBIAN` + `apt=` backend + `bootstrap_linux()` apt branch. Real
-   (non-dry) install of `jq`, `tmux`, `zsh`, `git` topics as the smoke test.
+2. `IS_DEBIAN` + `apt=` backend + `bootstrap_linux()` apt branch: **code
+   landed 2026-09-09** (dry-run green on Ubuntu, 122 unit tests). Real
+   (non-dry) install of `jq`, `tmux`, `zsh`, `git` topics as the smoke test:
+   pending (needs sudo).
 3. Package mapping topic by topic, mise-first.
 4. WSL gating of desktop topics.
 5. 1Password agent bridge.

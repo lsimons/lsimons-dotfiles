@@ -62,7 +62,7 @@ def main():
     info("Installing GitHub CLI...")
 
     if not ensure_package(
-        'GitHub CLI', brew='gh', pacman='github-cli', command='gh'
+        'GitHub CLI', brew='gh', pacman='github-cli', apt='gh', command='gh'
     ):
         return 1
 

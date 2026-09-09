@@ -25,7 +25,9 @@ from helpers import (
 
 
 def install_system_python():
-    return ensure_package('System Python', brew='python@3', pacman='python')
+    return ensure_package(
+        'System Python', brew='python@3', pacman='python', apt='python3'
+    )
 
 
 def install_mise_python():

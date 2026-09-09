@@ -14,7 +14,7 @@ def main():
 
     # No Arch repo carries topgrade; it is an AUR build.
     if not ensure_package(
-        'topgrade', brew='topgrade', aur='topgrade', command='topgrade'
+        'topgrade', brew='topgrade', aur='topgrade', mise='topgrade', command='topgrade'
     ):
         return 1
 

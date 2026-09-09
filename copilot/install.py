@@ -24,6 +24,7 @@ def install_copilot_cli():
         "copilot-cli",
         brew="copilot-cli",
         pacman="github-copilot-cli",
+        mise="copilot",
         command="copilot",
     ):
         return 1

@@ -50,13 +50,14 @@ Machine-specific config lives in `machines/` as JSON files. Use `get_machine_con
 
 ## Platforms
 
-macOS and Arch-based Linux (Omarchy). **Do not branch on the platform
-inside a topic installer.** Use `ensure_package()` from
-`script/helpers.py`, which takes a package name per platform:
+macOS, Arch-based Linux (Omarchy) and Debian-based Linux (Ubuntu, also
+under WSL2). **Do not branch on the platform inside a topic installer.**
+Use `ensure_package()` from `script/helpers.py`, which takes a package
+name per platform:
 
 ```python
-ensure_package("GitHub CLI", brew="gh", pacman="github-cli", command="gh")
-ensure_package("topgrade", brew="topgrade", aur="topgrade", command="topgrade")
+ensure_package("GitHub CLI", brew="gh", pacman="github-cli", apt="gh", command="gh")
+ensure_package("topgrade", brew="topgrade", aur="topgrade", mise="topgrade", command="topgrade")
 ```
 
 - `command=` / `macos_app=` are presence probes, checked before any
@@ -64,14 +65,24 @@ ensure_package("topgrade", brew="topgrade", aur="topgrade", command="topgrade")
 - `aur=` goes through yay; `pacman=` prefers a configured repo and falls
   back to yay. Omarchy ships an `[aur]` binary repo, so many nominally
   AUR packages resolve without a build.
+- `apt=` is for what Debian/Ubuntu package well: git, zsh, tmux, jq,
+  docker, ansible, fonts. Ubuntu's archive has no mise or 1Password CLI
+  and a stale gh, so those three come from the vendors' apt repositories,
+  which `script/install.py`'s bootstrap configures.
+- `mise=` is the fallback for a platform with no native name; in practice
+  that is Debian/Ubuntu for every other developer CLI (herdr, glab, uv,
+  aws-cli, codex, ...). A `github:owner/repo` spec works for tools not in
+  the mise registry. A topic that uses it lists `mise` in its
+  `dependencies.txt`.
 - `optional=True` downgrades "no package for this platform" and "install
   failed" to warnings. Use it for software with no aarch64 Linux build
   (Ghostty, Zed, Vivaldi, Quarto), not to paper over a real failure.
 
-`IS_MACOS` / `IS_LINUX` / `IS_ARCH` exist for work that is genuinely
-platform-shaped rather than a renamed package — LaunchAgents vs. systemd
-units, the 1Password agent socket, the Dock. A topic that belongs on one
-platform entirely gets a `platforms.txt` instead.
+`IS_MACOS` / `IS_LINUX` / `IS_ARCH` / `IS_DEBIAN` / `IS_WSL` exist for
+work that is genuinely platform-shaped rather than a renamed package —
+LaunchAgents vs. systemd units, the 1Password agent socket, the Dock. A
+topic that belongs on one platform entirely gets a `platforms.txt`
+instead.
 
 symlinks.txt lines may carry a `macos:` / `linux:` prefix when a config
 file's destination differs per platform.
@@ -96,7 +107,7 @@ config; it never replaces a stock file or writes to `/usr/share/omarchy`.
 - Idempotent
 - Non-interactive
 - Use `ensure_package()` for packages that aren't language runtimes
-  (Homebrew on macOS, pacman/yay on Arch)
+  (Homebrew on macOS, pacman/yay on Arch, apt or mise on Debian/Ubuntu)
 - Use `mise use -g <tool>@<version>` for language runtimes and for tools
   that benefit from per-project version pinning (node, python, rust, go,
   ruby, jdk, fnox, etc.)

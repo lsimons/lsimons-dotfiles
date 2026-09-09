@@ -5,6 +5,7 @@ dispatch, per-topic platform gating, and per-platform symlink
 destinations — rather than any one topic's installer.
 """
 
+import contextlib
 import importlib.util
 import subprocess
 import sys
@@ -29,6 +30,24 @@ def load_module(name, path):
 installer = load_module("dotfiles_platform_installer", REPO_ROOT / "script" / "install.py")
 
 
+def _on(macos=False, arch=False, debian=False):
+    """Force the platform flags helpers.ensure_package dispatches on."""
+    stack = contextlib.ExitStack()
+    stack.enter_context(mock.patch.object(helpers, "IS_MACOS", macos))
+    stack.enter_context(mock.patch.object(helpers, "IS_LINUX", arch or debian))
+    stack.enter_context(mock.patch.object(helpers, "IS_ARCH", arch))
+    stack.enter_context(mock.patch.object(helpers, "IS_DEBIAN", debian))
+    return stack
+
+
+def _on_arch():
+    return _on(arch=True)
+
+
+def _on_debian():
+    return _on(debian=True)
+
+
 class DistroDetectionTests(unittest.TestCase):
     def _ids(self, text):
         with tempfile.TemporaryDirectory() as tmp:
@@ -51,6 +70,36 @@ class DistroDetectionTests(unittest.TestCase):
             helpers._linux_distro_ids(Path("/nonexistent/os-release")), set()
         )
 
+    def test_ubuntu_is_a_debian_derivative(self):
+        ids = self._ids('ID=ubuntu\nID_LIKE=debian\nVERSION_CODENAME=noble\n')
+        self.assertTrue({"debian", "ubuntu"} & ids)
+        self.assertNotIn("arch", ids)
+
+
+class WslDetectionTests(unittest.TestCase):
+    def _proc_version(self, text):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "version"
+        path.write_text(text)
+        return path
+
+    def test_wsl_session_variable_is_enough(self):
+        with mock.patch.dict(helpers.os.environ, {"WSL_DISTRO_NAME": "Ubuntu-24.04"}):
+            self.assertTrue(helpers._running_in_wsl(Path("/nonexistent")))
+
+    def test_microsoft_kernel_is_detected_without_the_variable(self):
+        proc = self._proc_version(
+            "Linux version 6.6.87.2-microsoft-standard-WSL2 (root@...) #1 SMP\n"
+        )
+        with mock.patch.dict(helpers.os.environ, {}, clear=True):
+            self.assertTrue(helpers._running_in_wsl(proc))
+
+    def test_plain_linux_is_not_wsl(self):
+        proc = self._proc_version("Linux version 6.12.1-arch1-1 (linux@archlinux)\n")
+        with mock.patch.dict(helpers.os.environ, {}, clear=True):
+            self.assertFalse(helpers._running_in_wsl(proc))
+
 
 class EnsurePackageTests(unittest.TestCase):
     def setUp(self):
@@ -71,6 +120,8 @@ class EnsurePackageTests(unittest.TestCase):
             with self.subTest(macos=is_macos), mock.patch.object(
                 helpers, "IS_MACOS", is_macos
             ), mock.patch.object(helpers, "IS_LINUX", not is_macos), mock.patch.object(
+                helpers, "IS_ARCH", not is_macos
+            ), mock.patch.object(helpers, "IS_DEBIAN", False), mock.patch.object(
                 helpers, "brew_is_installed", return_value=False
             ), mock.patch.object(
                 helpers, "pacman_is_installed", return_value=False
@@ -92,9 +143,7 @@ class EnsurePackageTests(unittest.TestCase):
                     brew.assert_not_called()
 
     def test_aur_fallback_when_the_package_is_in_no_repo(self):
-        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
-            helpers, "IS_LINUX", True
-        ), mock.patch.object(
+        with mock.patch.object(helpers, "IS_MACOS", False), _on_arch(), mock.patch.object(
             helpers, "pacman_is_installed", return_value=False
         ), mock.patch.object(
             helpers, "pacman_repo_of", return_value=None
@@ -109,23 +158,17 @@ class EnsurePackageTests(unittest.TestCase):
 
     def test_missing_package_name_for_this_platform_fails_loudly(self):
         """A topic with no Arch package must not quietly report success."""
-        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
-            helpers, "IS_LINUX", True
-        ), mock.patch.object(helpers, "command_exists", return_value=False):
+        with mock.patch.object(helpers, "IS_MACOS", False), _on_arch(), mock.patch.object(helpers, "command_exists", return_value=False):
             self.assertFalse(helpers.ensure_package("dockutil", brew="dockutil"))
 
     def test_optional_downgrades_a_missing_package_to_a_warning(self):
-        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
-            helpers, "IS_LINUX", True
-        ), mock.patch.object(helpers, "command_exists", return_value=False):
+        with mock.patch.object(helpers, "IS_MACOS", False), _on_arch(), mock.patch.object(helpers, "command_exists", return_value=False):
             self.assertTrue(
                 helpers.ensure_package("dockutil", brew="dockutil", optional=True)
             )
 
     def test_optional_also_absorbs_an_install_failure(self):
-        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
-            helpers, "IS_LINUX", True
-        ), mock.patch.object(
+        with mock.patch.object(helpers, "IS_MACOS", False), _on_arch(), mock.patch.object(
             helpers, "command_exists", return_value=False
         ), mock.patch.object(
             helpers, "pacman_is_installed", return_value=False
@@ -136,10 +179,72 @@ class EnsurePackageTests(unittest.TestCase):
                 helpers.ensure_package("ghostty", pacman="ghostty", optional=True)
             )
 
+    def test_debian_uses_apt(self):
+        with _on_debian(), mock.patch.object(
+            helpers, "command_exists", return_value=False
+        ), mock.patch.object(
+            helpers, "apt_is_installed", return_value=False
+        ), mock.patch.object(
+            helpers, "apt_install", return_value=True
+        ) as apt, mock.patch.object(
+            helpers, "pacman_install"
+        ) as pacman, mock.patch.object(helpers, "mise_use") as mise:
+            self.assertTrue(
+                helpers.ensure_package(
+                    "GitHub CLI", brew="gh", pacman="github-cli", apt="gh", mise="gh"
+                )
+            )
+        apt.assert_called_once_with("gh")
+        pacman.assert_not_called()
+        mise.assert_not_called()
+
+    def test_mise_is_the_fallback_where_no_native_package_is_named(self):
+        with _on_debian(), mock.patch.object(
+            helpers, "command_exists", return_value=True
+        ), mock.patch.object(
+            helpers, "apt_install"
+        ) as apt, mock.patch.object(helpers, "mise_use", return_value=True) as mise:
+            # command_exists is True for the "mise" prerequisite probe, so
+            # skip the tool's own probe by not passing command=.
+            self.assertTrue(
+                helpers.ensure_package("herdr", brew="herdr", pacman="herdr", mise="herdr")
+            )
+        mise.assert_called_once_with("herdr")
+        apt.assert_not_called()
+
+    def test_a_native_package_beats_the_mise_fallback(self):
+        with _on_arch(), mock.patch.object(
+            helpers, "command_exists", return_value=False
+        ), mock.patch.object(
+            helpers, "pacman_is_installed", return_value=False
+        ), mock.patch.object(
+            helpers, "pacman_repo_of", return_value="extra"
+        ), mock.patch.object(
+            helpers, "pacman_install", return_value=True
+        ) as pacman, mock.patch.object(helpers, "mise_use") as mise:
+            self.assertTrue(helpers.ensure_package("uv", pacman="uv", mise="uv"))
+        pacman.assert_called_once_with("extra/uv")
+        mise.assert_not_called()
+
+    def test_mise_fallback_needs_mise_installed(self):
+        with _on_debian(), mock.patch.object(
+            helpers, "command_exists", return_value=False
+        ), mock.patch.object(helpers, "mise_use") as mise:
+            self.assertFalse(helpers.ensure_package("herdr", mise="herdr"))
+        mise.assert_not_called()
+
+    def test_apt_probe_reads_dpkg_status(self):
+        installed = subprocess.CompletedProcess([], 0, stdout="install ok installed", stderr="")
+        removed = subprocess.CompletedProcess([], 0, stdout="deinstall ok config-files", stderr="")
+        with mock.patch.object(helpers.subprocess, "run", return_value=installed):
+            self.assertTrue(helpers.apt_is_installed("jq"))
+        with mock.patch.object(helpers.subprocess, "run", return_value=removed):
+            self.assertFalse(helpers.apt_is_installed("jq"))
+
     def test_dry_run_installs_nothing_and_reports_success(self):
         helpers.set_dry_run(True)
         self.addCleanup(helpers.set_dry_run, False)
-        with mock.patch.object(helpers.subprocess, "run") as run:
+        with _on_arch(), mock.patch.object(helpers.subprocess, "run") as run:
             self.assertTrue(
                 helpers.ensure_package("jq", brew="jq", pacman="jq", command="jq")
             )
@@ -182,9 +287,7 @@ class PacmanTargetQualificationTests(unittest.TestCase):
             self.assertIsNone(helpers.pacman_repo_of("nope"))
 
     def test_install_target_carries_the_repo_prefix(self):
-        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
-            helpers, "IS_LINUX", True
-        ), mock.patch.object(
+        with mock.patch.object(helpers, "IS_MACOS", False), _on_arch(), mock.patch.object(
             helpers, "command_exists", return_value=False
         ), mock.patch.object(
             helpers, "pacman_is_installed", return_value=False
@@ -201,9 +304,7 @@ class PacmanTargetQualificationTests(unittest.TestCase):
 
     def test_an_aur_name_carried_by_a_repo_skips_the_source_build(self):
         """Omarchy prebuilds plenty of AUR packages; prefer those."""
-        with mock.patch.object(helpers, "IS_MACOS", False), mock.patch.object(
-            helpers, "IS_LINUX", True
-        ), mock.patch.object(
+        with mock.patch.object(helpers, "IS_MACOS", False), _on_arch(), mock.patch.object(
             helpers, "command_exists", return_value=False
         ), mock.patch.object(
             helpers, "pacman_is_installed", return_value=False
@@ -219,6 +320,59 @@ class PacmanTargetQualificationTests(unittest.TestCase):
             )
         pacman.assert_called_once_with("omarchy/mise-bin")
         aur.assert_not_called()
+
+
+class AptRepositoryBootstrapTests(unittest.TestCase):
+    """The Debian bootstrap adds vendor apt repositories exactly once."""
+
+    def _repo(self, root):
+        return {
+            'name': 'mise',
+            'key_url': 'https://example.invalid/key.pub',
+            'keyring': root / 'keyrings' / 'mise.gpg',
+            'source': 'deb [arch={arch} signed-by={keyring}] https://example.invalid/deb stable main',
+            'list': root / 'sources.list.d' / 'mise.list',
+        }
+
+    def _write(self, path, data, mode='0644'):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+
+    def test_first_run_writes_key_and_source_and_second_run_is_a_noop(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            installer, "fetch_url", return_value=b"binary-key"
+        ) as fetch, mock.patch.object(installer, "sudo_write", side_effect=self._write):
+            repo = self._repo(Path(tmp))
+            self.assertTrue(installer.ensure_apt_repo(repo, "amd64"))
+            self.assertEqual(repo['keyring'].read_bytes(), b"binary-key")
+            self.assertEqual(
+                repo['list'].read_text(),
+                f"deb [arch=amd64 signed-by={repo['keyring']}] "
+                "https://example.invalid/deb stable main\n",
+            )
+            fetch.assert_called_once()
+            self.assertFalse(installer.ensure_apt_repo(repo, "amd64"))
+            fetch.assert_called_once()
+
+    def test_a_changed_source_line_is_rewritten_without_refetching_the_key(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            installer, "fetch_url"
+        ) as fetch, mock.patch.object(installer, "sudo_write", side_effect=self._write):
+            repo = self._repo(Path(tmp))
+            self._write(repo['keyring'], b"binary-key")
+            self._write(repo['list'], b"deb https://example.invalid/old stable main\n")
+            self.assertTrue(installer.ensure_apt_repo(repo, "arm64"))
+            self.assertIn("arch=arm64", repo['list'].read_text())
+            fetch.assert_not_called()
+
+    def test_armored_keys_are_dearmored_and_binary_keys_pass_through(self):
+        self.assertEqual(installer.dearmor(b"\x99\x02binary"), b"\x99\x02binary")
+        done = subprocess.CompletedProcess([], 0, stdout=b"dearmored", stderr=b"")
+        with mock.patch.object(installer.subprocess, "run", return_value=done) as run:
+            self.assertEqual(
+                installer.dearmor(b"-----BEGIN PGP PUBLIC KEY BLOCK-----\n..."), b"dearmored"
+            )
+        self.assertEqual(run.call_args.args[0], ['gpg', '--dearmor'])
 
 
 class BrewWithoutHomebrewTests(unittest.TestCase):

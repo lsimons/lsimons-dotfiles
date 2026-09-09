@@ -22,7 +22,7 @@ def main():
     # macOS has shipped zsh as the default login shell since Catalina, so
     # this is a no-op there. Arch installs bash only.
     zsh_was_present = command_exists("zsh")
-    if not ensure_package("zsh", brew="zsh", pacman="zsh", command="zsh"):
+    if not ensure_package("zsh", brew="zsh", pacman="zsh", apt="zsh", command="zsh"):
         return 1
 
     # Deliberately not running chsh: on Omarchy the login shell is bash

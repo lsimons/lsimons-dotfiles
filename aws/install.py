@@ -92,7 +92,7 @@ def main():
     info("Installing AWS CLI...")
 
     if not ensure_package(
-        "awscli", brew="awscli", pacman="aws-cli-v2", command="aws"
+        "awscli", brew="awscli", pacman="aws-cli-v2", mise="aws-cli", command="aws"
     ):
         return 1
 
@@ -105,7 +105,7 @@ def main():
 
     info("Installing saml2aws...")
     if not ensure_package(
-        "saml2aws", brew="saml2aws", aur="saml2aws", command="saml2aws"
+        "saml2aws", brew="saml2aws", aur="saml2aws", mise="saml2aws", command="saml2aws"
     ):
         return 1
 

@@ -39,6 +39,9 @@ from helpers import (
 TAP = "nicosuave/tap"
 FORMULA = "nicosuave/tap/memex"
 AUR_PACKAGE = "memex"
+# No mise registry entry yet; upstream publishes linux/macos tarballs on
+# its GitHub releases, which mise's github backend installs directly.
+MISE_TOOL = "github:nicosuave/memex"
 
 HERDR_PLUGIN = "nicosuave/memex"
 HERDR_PLUGIN_ID = "nicosuave.memex"
@@ -69,7 +72,7 @@ def install_memex():
         return False
 
     return ensure_package(
-        "memex", brew=FORMULA, aur=AUR_PACKAGE, command="memex"
+        "memex", brew=FORMULA, aur=AUR_PACKAGE, mise=MISE_TOOL, command="memex"
     )
 
 

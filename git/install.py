@@ -230,7 +230,7 @@ def main():
     generate_config()
     generate_allowed_signers()
 
-    if not ensure_package("Git", brew="git", pacman="git"):
+    if not ensure_package("Git", brew="git", pacman="git", apt="git"):
         return 1
 
     # Optional on Linux: git-credential-manager publishes a .deb/.rpm and
@@ -251,12 +251,13 @@ def main():
         "git-filter-repo",
         brew="git-filter-repo",
         pacman="git-filter-repo",
+        apt="git-filter-repo",
         command="git-filter-repo",
     ):
         return 1
 
     lfs_already_installed = command_exists("git-lfs")
-    if not ensure_package("git-lfs", brew="git-lfs", pacman="git-lfs"):
+    if not ensure_package("git-lfs", brew="git-lfs", pacman="git-lfs", apt="git-lfs"):
         return 1
 
     # config.template already hardcodes the filter.lfs.* config this sets, so

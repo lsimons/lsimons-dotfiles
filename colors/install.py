@@ -12,7 +12,9 @@ def main():
     parse_dry_run()
     info("Installing color tooling...")
 
-    if not ensure_package('pastel', brew='pastel', pacman='pastel', command='pastel'):
+    if not ensure_package(
+        'pastel', brew='pastel', pacman='pastel', mise='pastel', command='pastel'
+    ):
         return 1
     return 0
 
