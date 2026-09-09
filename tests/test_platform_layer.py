@@ -365,6 +365,29 @@ class AptRepositoryBootstrapTests(unittest.TestCase):
             self.assertIn("arch=arm64", repo['list'].read_text())
             fetch.assert_not_called()
 
+    def test_a_repo_already_managed_by_extrepo_is_left_alone(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            installer, "fetch_url"
+        ) as fetch, mock.patch.object(installer, "sudo_write") as write:
+            repo = self._repo(Path(tmp))
+            managed = Path(tmp) / "sources.list.d" / "extrepo_mise.sources"
+            self._write(managed, b"Types: deb\n")
+            repo['managed_by'] = [managed]
+            self.assertFalse(installer.ensure_apt_repo(repo, "amd64"))
+        fetch.assert_not_called()
+        write.assert_not_called()
+
+    def test_downloads_identify_themselves(self):
+        """mise.jdx.dev returns 403 to Python's default user agent."""
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"key"
+        with mock.patch.object(installer.urllib.request, "urlopen", return_value=response) as urlopen:
+            self.assertEqual(installer.fetch_url("https://example.invalid/key"), b"key")
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://example.invalid/key")
+        self.assertNotIn("urllib", request.get_header("User-agent", ""))
+        self.assertIn("lsimons-dotfiles", request.get_header("User-agent", ""))
+
     def test_armored_keys_are_dearmored_and_binary_keys_pass_through(self):
         self.assertEqual(installer.dearmor(b"\x99\x02binary"), b"\x99\x02binary")
         done = subprocess.CompletedProcess([], 0, stdout=b"dearmored", stderr=b"")

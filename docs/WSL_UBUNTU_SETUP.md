@@ -82,7 +82,12 @@ Landed in `script/helpers.py` / `script/install.py`:
   (`cli.github.com/packages`) and **1Password** (incl. its debsig policy).
   mise via apt rather than `curl https://mise.run` so one mechanism covers all
   three and upgrades ride `apt upgrade`; `mise self-update` is disabled for
-  package installs, which is fine.
+  package installs, which is fine. First real run on poppy (2026-09-09):
+  `mise.jdx.dev` returned **403** to Python's default `Python-urllib` user
+  agent; `fetch_url` now sends a descriptive one. Leo had meanwhile enabled
+  the repo via `extrepo enable mise` (mise's other documented route), so the
+  bootstrap treats an existing `extrepo_mise.sources` as "already
+  configured" rather than adding the same repo twice.
 - Python: Ubuntu 24.04's 3.12 clears the guard and every topic imports on it;
   no newer interpreter is installed.
 

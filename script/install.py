@@ -298,6 +298,9 @@ DEBIAN_BOOTSTRAP_PACKAGES = [
 #
 # `source` is formatted with the dpkg architecture and the keyring path.
 # `extra_files` are (path, url, dearmor) triples written once when absent.
+# `managed_by` lists files whose presence means the repository is already
+# configured another way (extrepo, the vendor's other documented route),
+# in which case nothing is added so apt does not see the same repo twice.
 APT_KEYRINGS_DIR = Path('/etc/apt/keyrings')
 APT_SOURCES_DIR = Path('/etc/apt/sources.list.d')
 APT_REPOS = [
@@ -310,6 +313,7 @@ APT_REPOS = [
             'https://mise.jdx.dev/deb stable main'
         ),
         'list': APT_SOURCES_DIR / 'mise.list',
+        'managed_by': [APT_SOURCES_DIR / 'extrepo_mise.sources'],
     },
     {
         'name': 'GitHub CLI',
@@ -418,9 +422,15 @@ def dpkg_architecture():
     return result.stdout.strip()
 
 
+# mise.jdx.dev answers 403 to Python's default "Python-urllib/x.y" agent
+# (a bot filter); a descriptive one is accepted everywhere.
+FETCH_USER_AGENT = 'lsimons-dotfiles (+https://github.com/lsimons/lsimons-dotfiles)'
+
+
 def fetch_url(url):
     """Download `url` and return its bytes; raises on any HTTP or network error."""
-    with urllib.request.urlopen(url, timeout=60) as response:
+    request = urllib.request.Request(url, headers={'User-Agent': FETCH_USER_AGENT})
+    with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 
 
@@ -454,6 +464,11 @@ def ensure_apt_repo(repo, arch):
     expected line. Returns True when anything changed, so the caller
     knows to refresh apt's package lists.
     """
+    for managed in repo.get('managed_by', ()):
+        if managed.exists():
+            success(f"{repo['name']} apt repository already configured ({managed.name})")
+            return False
+
     changed = False
     keyring = repo['keyring']
     if not keyring.exists():
