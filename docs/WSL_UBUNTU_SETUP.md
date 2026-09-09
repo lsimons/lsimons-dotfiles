@@ -122,7 +122,26 @@ Landed in `script/helpers.py` / `script/install.py`:
   already). `1password/install.py` skips the app and `agent.toml` when
   `IS_WSL` and installs only the CLI; that is the one `IS_WSL` gate inside a
   topic, because the CLI is still wanted there.
-- `1password/`: install only `op` CLI (done, see above). For desktop-app integration (biometric
+- `1password/` under WSL — **code done, real test pending** (needs
+  `scoop install npiperelay` on Windows and the app's SSH agent enabled):
+  - `~/.local/bin/op` execs the Windows `op.exe` (found on the interop PATH,
+    else under `/mnt/c/Users/*/scoop/shims`), because only it can use the
+    Windows app's biometric unlock. Without `op.exe` the Linux CLI is
+    installed from the 1Password apt repo instead. `ssh/install.py`'s
+    `op_write_secret` now reads via stdout (not `-o`, which op.exe would
+    resolve on the Windows side) and strips CRLF.
+  - Agent bridge = option 1 below: `~/.config/dotfiles/1password-agent-bridge.sh`
+    (socat + `npiperelay.exe -ei -s //./pipe/openssh-ssh-agent`) run by the
+    systemd user unit `1password-agent-bridge.service`, listening on
+    `~/.1password/agent.sock`, the very path the Linux app uses, so
+    `ssh/install.py`'s `IdentityAgent` is unchanged. Verified on poppy that
+    Windows executables run from systemd user units (no `WSL_INTEROP` tricks
+    needed). `socat` via apt.
+  - Git signing: `op-ssh-sign` ships only with the app, so under WSL
+    `gpg.ssh.program` is `~/.config/dotfiles/ssh-sign-1password-bridge.sh`
+    (`SSH_AUTH_SOCK=<bridge> exec ssh-keygen "$@"`); `user.signingkey` was
+    already the public key, which is what makes ssh-keygen ask the agent.
+  - `npiperelay` added to `windows/scoopfile.json` (extras bucket). For desktop-app integration (biometric
   unlock) the Linux `op` cannot talk to the Windows app; alias `op` to
   `op.exe` (on PATH via `/mnt/c/...` interop) when `IS_WSL`. Affects
   `op_read_command()` and `ssh/install.py:op_write_secret()`.
@@ -162,7 +181,8 @@ Once `IS_DEBIAN` exists it can run a real install of a few cheap topics
    pending (needs sudo).
 3. Package mapping topic by topic, mise-first.
 4. WSL gating of desktop topics: **done 2026-09-09**.
-5. 1Password agent bridge.
+5. 1Password agent bridge: **code landed 2026-09-10**; real test on poppy
+   pending (npiperelay on Windows, then `1password`, `ssh`, `git` topics).
 6. CI + docs.
 
 Commit small; each step should leave `--dry-run` green on Ubuntu and on macOS

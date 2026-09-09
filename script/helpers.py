@@ -127,6 +127,16 @@ HOST_PLATFORMS = {PLATFORM}
 if IS_LINUX and not IS_WSL:
     HOST_PLATFORMS.add("linux-desktop")
 
+# Where the Linux 1Password app serves its SSH agent. Under WSL no app runs
+# here; 1password/install.py bridges the Windows app's agent into this same
+# path, so ssh's IdentityAgent needs no WSL special case.
+OP_LINUX_AGENT_SOCKET = HOME / ".1password" / "agent.sock"
+
+# git's gpg.ssh.program under WSL. op-ssh-sign ships only with the desktop
+# app, so ssh/install.py generates this helper, which signs with ssh-keygen
+# through the bridged agent instead.
+SSH_SIGN_BRIDGE_PATH = XDG_CONFIG_HOME / "dotfiles" / "ssh-sign-1password-bridge.sh"
+
 # Omarchy ships its own config tree; its presence is what distinguishes
 # "an Arch box" from "the Omarchy desktop" for topics that theme it.
 OMARCHY_ROOT = XDG_CONFIG_HOME / "omarchy"

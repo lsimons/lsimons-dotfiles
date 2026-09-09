@@ -28,12 +28,20 @@ class SshGitPathTests(unittest.TestCase):
         helpers.set_dry_run(False)
 
     def test_op_write_uses_path_and_explicit_account(self):
-        with mock.patch.object(ssh_installer.subprocess, "run") as run:
-            ssh_installer.op_write_secret("work", "op://vault/key/public", "/key")
+        completed = mock.Mock(stdout=b"ssh-ed25519 AAAA key\r\n", returncode=0)
+        with mock.patch.object(
+            ssh_installer.subprocess, "run", return_value=completed
+        ) as run, mock.patch.object(ssh_installer, "write_file") as write:
+            ssh_installer.op_write_secret("work", "op://vault/key/public", "/key", mode="0644")
 
         command = run.call_args.args[0]
         self.assertEqual(command[0], "op")
         self.assertEqual(command[1:4], ["read", "--account", "work"])
+        self.assertEqual(command[-1], "op://vault/key/public")
+        self.assertNotIn("-o", command)
+        # Read through stdout, CRLF normalised, so the same code works when
+        # `op` is the Windows op.exe under WSL.
+        write.assert_called_once_with("/key", "ssh-ed25519 AAAA key\n", mode=0o644)
 
     def test_askpass_has_explicit_account_and_repairs_mode_when_unchanged(self):
         with tempfile.TemporaryDirectory() as tmp:

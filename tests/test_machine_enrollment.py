@@ -250,6 +250,9 @@ class OnePasswordInstallerEnrollmentTests(unittest.TestCase):
             mock.patch.object(
                 onepassword, "install_1password_ssh_agent_config"
             ) as install_agent,
+            mock.patch.object(onepassword, "install_wsl_agent_bridge", return_value=True) as bridge,
+            # No op.exe on the Windows side: fall back to the Linux CLI.
+            mock.patch.object(onepassword, "install_op_wrapper", return_value=False),
             mock.patch("pathlib.Path.exists", return_value=True),
             mock.patch.object(onepassword, "ensure_package", return_value=True) as ensure,
         ):
@@ -257,6 +260,7 @@ class OnePasswordInstallerEnrollmentTests(unittest.TestCase):
 
         self.assertEqual(result, 0)
         install_agent.assert_not_called()
+        bridge.assert_called_once()
         self.assertEqual([call.args[0] for call in ensure.call_args_list], ["1Password CLI"])
 
 

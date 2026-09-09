@@ -496,9 +496,11 @@ class OnePasswordIntegrationPathTests(unittest.TestCase):
     modules are re-imported with that flag forced either way.
     """
 
-    def _load(self, name, relative_path, is_macos):
-        with mock.patch.object(helpers, "IS_MACOS", is_macos):
-            return load_module(f"{name}_{is_macos}", REPO_ROOT / relative_path)
+    def _load(self, name, relative_path, is_macos, is_wsl=False):
+        with mock.patch.object(helpers, "IS_MACOS", is_macos), mock.patch.object(
+            helpers, "IS_WSL", is_wsl
+        ):
+            return load_module(f"{name}_{is_macos}_{is_wsl}", REPO_ROOT / relative_path)
 
     def test_ssh_agent_socket_is_platform_native(self):
         mac = self._load("ssh_installer", "ssh/install.py", True)
@@ -517,6 +519,14 @@ class OnePasswordIntegrationPathTests(unittest.TestCase):
             "/Applications/1Password.app/Contents/MacOS/op-ssh-sign",
         )
         self.assertEqual(linux.GPG_SSH_PROGRAM_DEFAULT, "/opt/1Password/op-ssh-sign")
+
+    def test_wsl_signs_through_the_bridged_agent(self):
+        """No desktop app means no op-ssh-sign; the generated helper signs
+        with ssh-keygen against the bridged agent, at the Linux socket path."""
+        git = self._load("git_installer", "git/install.py", False, is_wsl=True)
+        ssh = self._load("ssh_installer", "ssh/install.py", False, is_wsl=True)
+        self.assertEqual(git.GPG_SSH_PROGRAM_DEFAULT, str(helpers.SSH_SIGN_BRIDGE_PATH))
+        self.assertEqual(ssh.OP_AGENT_SOCKET, helpers.OP_LINUX_AGENT_SOCKET)
 
 
 class GitEditorFallbackTests(unittest.TestCase):

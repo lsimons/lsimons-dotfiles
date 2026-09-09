@@ -9,7 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
 from helpers import (
     AI_KEY_PUB_PATH,
     IS_MACOS,
+    IS_WSL,
     SSH_CONFIG_AI_PATH,
+    SSH_SIGN_BRIDGE_PATH,
     backup_file,
     command_exists,
     ensure_package,
@@ -27,12 +29,15 @@ from helpers import (
 
 # 1Password's SSH signing shim, shipped inside the desktop app. The macOS
 # path is inside the .app bundle; the Linux package installs it under
-# /opt alongside the rest of the app.
-GPG_SSH_PROGRAM_DEFAULT = (
-    "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
-    if IS_MACOS
-    else "/opt/1Password/op-ssh-sign"
-)
+# /opt alongside the rest of the app. Under WSL the app runs on Windows,
+# so ssh/install.py generates a helper that signs with ssh-keygen through
+# the bridged agent instead.
+if IS_MACOS:
+    GPG_SSH_PROGRAM_DEFAULT = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+elif IS_WSL:
+    GPG_SSH_PROGRAM_DEFAULT = str(SSH_SIGN_BRIDGE_PATH)
+else:
+    GPG_SSH_PROGRAM_DEFAULT = "/opt/1Password/op-ssh-sign"
 
 # Editors to try for `core.editor`, most preferred first. Zed is the
 # daily driver, but it has no aarch64 Linux build, so fall back rather

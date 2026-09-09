@@ -18,6 +18,7 @@
     { "Name": "gsudo",           "Source": "extras" },
     { "Name": "lazygit",         "Source": "extras" },
     { "Name": "mise",            "Source": "main" },
+    { "Name": "npiperelay",      "Source": "extras" },
     { "Name": "ripgrep",         "Source": "main" },
     { "Name": "sd",              "Source": "main" },
     { "Name": "starship",        "Source": "main" },
