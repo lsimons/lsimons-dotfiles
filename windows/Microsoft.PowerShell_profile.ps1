@@ -1,4 +1,4 @@
-# PowerShell profile for the Windows 11 ARM64 AI-agent VM.
+# PowerShell profile for Windows 11 (ARM64 AI-agent VM or x64 workstation).
 # Copied to $PROFILE.CurrentUserAllHosts by bootstrap-phase1.ps1.
 # See ../docs/AGENT_WINDOWS_SETUP.md for rationale.
 

@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Phase 2 bootstrap: account-coupled setup for the Windows 11 ARM64 AI-agent VM.
+    Phase 2 bootstrap: account-coupled setup for Windows 11 (ARM64 AI-agent VM or x64 workstation).
 
 .DESCRIPTION
     Run AFTER phase 1 AND after signing into 1Password, GitHub, and Claude.

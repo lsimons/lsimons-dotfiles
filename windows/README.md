@@ -1,6 +1,8 @@
 # windows/
 
-Windows 11 ARM64 bootstrap for the AI-agent sandbox VM.
+Windows 11 bootstrap. Written for the ARM64 AI-agent sandbox VM (UTM on
+Apple Silicon); verified to also work unchanged on an x64 workstation — see
+[Personal machine variant](#personal-machine-variant).
 
 For the rationale (why native-only, why these tools, constraints), see
 [../docs/AGENT_WINDOWS_SETUP.md](../docs/AGENT_WINDOWS_SETUP.md).
@@ -22,7 +24,7 @@ For the rationale (why native-only, why these tools, constraints), see
 
 ## Prereqs
 
-- Fresh Windows 11 ARM64 in UTM, local account, updates applied
+- Fresh Windows 11 (ARM64 in UTM, or x64 on bare metal), local account, updates applied
 - `winget --version` works
 - You have a browser (Vivaldi) to complete OAuth flows
 
@@ -111,6 +113,33 @@ cd ~\git\lsimons-dotfiles\windows
 ```
 
 Tools that are not yet available for Windows/ARM64 via mise will warn and be skipped.
+On x64 they all install.
+
+### Personal machine variant
+
+The same scripts work on a real x64 workstation (verified 2026-09 on a fresh
+Windows 11 Pro install). Everything in phases 1–3 runs unchanged; only the
+identity-coupled manual steps differ:
+
+- **Skip `paretosecurity-tune.ps1`.** A real machine has a TPM, so the
+  BitLocker check applies — leave every Pareto check enabled and remediate
+  until green.
+- Sign in to Vivaldi, GitHub, Claude, and 1Password as **yourself**, not the bot.
+- Run phase 2 with your own identity instead of the bot defaults, otherwise
+  commits are authored as the bot and signed with the bot key:
+
+  ```powershell
+  .\bootstrap-phase2.ps1 `
+    -SshKeyItem 'op://Private/<your ssh key item>/public key' `
+    -GitName    'Leo Simons' `
+    -GitEmail   'mail@leosimons.com'
+  ```
+
+  Phase 2 always writes the public key to `~\.ssh\id_lsimons_bot_ed25519.pub`
+  regardless of which 1Password item it came from — the filename is
+  misleading on a personal machine but the contents are your key. Runs of
+  `git commit` and `git log --show-signature` in Verify below confirm which
+  key is in use.
 
 ### Debloat (optional)
 
@@ -159,10 +188,11 @@ are hash-compared so unchanged files don't get rewritten.
 
 ## Caveats
 
-- **No WSL2, no Docker, no Podman.** Apple Silicon M2 doesn't expose nested
-  virtualization, and even M3+ only exposes it for Linux guests. This VM
-  cannot run WSL2 regardless of effort spent trying. Run a separate Linux
-  UTM VM if you need containers.
+- **No WSL2, no Docker, no Podman on the ARM64 VM.** Apple Silicon M2 doesn't
+  expose nested virtualization, and even M3+ only exposes it for Linux guests.
+  This VM cannot run WSL2 regardless of effort spent trying. Run a separate
+  Linux UTM VM if you need containers. (Not a constraint on bare-metal x64,
+  but the scripts don't install any of these either way.)
 - **winget package IDs** may drift over time. If `winget configure` fails
   with "no package found", update the `id:` in `packages.winget.yaml`.
 - **Scoop refuses to run as admin.** Phase 1 enforces this — it throws if

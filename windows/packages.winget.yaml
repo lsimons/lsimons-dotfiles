@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
 #
-# Declarative winget manifest for the Windows 11 ARM64 AI-agent VM.
+# Declarative winget manifest for Windows 11 (ARM64 AI-agent VM or x64 workstation).
 # See ../docs/AGENT_WINDOWS_SETUP.md for rationale.
 #
 # Apply with:

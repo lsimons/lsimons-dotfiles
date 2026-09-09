@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Phase 1 bootstrap for the Windows 11 ARM64 AI-agent VM.
+    Phase 1 bootstrap for Windows 11 (ARM64 AI-agent VM or x64 workstation).
 
 .DESCRIPTION
     Unattended setup. No sign-ins required --account-coupled work lives in
