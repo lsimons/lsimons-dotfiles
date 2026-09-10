@@ -199,7 +199,7 @@ def main():
     info("Installing/updating Claude Code via official installer...")
     try:
         run_cmd(
-            ["sh", "-c", "curl -fsSL https://claude.ai/install.sh | sh"],
+            ["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"],
             check=True,
         )
         success("Claude Code installed")
