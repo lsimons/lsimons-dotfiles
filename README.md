@@ -20,31 +20,106 @@ A modular dotfiles configuration for macOS, Arch-based Linux ([Omarchy](https://
 
 ## Quick Start
 
-For a fresh VM setup (UTM, Little Snitch, accounts), see [AGENT_SETUP.md](./docs/AGENT_SETUP.md) first.
-For the Windows 11 ARM64 sandbox variant, see [AGENT_WINDOWS_SETUP.md](./docs/AGENT_WINDOWS_SETUP.md) and [windows/README.md](./windows/README.md).
+These dotfiles install natively on **macOS**, **Arch-based Linux**
+([Omarchy](https://omarchy.org/)) and **Ubuntu**, including Ubuntu under
+**WSL2**. Native Windows is not a target of `install.py`; the `windows/`
+directory bootstraps a Windows host with PowerShell instead. Pick your
+platform:
 
-On an existing macOS system with Homebrew, an Arch-based Linux (Omarchy)
-system, or an Ubuntu system (a WSL2 distro included):
+| You are on | Do this |
+|------------|---------|
+| macOS | [Prepare](#macos), then run the [common steps](#common-steps) |
+| Arch-based Linux (Omarchy) | Run the [common steps](#common-steps) |
+| Ubuntu (desktop or server) | Run the [common steps](#common-steps) |
+| Windows 11 | Bootstrap Windows with [windows/README.md](./windows/README.md), then optionally add [WSL2](#windows-11--wsl2) |
+| Ubuntu under WSL2 | [Prepare Windows](#windows-11--wsl2), then run the common steps inside WSL |
+
+For a fresh AI-agent VM (UTM, Little Snitch, accounts), read
+[AGENT_SETUP.md](./docs/AGENT_SETUP.md) first; the Windows 11 ARM64
+variant is [AGENT_WINDOWS_SETUP.md](./docs/AGENT_WINDOWS_SETUP.md).
+
+### Common steps
+
+Every machine must be enrolled before installing: the installer refuses
+to run for a hostname without a `machines/<hostname>.json` (see
+[Machine-Specific Configuration](#machine-specific-configuration)).
 
 ```bash
 mkdir -p ~/git/lsimons && cd ~/git/lsimons
 git clone https://github.com/lsimons/lsimons-dotfiles.git
 cd lsimons-dotfiles
-./script/install.py              # preview first: ./script/install.py --dry-run
-source ~/.zshrc
+hostname -s                      # enroll: create machines/<this>.json if missing
+./script/install.py --dry-run    # preview
+./script/install.py
+source ~/.zshrc                  # or open a new terminal
 ```
 
-The installer needs **Python 3.11 or newer**. macOS only ships 3.9 in
-the Command Line Tools, so on a fresh Mac run `brew install python`
-first; the installer says so and stops if the interpreter is too old.
-Arch is a rolling release, so its `python` is always new enough, and
-Ubuntu 24.04's `python3` (3.12) is new enough too.
-
-Installing packages needs root on Linux, so `sudo` may ask for your
-password once — the same way a Homebrew cask does on macOS.
+The installer needs **Python 3.11 or newer** and stops with a message if
+the interpreter is too old. It bootstraps the platform's package manager
+itself (Homebrew, yay, or the vendor apt repositories) and then runs
+every topic that supports the platform. Installing packages needs root
+on Linux, so `sudo` may ask for your password once — the same way a
+Homebrew cask does on macOS.
 
 Once mise is installed you can also use `mise run install` (add
-`-- --dry-run` to preview) and `mise run check` for subsequent runs.
+`-- --dry-run` to preview) for subsequent runs.
+
+### macOS
+
+macOS only ships Python 3.9 in the Command Line Tools, so install
+Homebrew and a current Python first:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+brew install python
+```
+
+Then run the common steps. Desktop apps (Ghostty, Zed, Vivaldi, fonts,
+the 1Password app) install as Homebrew casks; the `dock/`, `terminal/`,
+`swiftdialog/` and `timeout/` topics are macOS-only.
+
+### Arch-based Linux (Omarchy)
+
+Nothing to prepare: Arch is a rolling release, so its `python` is always
+new enough, and the installer adds `base-devel`, `git` and `yay` itself.
+Run the common steps. Omarchy is the first-class Linux desktop; the
+`omarchy/` topic adds LSD Warm themes and an extra Hyprland keybinding
+layer on top of Omarchy's own config, and other Arch derivatives are
+recognised through `ID_LIKE` in `/etc/os-release`.
+
+### Ubuntu
+
+Nothing to prepare on Ubuntu 24.04 or newer, whose `python3` (3.12) is
+new enough. On an older release, install a 3.11+ `python3` first (Ubuntu 22.04
+ships 3.10, which is too old). Run the common steps. The bootstrap adds the
+vendor apt repositories for mise, GitHub CLI and 1Password, which
+Ubuntu's archive lacks or ships stale; the remaining developer CLIs come
+from mise. Desktop topics (fonts, Ghostty, Zed, Vivaldi) install on a
+desktop session and are skipped on a server or under WSL.
+
+### Windows 11 + WSL2
+
+Windows itself is set up with PowerShell, not `install.py`: follow the
+phases in [windows/README.md](./windows/README.md) (winget, Scoop,
+profiles, Claude Code, SSH and git signing, mise runtimes). That is a
+complete Windows-native setup on its own.
+
+To also get the Linux dotfiles, add WSL2 with Ubuntu on top:
+
+1. On Windows, make sure `npiperelay` is installed (`scoop install
+   npiperelay`; it is in `windows/scoopfile.json`) and enable
+   **Settings → Developer → Use the SSH agent** and **Integrate with
+   1Password CLI** in the 1Password app.
+2. Run `wsl --install -d Ubuntu-24.04` and open the distro.
+3. Inside WSL, run the common steps **on the Linux filesystem** (your WSL
+   home, not `/mnt/c`).
+
+Under WSL the installer skips the desktop topics, since the Windows host
+owns the editor, browser, fonts and 1Password app, and instead bridges
+the Windows 1Password SSH agent and `op.exe` into WSL. Details and
+troubleshooting: [docs/WSL_UBUNTU_SETUP.md](./docs/WSL_UBUNTU_SETUP.md).
+
+### Validating the repo
 
 Run `mise run check` (or `python3 script/check.py`) to validate the
 repo without touching your system — this is what CI runs on every push.
@@ -163,12 +238,13 @@ files.
 
 ## Platform Support
 
-| Platform | Packages from | Desktop topics | Notes |
-|----------|---------------|----------------|-------|
-| macOS | Homebrew | yes | |
-| Arch-based Linux | pacman, yay for the AUR | yes | [Omarchy](https://omarchy.org/) in practice; its config tree is what the `omarchy/` topic detects. Derivatives are recognised through `ID_LIKE` in `/etc/os-release`, so Arch Linux ARM counts too |
-| Ubuntu / Debian | apt, mise for the rest | on a desktop | Ubuntu's archive has no mise or 1Password CLI and a stale gh; the bootstrap adds the vendors' apt repositories for those |
-| Ubuntu under WSL2 | apt, mise for the rest | no | The Windows host owns editor, browser, fonts and the 1Password app; the `1password/` topic bridges the Windows app's SSH agent and CLI into WSL. See [docs/WSL_UBUNTU_SETUP.md](./docs/WSL_UBUNTU_SETUP.md) and [windows/README.md](./windows/README.md) |
+| Platform | Installer | Packages from | Desktop topics | Notes |
+|----------|-----------|---------------|----------------|-------|
+| macOS | `install.py` | Homebrew (formulae and casks) | yes | Needs `brew install python` first; see [Quick Start](#macos) |
+| Arch-based Linux | `install.py` | pacman, yay for the AUR | yes | [Omarchy](https://omarchy.org/) in practice; its config tree is what the `omarchy/` topic detects. Derivatives are recognised through `ID_LIKE` in `/etc/os-release`, so Arch Linux ARM counts too |
+| Ubuntu / Debian | `install.py` | apt, mise for the rest | on a desktop session | Ubuntu's archive has no mise or 1Password CLI and a stale gh; the bootstrap adds the vendors' apt repositories for those |
+| Ubuntu under WSL2 | `install.py` | apt, mise for the rest | no | The Windows host owns editor, browser, fonts and the 1Password app; the `1password/` topic bridges the Windows app's SSH agent and CLI into WSL. See [docs/WSL_UBUNTU_SETUP.md](./docs/WSL_UBUNTU_SETUP.md) |
+| Windows 11 (native) | `windows/*.ps1` | winget, Scoop, mise | yes | Not handled by `install.py`. PowerShell bootstrap for the Windows host, x64 or ARM64; see [windows/README.md](./windows/README.md). Pair with WSL2 above for the Linux shell |
 
 Topic installers should not branch on the platform themselves. Call
 `ensure_package()` from `script/helpers.py` with a package name per
