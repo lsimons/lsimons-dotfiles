@@ -80,10 +80,10 @@ def install_agent_browser():
 
 
 def link_sbp_brandbook():
-    """Link the private sbp-brandbook skill into the vendored skills collection.
+    """Link the sbp-brandbook skill into the vendored skills collection.
 
     Unlike the rest of the collection, sbp-brandbook is not open source, so
-    it lives in the private sbp-skills checkout instead of lsimons-skills.
+    it lives in the separate sbp-skills checkout instead of lsimons-skills.
     """
     if not SBP_BRANDBOOK_SRC.is_dir() and not is_dry_run():
         warn(

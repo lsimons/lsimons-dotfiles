@@ -33,7 +33,7 @@ Add, update or remove skills in `lsimons-skills`; nothing here needs to
 change. `install.py` warns and exits non-zero if the checkout is missing.
 
 The one exception is `sbp-brandbook`, which is not open source and so isn't
-part of `lsimons-skills`. It lives in the private
+part of `lsimons-skills`. It lives in the separate (public)
 [`sbp-skills`](https://github.com/lsimons/sbp-skills) checkout instead,
 expected at `../sbp-skills`, and `install.py` symlinks it into
 `lsimons-skills/skills/sbp-brandbook` so it still reaches every agent through
