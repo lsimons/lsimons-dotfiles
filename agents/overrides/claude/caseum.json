@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run mkdocs build*)",
+      "Bash(uv run mkdocs serve*)"
+    ]
+  }
+}

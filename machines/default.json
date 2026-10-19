@@ -1,0 +1,10 @@
+{
+  "git": {
+    "user": {
+      "name": "Leo Simons",
+      "email": "mail@leosimons.com",
+      "signingkey": null
+    },
+    "gitlabHosts": ["gitlab.com"]
+  }
+}

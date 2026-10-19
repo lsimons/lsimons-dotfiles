@@ -1,0 +1,66 @@
+# lsimons ZSH configuration
+# This follows the XDG Base Directory specification
+
+# Set up XDG Base Directory paths if not already set
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+mkdir -p "$XDG_CACHE_HOME/zsh"
+mkdir -p "$XDG_STATE_HOME/zsh"
+
+# Configure ZSH to use XDG paths
+export HISTFILE="$XDG_STATE_HOME/zsh/history"
+export HISTSIZE=10000
+export SAVEHIST=10000
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Source each topic's shell config from the dotfiles directory, in three
+# phases: path.*, then rc.*, then completion.*. Only those fixed names are
+# sourced; any other script in a topic is left alone, so a file that is
+# meant to be run (and may end in exec) can never take over a new shell.
+# .sh files are shared between bash and zsh, loaded first in each phase;
+# .zsh files are zsh-specific, loaded second
+DOTFILES="$HOME/.dotfiles"
+# The private overlay (lsimons-dotfiles-private, see README.md) can add
+# topic files of its own; script/install.py links it at DOTFILES_PRIVATE
+# when it is checked out. Its files load right after this repository's.
+DOTFILES_PRIVATE="$XDG_CONFIG_HOME/dotfiles/private"
+if [ -d "$DOTFILES" ]; then
+  # Load path configuration first
+  for file in "$DOTFILES"/*/path.sh(N) "$DOTFILES_PRIVATE"/*/path.sh(N); do
+    [ -r "$file" ] && source "$file"
+  done
+  for file in "$DOTFILES"/*/path.zsh(N) "$DOTFILES_PRIVATE"/*/path.zsh(N); do
+    [ -r "$file" ] && source "$file"
+  done
+
+  # Load everything else
+  for file in "$DOTFILES"/*/rc.sh(N) "$DOTFILES_PRIVATE"/*/rc.sh(N); do
+    [ -r "$file" ] && source "$file"
+  done
+  for file in "$DOTFILES"/*/rc.zsh(N) "$DOTFILES_PRIVATE"/*/rc.zsh(N); do
+    [ -r "$file" ] && source "$file"
+  done
+
+  # Load completion configuration last
+  for file in "$DOTFILES"/*/completion.sh(N) "$DOTFILES_PRIVATE"/*/completion.sh(N); do
+    [ -r "$file" ] && source "$file"
+  done
+  for file in "$DOTFILES"/*/completion.zsh(N) "$DOTFILES_PRIVATE"/*/completion.zsh(N); do
+    [ -r "$file" ] && source "$file"
+  done
+fi
+
+# Initialize the completion system when no sourced completion config did so.
+if (( ! $+functions[compdef] )); then
+  autoload -Uz compinit
+  compinit -d "$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"
+fi

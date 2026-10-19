@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Installation script for OpenCode"""
+
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
+from helpers import (
+    SKILLS_DIR,
+    dry,
+    ensure_package,
+    info,
+    is_dry_run,
+    link_directory,
+    link_file,
+    link_or_merge_json,
+    parse_dry_run,
+    private_overlay,
+    render_agents_md,
+)
+
+
+def install_opencode():
+    """Install OpenCode (anomalyco's fork) from brew or the AUR."""
+    info("Installing OpenCode...")
+
+    if not ensure_package(
+        "OpenCode",
+        brew="anomalyco/tap/opencode",
+        aur="opencode-bin",
+        mise="opencode",
+        command="opencode",
+    ):
+        return 1
+    return 0
+
+
+def configure_opencode():
+    """Configure OpenCode symlinks."""
+    home = Path.home()
+    xdg_config_home = Path(os.environ.get("XDG_CONFIG_HOME", home / ".config"))
+    dotfiles = home / ".dotfiles"
+    opencode_dir = xdg_config_home / "opencode"
+    agents_md = opencode_dir / "AGENTS.md"
+    config_json = opencode_dir / "opencode.json"
+    legacy_config_json = opencode_dir / "config.json"
+    tui_json = opencode_dir / "tui.json"
+    tui_json_source = dotfiles / "opencode" / "tui.json.symlink"
+    themes_source = dotfiles / "opencode" / "themes"
+
+    if not is_dry_run():
+        opencode_dir.mkdir(parents=True, exist_ok=True)
+
+    render_agents_md(agents_md)
+    # The LiteLLM provider and default models come from the private overlay.
+    # Read from this checkout: ~/.dotfiles does not exist yet in a dry run.
+    link_or_merge_json(
+        Path(__file__).resolve().parent / "opencode.json.symlink",
+        config_json,
+        private_overlay("opencode", "opencode.json"),
+    )
+    link_file(tui_json_source, tui_json)
+    link_directory(themes_source, opencode_dir / "themes")
+    link_directory(SKILLS_DIR, opencode_dir / "skills")
+
+    if legacy_config_json.is_symlink():
+        if is_dry_run():
+            dry(f"would remove legacy symlink {legacy_config_json}")
+        else:
+            legacy_config_json.unlink()
+
+
+def main():
+    parse_dry_run()
+    info("Setting up OpenCode...")
+
+    result = install_opencode()
+    if result != 0:
+        return result
+
+    configure_opencode()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

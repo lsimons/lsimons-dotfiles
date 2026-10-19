@@ -1,0 +1,3 @@
+# Bash symlink destinations
+bashrc.symlink -> ~/.bashrc
+bash_profile.symlink -> ~/.bash_profile

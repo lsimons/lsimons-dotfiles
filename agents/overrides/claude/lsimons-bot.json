@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run python -m lsimons_bot.blog --dry-run*)",
+      "Bash(uv run --env-file .env ./app.py)"
+    ]
+  }
+}

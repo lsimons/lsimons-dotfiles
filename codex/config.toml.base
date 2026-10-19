@@ -1,0 +1,29 @@
+model_catalog_json = "/Users/lsimons/.codex/models.json"
+personality = "pragmatic"
+model_reasoning_effort = "medium"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "cached"
+
+[sandbox_workspace_write]
+network_access = true
+
+[features]
+multi_agent = true
+
+[features.network_proxy]
+enabled = true
+domains = { "github.com" = "allow", "api.github.com" = "allow", "codeload.github.com" = "allow", "uploads.github.com" = "allow", "objects.githubusercontent.com" = "allow", "raw.githubusercontent.com" = "allow" }
+dangerously_allow_all_unix_sockets = true
+
+[analytics]
+enabled = false
+
+[feedback]
+enabled = false
+
+[tui]
+status_line = ["model-with-reasoning", "context-remaining", "git-branch"]
+
+[projects."/Users/lsimons/git/lsimons/lsimons-dotfiles"]
+trust_level = "trusted"

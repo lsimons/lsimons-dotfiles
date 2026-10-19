@@ -1,0 +1,4 @@
+# aisk/timeout is a Go reimplementation of the coreutils tool, packaged
+# for macOS because macOS does not ship timeout(1) at all. On Linux
+# coreutils already provides it, so there is nothing to install.
+macos

@@ -1,0 +1,58 @@
+# lsimons Bash configuration
+# This follows the XDG Base Directory specification
+
+# Set up XDG Base Directory paths if not already set
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
+
+# Source each topic's shell config from the dotfiles directory, in three
+# phases: path.*, then rc.*, then completion.*. Only those fixed names are
+# sourced; any other script in a topic is left alone, so a file that is
+# meant to be run (and may end in exec) can never take over a new shell.
+# .sh files are shared between bash and zsh, loaded first in each phase;
+# .bash files are bash-specific, loaded second
+DOTFILES="$HOME/.dotfiles"
+# The private overlay (lsimons-dotfiles-private, see README.md) can add
+# topic files of its own; script/install.py links it at DOTFILES_PRIVATE
+# when it is checked out. Its files load right after this repository's.
+DOTFILES_PRIVATE="$XDG_CONFIG_HOME/dotfiles/private"
+if [ -d "$DOTFILES" ]; then
+  # Enable nullglob so unmatched patterns expand to nothing, preserving its state.
+  if shopt -q nullglob; then
+    nullglob_was_set=true
+  else
+    nullglob_was_set=false
+  fi
+  shopt -s nullglob
+
+  # Load path configuration first
+  for file in "$DOTFILES"/*/path.sh "$DOTFILES_PRIVATE"/*/path.sh; do
+    [ -r "$file" ] && source "$file"
+  done
+  for file in "$DOTFILES"/*/path.bash "$DOTFILES_PRIVATE"/*/path.bash; do
+    [ -r "$file" ] && source "$file"
+  done
+
+  # Load everything else
+  for file in "$DOTFILES"/*/rc.sh "$DOTFILES_PRIVATE"/*/rc.sh; do
+    [ -r "$file" ] && source "$file"
+  done
+  for file in "$DOTFILES"/*/rc.bash "$DOTFILES_PRIVATE"/*/rc.bash; do
+    [ -r "$file" ] && source "$file"
+  done
+
+  # Load completion configuration last
+  for file in "$DOTFILES"/*/completion.sh "$DOTFILES_PRIVATE"/*/completion.sh; do
+    [ -r "$file" ] && source "$file"
+  done
+  for file in "$DOTFILES"/*/completion.bash "$DOTFILES_PRIVATE"/*/completion.bash; do
+    [ -r "$file" ] && source "$file"
+  done
+
+  if [ "$nullglob_was_set" = false ]; then
+    shopt -u nullglob
+  fi
+  unset nullglob_was_set
+fi

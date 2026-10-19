@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Supersede in-flight runs for the same branch/PR; never cancel main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Provisions Python, ruff, shellcheck and actionlint from
+      # .mise.toml, all exact-pinned. Previously CI resolved Python
+      # through setup-python and then `pip install ruff` unpinned, so it
+      # could run a different ruff than any developer and had no way to
+      # get the shell and workflow linters at all.
+      - name: Set up mise
+        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
+        with:
+          install: true
+          cache: true
+
+      # NOT `mise run install`: in this repo that is the dotfiles
+      # installer, which would try to configure the runner as a
+      # workstation. `check` is the read-only gate, and it already runs
+      # install.py under --dry-run.
+      - name: Run checks
+        run: mise run check
+
+  install-smoke:
+    name: Install smoke test (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # `check` only dry-runs the installer, so nothing there ever reaches
+      # a package manager. This job is where the Debian bootstrap and the
+      # apt backend run for real: the vendor repositories get added, apt
+      # installs happen, and the mise topic installs mise from mise's own
+      # repository. Deliberately NOT `script/install.py`, which would set
+      # the runner up as a workstation and needs an enrolled machine. The
+      # runner's stock Ubuntu python3 is exactly what a fresh WSL distro
+      # has, which is the point.
+      - name: Bootstrap Debian prerequisites and vendor repositories
+        run: |
+          python3 -c 'import sys; sys.path.insert(0, "script"); import install; sys.exit(0 if install.bootstrap_debian() else 1)'
+          apt-cache policy mise gh 1password-cli
+
+      - name: Install cheap topics for real
+        run: |
+          for topic in jq tmux zsh mise; do
+            python3 "$topic/install.py"
+          done
+          jq --version
+          tmux -V
+          zsh --version
+          mise --version
+
+      - name: Bootstrap is idempotent
+        run: |
+          python3 -c 'import sys; sys.path.insert(0, "script"); import install; sys.exit(0 if install.bootstrap_debian() else 1)' > second-run.log
+          cat second-run.log
+          ! grep -q 'Adding the' second-run.log
+
+  zizmor:
+    name: Zizmor (GitHub Actions audit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Audit GitHub Actions workflows (zizmor)
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          advanced-security: false
+          # The action defaults to version "latest"; pin it so a zizmor
+          # release cannot turn CI red on its own. Must match the zizmor
+          # in .mise.toml for `mise run audit` to be a real local mirror
+          # — bump them together.
+          #
+          # The action validates this against a list baked into its own
+          # release, so the pin requires zizmor-action >= v0.6.2. On
+          # v0.6.1 it fails with "Unknown version: 1.29.0" before zizmor
+          # runs at all; that is why the SHA above moved in the same
+          # change.
+          #
+          # `collect` is deliberately left at its default, which already
+          # collects every input kind (workflows, actions, dependabot,
+          # pre-commit) while respecting .gitignore.
+          version: "1.30.1"

@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""Installation script for Azure CLI"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "script"))
+from helpers import ensure_package, info, parse_dry_run
+
+
+def main():
+    parse_dry_run()
+    info("Installing Azure CLI...")
+
+    if not ensure_package(
+        "azure-cli", brew="azure-cli", pacman="azure-cli", mise="azure-cli", command="az"
+    ):
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
