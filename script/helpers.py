@@ -776,6 +776,24 @@ def npm_install_global(package):
         return False
 
 
+def npm_uninstall_global(package):
+    """Uninstall an npm package globally (from the active mise node).
+
+    Returns True on success, False on failure.
+    """
+    if _DRY_RUN:
+        dry(f"would run: npm uninstall -g {package}")
+        return True
+    if not command_exists("npm"):
+        error("npm not found; install the 'node' topic first")
+        return False
+    try:
+        subprocess.run(["npm", "uninstall", "-g", package], check=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def mise_use(tool_spec):
     """Run `mise use -g <tool_spec>`. Respects dry-run.
 

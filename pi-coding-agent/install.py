@@ -17,22 +17,34 @@ from helpers import (
     link_directory,
     npm_global_installed,
     npm_install_global,
+    npm_uninstall_global,
     parse_dry_run,
     render_agents_md,
     success,
     write_file,
 )
 
+PACKAGE = '@earendil-works/pi-coding-agent'
+# Pre-1.0 name, deprecated upstream. It ships the same `pi` binary, so it
+# must be removed before the new package can be installed.
+LEGACY_PACKAGE = '@mariozechner/pi-coding-agent'
+
 
 def install_npm_package():
     """Install the pi-coding-agent npm package via mise-managed npm."""
     info("Installing pi-coding-agent npm package...")
 
-    if npm_global_installed('@mariozechner/pi-coding-agent'):
+    if npm_global_installed(LEGACY_PACKAGE):
+        info(f"Removing deprecated {LEGACY_PACKAGE}...")
+        if not npm_uninstall_global(LEGACY_PACKAGE):
+            error(f"Failed to uninstall {LEGACY_PACKAGE}")
+            return 1
+
+    if npm_global_installed(PACKAGE):
         success("pi-coding-agent already installed")
         return 0
 
-    if npm_install_global('@mariozechner/pi-coding-agent'):
+    if npm_install_global(PACKAGE):
         success("pi-coding-agent installed")
         return 0
 
