@@ -129,7 +129,14 @@
       "Bash(gh auth refresh *)",
       "Bash(gh auth logout *)",
       "Bash(gh auth setup-git *)",
-      "Bash(gh repo delete *)"
+      "Bash(gh repo delete *)",
+      "NotebookEdit",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "RemoteTrigger",
+      "EnterPlanMode",
+      "ExitPlanMode"
     ],
     "defaultMode": "auto"
   },
