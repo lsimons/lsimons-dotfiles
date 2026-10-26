@@ -157,6 +157,8 @@
   },
   "cleanupPeriodDays": 3650000,
   "disableClaudeAiConnectors": true,
+  "enableWorkflows": false,
+  "enableArtifact": false,
   "skillOverrides": {
     "dataviz": "off",
     "claude-api": "off",

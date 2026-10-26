@@ -110,7 +110,12 @@ def install_mcp_servers(topic_dir):
         return
 
     with open(source) as f:
-        wanted = json.load(f).get("mcpServers", {})
+        source_config = json.load(f)
+    wanted = source_config.get("mcpServers", {})
+    # Servers listed here were once installed by this topic and must be
+    # removed explicitly. Servers that are simply absent from mcpServers are
+    # left alone, because they may have been added by hand.
+    removed = source_config.get("removedMcpServers", [])
 
     if not command_exists("claude"):
         warn("claude CLI not on PATH; skipping MCP server config")
@@ -156,6 +161,22 @@ def install_mcp_servers(topic_dir):
             success(f"MCP server configured: {name}")
         except subprocess.CalledProcessError:
             warn(f"Failed to configure MCP server: {name}")
+
+    for name in removed:
+        if name not in current:
+            success(f"MCP server already removed: {name}")
+            continue
+
+        if is_dry_run():
+            dry(f"would remove MCP server {name}")
+            continue
+
+        info(f"Removing MCP server: {name}")
+        try:
+            run_cmd(["claude", "mcp", "remove", "--scope", "user", name], check=True)
+            success(f"MCP server removed: {name}")
+        except subprocess.CalledProcessError:
+            warn(f"Failed to remove MCP server: {name}")
 
 
 def install_claude_history():
