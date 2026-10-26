@@ -136,7 +136,17 @@
       "CronList",
       "RemoteTrigger",
       "EnterPlanMode",
-      "ExitPlanMode"
+      "ExitPlanMode",
+      "EndConversation",
+      "ShareOnboardingGuide",
+      "SendFeedback",
+      "SendUserFile",
+      "PushNotification",
+      "LSP",
+      "ListMcpResourcesTool",
+      "ReadMcpResourceTool",
+      "ReadMcpResourceDirTool",
+      "WaitForMcpServers"
     ],
     "defaultMode": "auto"
   },
