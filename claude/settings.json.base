@@ -146,7 +146,8 @@
       "ListMcpResourcesTool",
       "ReadMcpResourceTool",
       "ReadMcpResourceDirTool",
-      "WaitForMcpServers"
+      "WaitForMcpServers",
+      "mcp__*"
     ],
     "defaultMode": "auto"
   },
