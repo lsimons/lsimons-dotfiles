@@ -61,6 +61,11 @@ every topic that supports the platform. Installing packages needs root
 on Linux, so `sudo` may ask for your password once — the same way a
 Homebrew cask does on macOS.
 
+The 3.11 floor is only for running the installer. Development uses Python
+3.15: the repo's `.mise.toml` pins it, and the `python` topic installs it
+as mise's global Python (`mise use -g python@3.15`), so interactive shells
+get 3.15 after the first run.
+
 Once mise is installed you can also use `mise run install` (add
 `-- --dry-run` to preview) for subsequent runs.
 

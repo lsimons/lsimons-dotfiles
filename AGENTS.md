@@ -6,7 +6,7 @@ Personal dotfiles repository for macOS, Arch-based Linux ([Omarchy](https://omar
 
 ## Quick Reference
 
-- **Install**: `mise run install` (or `./script/install.py`) — needs Python 3.11+
+- **Install**: `mise run install` (or `./script/install.py`) — needs Python 3.11+; dev tooling and mise use 3.15
 - **Preview install**: `mise run install -- --dry-run`
 - **Quality checks**: `mise run check` (or `python3 script/check.py`)
 - **Workflow audit**: `mise run audit` (zizmor)
