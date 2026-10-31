@@ -41,11 +41,8 @@ hostname -s                                        # enroll: create machines/<th
 ./script/install.py
 ```
 
-Ubuntu 24.04's `python3` (3.12) is older than the installer's 3.15 minimum,
-so install 3.15 with uv first and run the installer with it:
-`curl -LsSf https://astral.sh/uv/install.sh | sh`, then
-`~/.local/bin/uv python install 3.15` and
-`~/.local/bin/python3.15 script/install.py`. `sudo` asks for your password once for apt.
+Ubuntu 24.04's `python3` (3.12) clears the installer's version guard, so no
+newer interpreter is needed. `sudo` asks for your password once for apt.
 
 The installer detects Ubuntu through `ID`/`ID_LIKE` in `/etc/os-release`
 (`IS_DEBIAN`) and WSL through `WSL_DISTRO_NAME` or the Microsoft kernel in
