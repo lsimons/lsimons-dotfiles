@@ -39,17 +39,17 @@ import sys
 import urllib.request
 from pathlib import Path
 
-# Checked before importing helpers, which imports tomllib (new in 3.11).
-# macOS ships Python 3.9.6 in the Command Line Tools, so on a genuinely
-# fresh machine this script would otherwise die on an opaque
-# `ModuleNotFoundError: No module named 'tomllib'` before reaching step 2
-# above — the step that installs a newer Python. Fail with an instruction
-# instead.
+# Python 3.15 is the minimum for every Python project of lsimons; keep in
+# step with pyrightconfig.json and ruff.toml. Checked before importing
+# helpers, which imports tomllib (new in 3.11). macOS ships Python 3.9.6
+# in the Command Line Tools, so on a genuinely fresh machine this script
+# would otherwise die on an opaque `ModuleNotFoundError: No module named
+# 'tomllib'` before reaching step 2 above — the step that installs a
+# newer Python. Fail with an instruction instead.
 #
-# Only the standard library sets this floor: the syntax here is still
-# 3.9-compatible, so this guard itself parses on the stock interpreter
-# and can report the problem.
-MIN_PYTHON = (3, 11)
+# The syntax here is still 3.9-compatible, so this guard itself parses on
+# the stock interpreter and can report the problem.
+MIN_PYTHON = (3, 15)
 if sys.version_info < MIN_PYTHON:
     if platform.system() == 'Darwin':
         _hint = (
@@ -61,9 +61,11 @@ if sys.version_info < MIN_PYTHON:
         )
     else:
         _hint = (
-            "Install a newer Python first, then re-run this script:\n"
-            "  sudo pacman -S python              # Arch\n"
-            "  sudo apt-get install -y python3    # Debian/Ubuntu\n"
+            "Install a newer Python first, then re-run this script with it.\n"
+            "Distribution packages may still be older, so uv is the reliable way:\n"
+            "  curl -LsSf https://astral.sh/uv/install.sh | sh\n"
+            "  ~/.local/bin/uv python install 3.15\n"
+            "  ~/.local/bin/python3.15 script/install.py\n"
         )
     sys.stderr.write(
         f"lsimons-dotfiles needs Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]} or newer, "
@@ -570,10 +572,9 @@ def bootstrap_platform():
     if IS_LINUX:
         if not bootstrap_linux():
             return None
-        # pacman's `python` is current (Arch is a rolling release), Ubuntu
-        # 24.04's 3.12 clears the guard at the top of this file, and that
-        # guard has already vetted this interpreter, so there is nothing to
-        # install a newer one *for*.
+        # The guard at the top of this file has already vetted this
+        # interpreter (>= MIN_PYTHON), so there is nothing to install a
+        # newer one *for*.
         return sys.executable
 
     warn(f"No package-manager bootstrap for platform '{PLATFORM}'")
