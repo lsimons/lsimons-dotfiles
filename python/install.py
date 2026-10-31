@@ -36,7 +36,7 @@ def install_mise_python():
         return False
 
     info("Installing Python via mise...")
-    if not mise_use('python@3.14'):
+    if not mise_use('python@3.15'):
         error("Failed to install Python via mise")
         return False
 
