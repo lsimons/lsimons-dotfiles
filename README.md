@@ -54,7 +54,7 @@ hostname -s                      # enroll: create machines/<this>.json if missin
 source ~/.zshrc                  # or open a new terminal
 ```
 
-The installer needs **Python 3.15 or newer** and stops with a message if
+The installer needs **Python 3.11 or newer** and stops with a message if
 the interpreter is too old. It bootstraps the platform's package manager
 itself (Homebrew, yay, or the vendor apt repositories) and then runs
 every topic that supports the platform. Installing packages needs root
@@ -80,31 +80,18 @@ the 1Password app) install as Homebrew casks; the `dock/`, `terminal/`,
 
 ### Arch-based Linux (Omarchy)
 
-Arch's `python` may still be older than 3.15 (it was 3.14 when this
-minimum was set); if so, install 3.15 with uv and run the installer with it:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-~/.local/bin/uv python install 3.15
-~/.local/bin/python3.15 script/install.py
-```
-
-The installer adds `base-devel`, `git` and `yay` itself. Omarchy is the first-class Linux desktop; the
+Nothing to prepare: Arch is a rolling release, so its `python` is always
+new enough, and the installer adds `base-devel`, `git` and `yay` itself.
+Run the common steps. Omarchy is the first-class Linux desktop; the
 `omarchy/` topic adds LSD Warm themes and an extra Hyprland keybinding
 layer on top of Omarchy's own config, and other Arch derivatives are
 recognised through `ID_LIKE` in `/etc/os-release`.
 
 ### Ubuntu
 
-Ubuntu's `python3` is too old (24.04 ships 3.12), so install 3.15 with uv
-and run the installer with it instead of the common `./script/install.py`:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-~/.local/bin/uv python install 3.15
-~/.local/bin/python3.15 script/install.py
-```
- The bootstrap adds the
+Nothing to prepare on Ubuntu 24.04 or newer, whose `python3` (3.12) is
+new enough. On an older release, install a 3.11+ `python3` first (Ubuntu 22.04
+ships 3.10, which is too old). Run the common steps. The bootstrap adds the
 vendor apt repositories for mise, GitHub CLI and 1Password, which
 Ubuntu's archive lacks or ships stale; the remaining developer CLIs come
 from mise. Desktop topics (fonts, Ghostty, Zed, Vivaldi) install on a
@@ -611,20 +598,14 @@ Secrets are loaded from 1Password, not stored in git. See the [1Password topic](
 
 ### `ModuleNotFoundError: No module named 'tomllib'`
 
-The installer needs Python 3.15 or newer, and macOS ships 3.9 in the
-Command Line Tools. Install a newer Python and re-run. On macOS:
+The installer needs Python 3.11 or newer, and macOS ships 3.9 in the
+Command Line Tools. Install a newer Python and re-run:
 
 ```bash
-brew install python
+brew install python              # macOS
+sudo pacman -S python            # Arch
+sudo apt-get install -y python3  # Debian/Ubuntu
 ./script/install.py
-```
-
-On Linux, where the distribution `python3` may be older than 3.15:
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-~/.local/bin/uv python install 3.15
-~/.local/bin/python3.15 script/install.py
 ```
 
 On a Mac with no Homebrew either, install Homebrew first (see
