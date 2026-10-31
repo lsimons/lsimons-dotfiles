@@ -38,9 +38,9 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # mise: version + per-arch sha256 from the release's SHASUMS256.txt.
-ARG MISE_VERSION=2026.9.14
-ARG MISE_SHA256_ARM64=b405a2ea062c4d9560eee0a3c45b79e53c8834cf38e956bb47ca70e0d2e7479a
-ARG MISE_SHA256_X64=2b289d1b3074e0b1d3f95bad0bd78bbc517c1a5bcb020cbc1643d260f5d1a351
+ARG MISE_VERSION=2026.10.18
+ARG MISE_SHA256_ARM64=3a3c72376687ba21a588d0f5a2c88c76f483fb6cdece7b0fc43d5e3132b08a52
+ARG MISE_SHA256_X64=e97c38973336aa2ff350fea50f47b412b266fe263b102b7200ff1e9b118c6942
 RUN case "$(dpkg --print-architecture)" in \
       arm64) arch=arm64; sha="$MISE_SHA256_ARM64" ;; \
       amd64) arch=x64;   sha="$MISE_SHA256_X64" ;; \
