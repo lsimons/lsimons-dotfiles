@@ -10,10 +10,9 @@ import shutil
 import socket
 import subprocess
 import sys
+import tomllib
 from datetime import datetime
 from pathlib import Path
-
-import tomllib
 
 DOTFILES_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(DOTFILES_ROOT))
@@ -46,7 +45,7 @@ XDG_STATE_HOME_STR = os.environ.get("XDG_STATE_HOME", str(HOME / ".local/state")
 OP_DEFAULT_ACCOUNT = "my"
 
 # Local wall-clock time is intentional for human-readable backup suffixes.
-NOW = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
+NOW = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 _DRY_RUN = False
 

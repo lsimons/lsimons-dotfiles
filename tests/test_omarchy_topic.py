@@ -11,12 +11,11 @@ import importlib.util
 import struct
 import sys
 import tempfile
+import tomllib
 import unittest
 import zlib
 from pathlib import Path
 from unittest import mock
-
-import tomllib
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "script"))
