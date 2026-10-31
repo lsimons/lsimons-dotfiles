@@ -401,14 +401,14 @@ def main():
     args = ap.parse_args()
 
     paths = sorted(glob.glob(os.path.join(S.PROJECTS, "*", "*.jsonl")))
-    since = dt.datetime.fromisoformat(args.since).replace(tzinfo=dt.timezone.utc)
+    since = dt.datetime.fromisoformat(args.since).replace(tzinfo=dt.UTC)
 
     week = S.analyse(paths, since)
     alltime = S.analyse(paths, None)
     for st, _ in (week, alltime):
         st["sessions_n"] = len(st["sessions"])
 
-    generated = dt.datetime.now(dt.timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M %Z")
+    generated = dt.datetime.now(dt.UTC).astimezone().strftime("%Y-%m-%d %H:%M %Z")
     with open(args.out, "w") as fh:
         fh.write(build(week, alltime, args.since, generated))
     print(args.out)

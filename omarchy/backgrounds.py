@@ -12,10 +12,9 @@ installer stays dependency-free.
 
 import struct
 import sys
+import tomllib
 import zlib
 from pathlib import Path
-
-import tomllib
 
 # 16:9 at a size that still looks clean on a HiDPI panel. A gradient
 # rescales without artefacts, so one size covers every monitor.

@@ -173,7 +173,7 @@ def parse_ts(s: str | None) -> dt.datetime | None:
     if not s:
         return None
     try:
-        return dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt.datetime.fromisoformat(s)
     except ValueError:
         return None
 
@@ -689,7 +689,7 @@ def main():
 
     since = None
     if args.since:
-        since = dt.datetime.fromisoformat(args.since).replace(tzinfo=dt.timezone.utc)
+        since = dt.datetime.fromisoformat(args.since).replace(tzinfo=dt.UTC)
 
     paths = sorted(glob.glob(os.path.join(PROJECTS, "*", "*.jsonl")))
     stats, events = analyse(paths, since)
