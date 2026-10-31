@@ -1,4 +1,12 @@
-# Python 3.15 is the minimum for every Python project of lsimons.
-# Keep in step with pyrightconfig.json pythonVersion and MIN_PYTHON in
+# Python 3.15 is the minimum for development (see .mise.toml), but the
+# installer bootstrap must still run on a stock distro python3, so the
+# files it runs or imports are held to 3.11. Keep in step with
+# executionEnvironments in pyrightconfig.json and MIN_PYTHON in
 # script/install.py.
 target-version = "py315"
+
+[per-file-target-version]
+"script/**/*.py" = "py311"
+"*/install.py" = "py311"
+"agents/shared.py" = "py311"
+"omarchy/backgrounds.py" = "py311"

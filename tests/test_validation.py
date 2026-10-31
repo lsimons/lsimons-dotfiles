@@ -66,6 +66,30 @@ class ShellLayoutTests(unittest.TestCase):
         self.assertEqual(sourced, check.SOURCED_SHELL_FILES)
 
 
+class BootstrapPythonFloorTests(unittest.TestCase):
+    """The installer bootstrap runs on a stock distro python3 (3.11+).
+
+    Development targets 3.15, so pyright must hold every file the bootstrap
+    runs to 3.11 through an explicit executionEnvironments entry. pyright
+    roots take no wildcards, so a new topic installer needs its own entry.
+    """
+
+    def test_every_topic_installer_has_a_3_11_pyright_environment(self):
+        config = json.loads((REPO_ROOT / "pyrightconfig.json").read_text())
+        floor_roots = {
+            env["root"]
+            for env in config["executionEnvironments"]
+            if env.get("pythonVersion") == "3.11"
+        }
+        installers = {
+            path.relative_to(REPO_ROOT).as_posix()
+            for path in REPO_ROOT.glob("*/install.py")
+            if path.parent.name != "script"
+        }
+        self.assertEqual(sorted(installers - floor_roots), [])
+        self.assertIn("script", floor_roots)
+
+
 class MachineValidationTests(unittest.TestCase):
     def test_validation_repository_machine_files_are_valid(self):
         self.assertEqual(check.check_machine_configs(), [])
