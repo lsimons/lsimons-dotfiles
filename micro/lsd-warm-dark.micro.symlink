@@ -5,7 +5,7 @@
 
 color-link default "#dfcab2,#1a0c00"
 color-link comment "italic #6b5b44,#1a0c00"
-color-link identifier "#5b9bf0,#1a0c00"
+color-link identifier "#005fc9,#1a0c00"
 color-link constant "#eabb79,#1a0c00"
 color-link constant.bool "#eabb79,#1a0c00"
 color-link constant.number "#007980,#1a0c00"
