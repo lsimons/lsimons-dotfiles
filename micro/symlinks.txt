@@ -1,0 +1,5 @@
+# micro symlink destinations. On Windows, windows/bootstrap-phase1.ps1
+# copies the same files into %USERPROFILE%\.config\micro.
+settings.json.symlink -> $XDG_CONFIG_HOME/micro/settings.json
+lsd-warm-light.micro.symlink -> $XDG_CONFIG_HOME/micro/colorschemes/lsd-warm-light.micro
+lsd-warm-dark.micro.symlink -> $XDG_CONFIG_HOME/micro/colorschemes/lsd-warm-dark.micro

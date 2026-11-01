@@ -282,6 +282,22 @@ Invoke-Step "Install Zed theme and settings" {
     -Dest   (Join-Path $zedDir 'settings.json')
 }
 
+Invoke-Step "Install micro colorschemes and settings" {
+  # micro reads %USERPROFILE%\.config\micro on Windows too (no XDG lookup
+  # unless XDG_CONFIG_HOME is set). Same files as the micro/ topic, which
+  # selects the LSD Warm Light colorscheme.
+  $microDir = Join-Path $env:USERPROFILE '.config\micro'
+  $microTopic = Join-Path $dotfilesRoot 'micro'
+  Copy-IfChanged `
+    -Source (Join-Path $microTopic 'settings.json.symlink') `
+    -Dest   (Join-Path $microDir 'settings.json')
+  foreach ($scheme in 'lsd-warm-light', 'lsd-warm-dark') {
+    Copy-IfChanged `
+      -Source (Join-Path $microTopic "$scheme.micro.symlink") `
+      -Dest   (Join-Path $microDir "colorschemes\$scheme.micro")
+  }
+}
+
 # ---------------------------------------------------------------------------
 # Claude Code
 # ---------------------------------------------------------------------------

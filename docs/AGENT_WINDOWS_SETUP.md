@@ -90,7 +90,7 @@ Phase 1 does, in order:
 1. Enables `winget configure`
 2. Runs `winget configure --file packages.winget.yaml` — installs Git for Windows, GitHub CLI, 1Password + CLI, PowerShell 7, Windows Terminal, Zed, Pareto Security, Simplewall, and Vivaldi
 3. Installs Scoop (user-space, non-elevated)
-4. Runs `scoop import scoopfile.json` — installs the CLI toolchain (ripgrep, fzf, fd, bat, jq, yq, eza, zoxide, just, lazygit, delta, starship, mise)
+4. Runs `scoop import scoopfile.json` — installs the CLI toolchain (ripgrep, fzf, fd, bat, jq, yq, eza, zoxide, just, lazygit, micro, delta, starship, mise)
 5. Applies registry tweaks: dark mode, show hidden files, show file extensions, disable animations, distinct accent color (so you always know you're in the sandbox)
 6. Sets the wallpaper to a sandbox-distinct image
 7. Symlinks the PowerShell profile and Windows Terminal settings into the right places

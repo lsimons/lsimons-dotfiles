@@ -33,6 +33,7 @@
     { "root": "jdk/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "jq/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "memex/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
+    { "root": "micro/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "mise/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "node/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "oh-my-zsh/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
