@@ -7,6 +7,7 @@ destinations — rather than any one topic's installer.
 
 import contextlib
 import importlib.util
+import os
 import subprocess
 import sys
 import tempfile
@@ -595,6 +596,26 @@ class GitEditorFallbackTests(unittest.TestCase):
             self.git_installer, "command_exists", return_value=False
         ):
             self.assertEqual(self.git_installer.resolve_editor(), "vim")
+
+    def test_ai_config_uses_the_same_editor(self):
+        machine = {
+            "git": {"user": {"name": "Bot", "email": "bot@example.com", "signingkey": None}}
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            xdg = Path(tmp)
+            with (
+                mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": str(xdg)}),
+                mock.patch.object(
+                    self.git_installer, "get_machine_config", return_value=(machine, "test")
+                ),
+                mock.patch.object(
+                    self.git_installer, "command_exists", lambda cmd: cmd == "micro"
+                ),
+            ):
+                self.git_installer.generate_config()
+            for name in ("config", "config.ai"):
+                content = (xdg / "git" / name).read_text()
+                self.assertIn("\teditor = micro\n", content, name)
 
 
 class GitCredentialHelperTests(unittest.TestCase):

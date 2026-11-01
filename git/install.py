@@ -221,6 +221,9 @@ def generate_config():
     config_path = _xdg_git_dir() / "config"
     ai_path = _xdg_git_dir() / "config.ai"
     credential_blocks = render_credential_blocks(machine_config)
+    # One editor for both configs: an agent that does open an editor
+    # gets the same terminal editor as the human.
+    editor = resolve_editor()
 
     main_content = _render_config(
         template,
@@ -230,7 +233,7 @@ def generate_config():
         gpgsign=gpgsign,
         signingkey=signing_key_pub,
         gpg_ssh_program=GPG_SSH_PROGRAM_DEFAULT,
-        editor=resolve_editor(),
+        editor=editor,
         credential_helper=CREDENTIAL_HELPER_GH,
         credential_blocks=credential_blocks,
         ssh_command_block="",
@@ -243,7 +246,7 @@ def generate_config():
         gpgsign=gpgsign,
         signingkey=str(ai_key_pub_path),
         gpg_ssh_program="ssh-keygen",
-        editor="vim",
+        editor=editor,
         credential_helper=CREDENTIAL_HELPER_GH,
         credential_blocks=credential_blocks,
         ssh_command_block=f"\tsshCommand = ssh -F {SSH_CONFIG_AI_PATH}\n",
