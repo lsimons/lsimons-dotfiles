@@ -566,7 +566,13 @@ class GitEditorFallbackTests(unittest.TestCase):
             "dotfiles_git_editor", REPO_ROOT / "git" / "install.py"
         )
 
-    def test_prefers_zed_when_present(self):
+    def test_prefers_micro_when_present(self):
+        with mock.patch.object(
+            self.git_installer, "command_exists", lambda cmd: cmd in ("micro", "zed")
+        ):
+            self.assertEqual(self.git_installer.resolve_editor(), "micro")
+
+    def test_prefers_zed_when_micro_is_missing(self):
         with mock.patch.object(
             self.git_installer, "command_exists", lambda cmd: cmd == "zed"
         ):

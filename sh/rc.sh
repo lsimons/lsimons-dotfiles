@@ -2,13 +2,20 @@
 
 export LANG=en_US.UTF-8
 
-# Preferred editor: the first one actually installed wins. Zed is the
-# daily driver, but its Linux binary is named `zeditor`, and there is no
-# aarch64 build at all — so fall back to a terminal editor rather than
-# export an EDITOR that cannot be launched.
-for _dotfiles_editor in "zed -w" "zeditor -w" nvim vim; do
+# Preferred editor: the first one actually installed wins. micro comes
+# first because it runs inside the terminal: over a remote terminal
+# session (Rex remoting, ssh) a GUI editor like Zed opens on whichever
+# machine runs the shell, not in front of you. Zed stays as a fallback
+# (its Linux binary is `zeditor`), then nvim and vim.
+#
+# VISUAL and GIT_EDITOR get the same value so nothing falls back to its
+# own default: git checks GIT_EDITOR before core.editor, and many tools
+# prefer VISUAL over EDITOR.
+for _dotfiles_editor in micro "zed -w" "zeditor -w" nvim vim; do
   if command -v "${_dotfiles_editor%% *}" >/dev/null 2>&1; then
     export EDITOR="$_dotfiles_editor"
+    export VISUAL="$_dotfiles_editor"
+    export GIT_EDITOR="$_dotfiles_editor"
     break
   fi
 done

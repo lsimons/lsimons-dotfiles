@@ -1,0 +1,3 @@
+# Ordering only: micro installs first so resolve_editor() can pick it for
+# core.editor. Dropped when a machine leaves the micro topic out.
+micro

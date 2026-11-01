@@ -13,6 +13,16 @@ foreach ($d in $env:XDG_CONFIG_HOME, $env:XDG_DATA_HOME, $env:XDG_CACHE_HOME, $e
   if (-not (Test-Path $d)) { New-Item -ItemType Directory -Force -Path $d | Out-Null }
 }
 
+# --- Editor ---
+# micro runs in the terminal, so it also works over a remote terminal
+# session where a GUI editor would open on the wrong machine. Same
+# choice as sh/rc.sh. git checks GIT_EDITOR before core.editor.
+if (Get-Command micro -ErrorAction SilentlyContinue) {
+  $env:EDITOR     = 'micro'
+  $env:VISUAL     = 'micro'
+  $env:GIT_EDITOR = 'micro'
+}
+
 # --- PSReadLine ---
 if (Get-Module -ListAvailable -Name PSReadLine) {
   Import-Module PSReadLine

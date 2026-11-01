@@ -40,11 +40,15 @@ elif IS_WSL:
 else:
     GPG_SSH_PROGRAM_DEFAULT = "/opt/1Password/op-ssh-sign"
 
-# Editors to try for `core.editor`, most preferred first. Zed is the
-# daily driver, but it has no aarch64 Linux build, so fall back rather
-# than configure git to launch a binary that is not there. Each entry is
-# (command, git core.editor value).
+# Editors to try for `core.editor`, most preferred first. micro runs in
+# the terminal, so it works over a remote terminal session where a GUI
+# editor would open on the wrong machine; the micro topic installs it
+# first (git/dependencies.txt). Zed is the fallback, but it has no
+# aarch64 Linux build, so fall back further rather than configure git to
+# launch a binary that is not there. Each entry is
+# (command, git core.editor value). sh/rc.sh keeps the same order.
 EDITOR_CANDIDATES = [
+    ("micro", "micro"),
     ("zed", "zed --wait"),
     ("zeditor", "zeditor --wait"),
     ("nvim", "nvim"),
