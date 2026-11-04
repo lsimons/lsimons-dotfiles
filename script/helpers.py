@@ -49,6 +49,13 @@ NOW = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 _DRY_RUN = False
 
+# Homebrew 7 asks for a yes/no confirmation before every install by
+# default. Installers must be non-interactive, so opt out for every brew
+# call made by this process and its children (topic installers, run_cmd).
+# Set via the environment rather than a `--yes` flag because older
+# Homebrew rejects that flag but ignores an unknown variable.
+os.environ.setdefault("HOMEBREW_NO_ASK", "1")
+
 # ssh paths are also used also by git/ topic
 SSH_CONFIG_DIR = HOME / ".ssh"
 SSH_CONFIG_AI_PATH = SSH_CONFIG_DIR / "config.ai"
