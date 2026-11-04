@@ -37,7 +37,8 @@ part of `lsimons-skills`. It lives in the separate (public)
 [`sbp-skills`](https://github.com/lsimons/sbp-skills) checkout instead,
 expected at `../sbp-skills`, and `install.py` symlinks it into
 `lsimons-skills/skills/sbp-brandbook` so it still reaches every agent through
-the same shared mechanism.
+the same shared mechanism. That checkout is optional: if it is missing,
+`install.py` warns and carries on without the skill.
 
 The `vercel-agent-browser` skill is only a discovery stub, so the installer
 also installs the `agent-browser` CLI and its Chrome build (~180 MB,
