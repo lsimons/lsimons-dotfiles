@@ -8,6 +8,7 @@
     { "root": "omarchy/backgrounds.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "1password/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "agents/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
+    { "root": "agentsview/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "ansible/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "aws/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "azure/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },

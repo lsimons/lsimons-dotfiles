@@ -155,6 +155,7 @@ The installation script (`./script/install.py`) will:
 |-------|----------|
 | `1password/` | 1Password app and CLI (`op`). Under WSL: no app, but a systemd user service bridging the Windows app's SSH agent into `~/.1password/agent.sock`, and `op` running the Windows `op.exe` |
 | `agents/` | Shared coding-agent instructions, links to the [lsimons-skills](https://github.com/lsimons/lsimons-skills) collection, and repository config sync |
+| `agentsview/` | [AgentsView](https://www.agentsview.io) browser for past coding-agent sessions (Homebrew cask, AUR, mise on Debian/Ubuntu) |
 | `ansible/` | Ansible and related tools |
 | `aws/` | AWS CLI (`awscli`) + default `~/.aws/config`; `saml2aws` configured with the Browser provider for Okta OIE |
 | `azure/` | Azure CLI (`az`) |
