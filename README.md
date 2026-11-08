@@ -183,7 +183,7 @@ The installation script (`./script/install.py`) will:
 | `memex/` | memex agent-transcript search + its herdr plugin |
 | `micro/` | [micro](https://micro-editor.github.io/) terminal editor with the LSD Warm Light (default) and LSD Warm Dark colorschemes. Also installed on Windows via Scoop + `windows/bootstrap-phase1.ps1` |
 | `mise/` | mise (polyglot tool version manager) |
-| `node/` | Node.js (via mise) + pnpm (via corepack) |
+| `node/` | Node.js (via mise) + pnpm (via corepack); reinstalls the global npm CLIs after node upgrades |
 | `oh-my-zsh/` | Oh My Zsh + powerlevel10k |
 | `omarchy/` | LSD Warm Dark/Light Omarchy themes, an extra Hyprland keybinding layer, Omarchy's default-app selection, and a per-machine foot font size. **Linux only** |
 | `opencode/` | OpenCode CLI (permissions, model variants, LSD Warm theme, git-config-ai routing) |

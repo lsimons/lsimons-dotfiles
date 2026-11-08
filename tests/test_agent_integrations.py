@@ -175,5 +175,17 @@ class DeterministicAgentIntegrationTests(unittest.TestCase):
         self.assertFalse((REPO_ROOT / "agents/skills").exists())
 
 
+class NpmGlobalsTests(unittest.TestCase):
+    def test_npm_globals_match_their_owning_topic_installers(self):
+        """The reinstall list repeats package names; keep it in step with the topics."""
+        module = load_module(
+            "reinstall_npm_globals_test", REPO_ROOT / "node/reinstall-npm-globals.py"
+        )
+        for package, topic in module.NPM_GLOBALS:
+            installer = (REPO_ROOT / topic / "install.py").read_text()
+            with self.subTest(package=package):
+                self.assertIn(package, installer)
+
+
 if __name__ == "__main__":
     unittest.main()

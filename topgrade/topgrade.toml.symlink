@@ -41,6 +41,12 @@ cleanup = true
 # links and the tools, so it is cheap and idempotent.
 "agent skills" = "python3 ~/.dotfiles/agents/install.py"
 
+# The mise step upgrades node and prunes the old version, taking its
+# global npm packages with it. Reinstall the CLIs the topics put there.
+# Custom commands run last, so on the day node moves, steps for those
+# CLIs (pi) still fail once; the next run is clean.
+"npm globals" = "python3 ~/.dotfiles/node/reinstall-npm-globals.py"
+
 [brew]
 # Run `brew autoremove` after upgrading formulae to drop orphaned deps.
 autoremove = true
