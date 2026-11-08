@@ -20,7 +20,13 @@ ignore_failures = ["containers"]
 #
 # The separate `ruby_gems` step (`gem update --system`) stays enabled: it
 # upgrades RubyGems inside the mise install dir and has no such problem.
-disable = ["gem"]
+#
+# The `skills` step runs the npm `skills` CLI whenever one is on PATH.
+# Agent skills here come from the lsimons-skills checkout, linked by the
+# "agent skills" command below, not from that CLI. A stray global
+# install under a non-active node version leaves a mise shim that makes
+# the step fail with "skills is not provided by the active node".
+disable = ["gem", "skills"]
 
 # Never prompt "Retry? (y/N)" on a failed step; keep runs non-interactive.
 no_retry = true
