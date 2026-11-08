@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>lsimons/.github:renovate-config"],
+  "packageRules": [
+    {
+      "description": "claude-docker/image builds FROM claude-code:local, an image built on this machine from the upstream claude-code repo; it is not in any registry, so there is nothing to look up.",
+      "matchManagers": ["dockerfile"],
+      "matchDepNames": ["claude-code"],
+      "enabled": false
+    }
+  ]
+}
