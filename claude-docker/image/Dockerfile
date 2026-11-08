@@ -37,20 +37,18 @@ RUN apt-get update \
       libxfixes3 libxrandr2 libatspi2.0-0t64 fonts-liberation \
  && rm -rf /var/lib/apt/lists/*
 
-# mise: version + per-arch sha256 from the release's SHASUMS256.txt.
-ARG MISE_VERSION=2026.10.25
-ARG MISE_SHA256_ARM64=bb09e88b13164ca90691a5cc042726d079f0ba26ab55527344cb173c2e83c998
-ARG MISE_SHA256_X64=5d362ecc578dc7c146679b841dda949d6472cbf86ff5635db7afdca1b6b3fd87
-RUN case "$(dpkg --print-architecture)" in \
-      arm64) arch=arm64; sha="$MISE_SHA256_ARM64" ;; \
-      amd64) arch=x64;   sha="$MISE_SHA256_X64" ;; \
-      *) echo "unsupported architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
-    esac \
- && curl -fsSLo /usr/local/bin/mise \
-      "https://github.com/jdx/mise/releases/download/v${MISE_VERSION}/mise-v${MISE_VERSION}-linux-${arch}" \
- && echo "${sha}  /usr/local/bin/mise" | sha256sum -c - \
- && chmod 0755 /usr/local/bin/mise \
- && mise --version
+# mise: the static (musl) release binary, copied out of mise's own release
+# image. jdx's release workflow builds jdxcode/mise:<version> FROM scratch
+# from the minisign-verified release assets, so the file is byte-identical
+# to mise-v<version>-linux-{arm64,x64}-musl in the release's
+# SHASUMS256.txt. The multi-arch index digest pins those exact bytes for
+# both architectures, the way the per-arch sha256 ARGs used to. Renovate's
+# dockerfile manager bumps tag and digest together (Docker Hub has release
+# timestamps, so the 7-day minimumReleaseAge applies). To check a digest by
+# hand: docker buildx imagetools inspect jdxcode/mise:<version>
+COPY --from=jdxcode/mise:2026.10.25@sha256:91417f41840316b7c5da6854bef393eccea4546ae70f8baf0803e0e94287b68d \
+     /usr/local/bin/mise /usr/local/bin/mise
+RUN mise --version
 
 COPY claude_env.sh session_start.sh /usr/local/share/claude-docker-lsimons/
 
