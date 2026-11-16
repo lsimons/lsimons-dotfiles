@@ -46,7 +46,7 @@ RUN apt-get update \
 # dockerfile manager bumps tag and digest together (Docker Hub has release
 # timestamps, so the 7-day minimumReleaseAge applies). To check a digest by
 # hand: docker buildx imagetools inspect jdxcode/mise:<version>
-COPY --from=jdxcode/mise:2026.10.25@sha256:91417f41840316b7c5da6854bef393eccea4546ae70f8baf0803e0e94287b68d \
+COPY --from=jdxcode/mise:2026.11.5@sha256:3beda11ba592da44277cac15061103b844c69420a55cb5c41694dc4f2734d0cb \
      /usr/local/bin/mise /usr/local/bin/mise
 RUN mise --version
 

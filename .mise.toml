@@ -16,9 +16,9 @@ lockfile = true
 [tools]
 actionlint = "1.7.12"
 python = "3.15.2"
-ruff = "0.17.3"
+ruff = "0.17.4"
 shellcheck = "0.11.0"
-zizmor = "1.31.1"
+zizmor = "1.32.0"
 
 [tasks.check]
 description = "Compile and lint Python and shell, lint workflows, validate JSON/machines, run tests, and dry-run install"
