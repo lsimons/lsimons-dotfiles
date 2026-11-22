@@ -4,8 +4,8 @@
 The costly mistakes here are all lock-outs or surprise exposure: turning
 off password login before a key is authorized, running the host topics
 on a machine that never asked for them, a typo in the machine config
-silently disabling the gate, and wayvnc (which has no auth of its own)
-listening anywhere but the tailnet. So that is what these cover.
+silently disabling the gate, wayvnc listening anywhere but the tailnet,
+and wayvnc's login lockout going missing. So that is what these cover.
 """
 
 import importlib.util
@@ -153,6 +153,8 @@ class WayvncTests(unittest.TestCase):
             wayvnc, "get_remote_access_config", return_value={"wayvnc": True}
         ), mock.patch.object(wayvnc, "IS_ARCH", True), mock.patch.object(
             wayvnc, "install_wayvnc", return_value=True
+        ), mock.patch.object(wayvnc, "install_pam", return_value=True), mock.patch.object(
+            wayvnc, "install_config", return_value=(True, False)
         ), mock.patch.object(wayvnc, "install_unit", return_value=True), mock.patch.object(
             wayvnc, "systemctl_enable", return_value=True
         ), mock.patch.object(wayvnc, "ufw_allow", return_value=True) as allow:
@@ -173,6 +175,51 @@ class WayvncTests(unittest.TestCase):
                 self.assertTrue(wayvnc.install_unit())
             self.assertEqual(unit_path.read_text(), wayvnc.UNIT)
         run.assert_called_once()
+
+    def test_config_requires_a_pam_login(self):
+        lines = wayvnc.CONFIG.splitlines()
+        self.assertIn("enable_auth=true", lines)
+        self.assertIn("enable_pam=true", lines)
+        self.assertIn(f"rsa_private_key_file={wayvnc.RSA_KEY_PATH}", lines)
+
+    def test_pam_locks_out_after_three_failures_in_a_private_tally(self):
+        faillock = [line for line in wayvnc.PAM.splitlines() if "pam_faillock.so" in line]
+        self.assertEqual(
+            [line.split()[3] for line in faillock], ["preauth", "authfail", "authsucc"]
+        )
+        for line in faillock:
+            self.assertIn("deny=3", line)
+            self.assertIn("unlock_time=600", line)
+            self.assertIn(f"dir={wayvnc.FAILLOCK_DIR}", line)
+        self.assertNotIn("/run/faillock", wayvnc.PAM)
+
+    def test_pacman_hook_restores_the_pam_file_after_upgrades(self):
+        hook = wayvnc.PACMAN_HOOK
+        self.assertIn("Operation = Upgrade", hook)
+        self.assertIn("Target = wayvnc", hook)
+        self.assertIn(f"{wayvnc.PAM_MASTER_PATH} {wayvnc.PAM_PATH}", hook)
+        self.assertFalse(str(wayvnc.PAM_MASTER_PATH).startswith("/etc/pam.d/"))
+
+    def test_config_change_restarts_wayvnc_and_rerun_does_not(self):
+        helpers.set_dry_run(False)
+        with tempfile.TemporaryDirectory() as tmp:
+            config_dir = Path(tmp) / "wayvnc"
+            key = config_dir / "rsa_key.pem"
+
+            def keygen(cmd, **kwargs):
+                key.write_text("key")
+                return mock.Mock(returncode=0, stderr="")
+
+            with mock.patch.object(wayvnc, "CONFIG_DIR", config_dir), mock.patch.object(
+                wayvnc, "CONFIG_PATH", config_dir / "config"
+            ), mock.patch.object(wayvnc, "RSA_KEY_PATH", key), mock.patch.object(
+                wayvnc, "run_cmd", side_effect=keygen
+            ) as run:
+                self.assertEqual(wayvnc.install_config(), (True, True))
+                self.assertEqual(wayvnc.install_config(), (True, False))
+            run.assert_called_once()
+            self.assertEqual((config_dir / "config").read_text(), wayvnc.CONFIG)
+            self.assertEqual(key.stat().st_mode & 0o777, 0o600)
 
 
 class RexTests(unittest.TestCase):

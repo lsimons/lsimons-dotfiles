@@ -209,7 +209,7 @@ The installation script (`./script/install.py`) will:
 | `topgrade/` | topgrade (automated updates) |
 | `uv/` | uv (Python package manager) |
 | `vivaldi/` | Vivaldi Browser (no aarch64 Linux build) |
-| `wayvnc/` | wayvnc remote desktop for a Hyprland session, bound to the machine's Tailscale address, as a systemd user unit plus a tailnet-only ufw rule. **Opt-in per machine** via `remoteAccess.wayvnc`; Linux desktop only |
+| `wayvnc/` | wayvnc remote desktop for a Hyprland session, bound to the machine's Tailscale address, with a PAM login and lockout, as a systemd user unit plus a tailnet-only ufw rule. **Opt-in per machine** via `remoteAccess.wayvnc`; Linux desktop only |
 | `wordpress/` | WordPress shell environment |
 | `zed/` | Zed editor (`zeditor` on Linux; no aarch64 build — config only there) |
 | `zsh/` | ZSH itself (Arch has no zsh by default) and its directories |
@@ -495,11 +495,18 @@ since each one lets another machine in:
 - `wayvnc` runs the `wayvnc/` topic: wayvnc as a systemd user unit that
   starts with the Hyprland session and listens on this machine's
   Tailscale IPv4 address only, plus 5900/tcp in ufw for the tailnet range
-  (`100.64.0.0/10`). VNC auth is off; the tailnet is the access control,
-  so connect from another tailnet device with a VNC viewer (TigerVNC or
-  RealVNC on macOS — Apple's Screen Sharing does not get along with
-  wayvnc). wayvnc encodes on the CPU and never touches GPU buffers, which
-  is why it replaced Sunshine here.
+  (`100.64.0.0/10`). Connecting requires logging in as the desktop user
+  with the system password (PAM). Three consecutive failures lock VNC
+  logins for 10 minutes; the tally lives in
+  `~/.local/state/wayvnc/faillock`, separate from the local login's, so
+  it never locks the console or lock screen. Inspect or clear it with
+  `faillock --dir ~/.local/state/wayvnc/faillock --user $USER [--reset]`.
+  wayvnc upgrades overwrite `/etc/pam.d/wayvnc`, so a pacman hook puts
+  the topic's copy back. Connect from another tailnet device with
+  TigerVNC, RealVNC or (thanks to `relax_encryption`, safe because the
+  tailnet already encrypts) macOS Screen Sharing. wayvnc encodes on the
+  CPU and never touches GPU buffers, which is why it replaced Sunshine
+  here.
 - `allowFrom` scopes the `sshd` ufw rule to one CIDR, normally the home
   LAN. Omit it to allow from anywhere the firewall already permits. The
   `wayvnc` rule is always tailnet-only and ignores it.
