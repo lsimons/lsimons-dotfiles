@@ -1,0 +1,3 @@
+# The Rex server runs on Omarchy (see install.py); the macOS GUI is not
+# set up yet.
+linux-desktop

@@ -1,4 +1,4 @@
-"""Tests for the opt-in remote-access topics (sshd, wayvnc) and the
+"""Tests for the opt-in remote-access topics (sshd, wayvnc, rex) and the
 `remoteAccess` machine-config block that gates them.
 
 The costly mistakes here are all lock-outs or surprise exposure: turning
@@ -31,6 +31,7 @@ def load_module(name, path):
 
 sshd = load_module("dotfiles_sshd", REPO_ROOT / "sshd" / "install.py")
 wayvnc = load_module("dotfiles_wayvnc", REPO_ROOT / "wayvnc" / "install.py")
+rex = load_module("dotfiles_rex", REPO_ROOT / "rex" / "install.py")
 
 KEY_A = "ssh-ed25519 AAAAexampleA a@example"
 KEY_B = "ssh-ed25519 AAAAexampleB b@example"
@@ -42,6 +43,7 @@ class RemoteAccessSchemaTests(unittest.TestCase):
             {
                 "remoteAccess": {
                     "allowFrom": "192.168.2.0/24",
+                    "rex": True,
                     "sshd": True,
                     "wayvnc": True,
                 }
@@ -171,6 +173,69 @@ class WayvncTests(unittest.TestCase):
                 self.assertTrue(wayvnc.install_unit())
             self.assertEqual(unit_path.read_text(), wayvnc.UNIT)
         run.assert_called_once()
+
+
+class RexTests(unittest.TestCase):
+    """Rex on the tailnet is remote shell access: it must follow the
+    machine's opt-in, and the installer must never restart the server
+    (that ends every session, maybe the one running the install)."""
+
+    def setUp(self):
+        helpers.set_dry_run(False)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.drop_in = Path(self.tmp.name) / "rex.service.d" / "tailscale.conf"
+        self.ok = mock.Mock(returncode=0, stderr="", stdout="")
+
+    def run_main(self, remote):
+        with mock.patch.object(rex, "parse_dry_run"), mock.patch.object(
+            rex, "is_omarchy", return_value=True
+        ), mock.patch.object(rex, "trust_signing_key", return_value=True), mock.patch.object(
+            rex, "configure_repo", return_value=True
+        ), mock.patch.object(rex, "ensure_package", return_value=True), mock.patch.object(
+            rex, "enable_linger", return_value=True
+        ), mock.patch.object(rex, "systemctl_enable", return_value=True) as enable, mock.patch.object(
+            rex, "get_remote_access_config", return_value=remote
+        ), mock.patch.object(rex, "get_short_hostname", return_value="host"), mock.patch.object(
+            rex, "DROP_IN_PATH", self.drop_in
+        ), mock.patch.object(rex, "run_cmd", return_value=self.ok) as run:
+            self.assertEqual(rex.main(), 0)
+        return enable, run
+
+    def test_drop_in_serves_on_the_tailnet_when_enabled(self):
+        self.run_main({"rex": True})
+        exec_starts = [
+            line for line in self.drop_in.read_text().splitlines() if line.startswith("ExecStart=")
+        ]
+        self.assertEqual(exec_starts[0], "ExecStart=")
+        self.assertIn("--tailscale --tailscale-hostname host-rex", exec_starts[1])
+        self.assertNotIn("--listen", exec_starts[1])
+
+    def test_drop_in_is_removed_when_not_enabled(self):
+        self.drop_in.parent.mkdir(parents=True)
+        self.drop_in.write_text("stale")
+        self.run_main({"sshd": True})
+        self.assertFalse(self.drop_in.exists())
+
+    def test_enables_both_units_and_never_restarts(self):
+        enable, run = self.run_main({"rex": True})
+        self.assertEqual([c.args[0] for c in enable.call_args_list], ["rex.socket", "rex.service"])
+        for call in run.call_args_list:
+            self.assertNotIn("restart", call.args[0])
+
+    def test_skips_off_omarchy(self):
+        with mock.patch.object(rex, "parse_dry_run"), mock.patch.object(
+            rex, "is_omarchy", return_value=False
+        ), mock.patch.object(rex, "trust_signing_key") as trust:
+            self.assertEqual(rex.main(), 0)
+        trust.assert_not_called()
+
+    def test_refuses_a_key_with_the_wrong_fingerprint(self):
+        with mock.patch.object(rex, "key_is_trusted", return_value=False), mock.patch.object(
+            rex, "run_cmd", return_value=self.ok
+        ) as run, mock.patch.object(rex, "fingerprints_of", return_value=["0" * 40]):
+            self.assertFalse(rex.trust_signing_key())
+        self.assertFalse(any(c.args[0][:2] == ["sudo", "pacman-key"] for c in run.call_args_list))
 
 
 if __name__ == "__main__":

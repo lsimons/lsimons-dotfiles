@@ -387,11 +387,12 @@ def validate_machine_data(data, source, *, require_git=False) -> list[str]:
     if 'remoteAccess' in data and object_at(
         data['remoteAccess'],
         '$.remoteAccess',
-        {'allowFrom', 'sshd', 'wayvnc'},
+        {'allowFrom', 'rex', 'sshd', 'wayvnc'},
     ):
         remote = data['remoteAccess']
         for key, expected_type in (
             ('allowFrom', str),
+            ('rex', bool),
             ('sshd', bool),
             ('wayvnc', bool),
         ):

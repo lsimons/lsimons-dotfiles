@@ -45,6 +45,7 @@
     { "root": "postgres/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "python/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "quarto/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
+    { "root": "rex/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "ruby/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "rust/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },
     { "root": "secretive/install.py", "pythonVersion": "3.11", "extraPaths": ["script"] },

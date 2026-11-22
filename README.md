@@ -192,11 +192,12 @@ The installation script (`./script/install.py`) will:
 | `postgres/` | PostgreSQL 16 client, keg-only and **not linked** (a project puts `/opt/homebrew/opt/postgresql@16/bin` on its own PATH). **macOS only** |
 | `python/` | Python (via mise) + XDG config |
 | `quarto/` | Quarto (Homebrew cask; `quarto-cli-bin` from the AUR) |
+| `rex/` | [Rex](https://superlogical.com) personal server on Omarchy: the signed `[rex]` pacman repo, `rex.socket` + `rex.service` as user units, lingering on. Serving it on the tailnet is **opt-in per machine** via `remoteAccess.rex`. macOS GUI not set up yet |
 | `ruby/` | Ruby (via mise) |
 | `rust/` | Rust (via mise) + CARGO_HOME |
 | `secretive/` | [Secretive](https://github.com/maxgoedjen/secretive) (Secure Enclave SSH agent; cask, needs admin) and `age-plugin-se`. Key creation and GitHub registration stay manual; 1Password stays the default agent. **macOS only** |
 | `sh/` | Shared shell configuration (PATH, XDG, settings) |
-| `ssh/` | SSH configuration (post-quantum warning, 1Password agent), and on Linux an `ssh-agent` systemd user unit holding the AI signing key |
+| `ssh/` | SSH configuration (post-quantum warning, 1Password agent), and on Linux an `ssh-agent` systemd user unit holding the AI signing key; `ssh-add-ai` loads it by passphrase from a remote (SSH or Rex) session |
 | `sshd/` | OpenSSH server: `authorized_keys` from the machine config, keys-only login, port 22 in ufw. **Opt-in per machine** via `remoteAccess.sshd`; Linux only |
 | `swiftdialog/` | swiftDialog (via Homebrew cask; skipped if already present, e.g. via MDM). **macOS only** |
 | `tailscale/` | Tailscale (Homebrew cask on macOS, `tailscale` + `tailscaled` on Arch). Joining the tailnet stays manual |
@@ -467,19 +468,27 @@ instead of falling back to another machine's account or reference.
 
 ### Remote access (`remoteAccess`)
 
-Hosting SSH or a VNC desktop is opt-in per machine, since either opens a
-port on whatever network the machine sits on:
+Hosting SSH, a VNC desktop or Rex on the tailnet is opt-in per machine,
+since each one lets another machine in:
 
 ```json
 {
   "remoteAccess": {
     "allowFrom": "192.168.2.0/24",
+    "rex": true,
     "sshd": true,
     "wayvnc": true
   }
 }
 ```
 
+- `rex` makes the `rex/` topic serve Rex on the tailnet as well: a
+  `rex.service` drop-in adds `--tailscale --tailscale-hostname
+  <host>-rex`. Without it the server listens on its local socket only.
+  The topic never restarts the server (that ends every session); it says
+  when a restart is needed. In a Rex terminal `ssh/rc.sh` does not ask
+  1Password for the AI key's passphrase (the dialog would open on the
+  machine's screen); run `ssh-add-ai` and paste it, once per boot.
 - `sshd` runs the `sshd/` topic: OpenSSH server enabled, `authorized_keys`
   generated from this machine's `ssh.keys` entries with `auth: true`,
   and password/root login disabled once at least one key is present.
@@ -495,7 +504,7 @@ port on whatever network the machine sits on:
   LAN. Omit it to allow from anywhere the firewall already permits. The
   `wayvnc` rule is always tailnet-only and ignores it.
 
-Both hosts depend on the `tailscale/` topic, which installs Tailscale on
+All three hosts depend on the `tailscale/` topic, which installs Tailscale on
 every machine but leaves `tailscale up` to the user.
 
 ### Claude Code (`claude`)
