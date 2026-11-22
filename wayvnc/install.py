@@ -14,9 +14,8 @@ enabled machine it:
   survives the node being re-enrolled;
 * opens 5900/tcp in ufw for the tailnet's CGNAT range only;
 * requires a login as the desktop user, checked by PAM against the
-  system password, over RSA-AES (TigerVNC, RealVNC) or Apple
-  Diffie-Hellman (macOS Screen Sharing, via `relax_encryption`; the
-  tailnet already encrypts the traffic);
+  system password, over RSA-AES (TigerVNC, RealVNC). macOS Screen
+  Sharing does not work: it only asks for a password, never a user;
 * locks VNC logins for 10 minutes after 3 consecutive failures, using
   pam_faillock with its own tally so VNC guessing never locks the local
   login or lock screen. `/etc/pam.d/wayvnc` belongs to the wayvnc
@@ -91,7 +90,6 @@ CONFIG = f"""\
 enable_auth=true
 enable_pam=true
 rsa_private_key_file={RSA_KEY_PATH}
-relax_encryption=true
 """
 
 # Lockout policy for VNC logins. The tally lives in the user's state

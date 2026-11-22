@@ -503,8 +503,8 @@ since each one lets another machine in:
   `faillock --dir ~/.local/state/wayvnc/faillock --user $USER [--reset]`.
   wayvnc upgrades overwrite `/etc/pam.d/wayvnc`, so a pacman hook puts
   the topic's copy back. Connect from another tailnet device with
-  TigerVNC, RealVNC or (thanks to `relax_encryption`, safe because the
-  tailnet already encrypts) macOS Screen Sharing. wayvnc encodes on the
+  TigerVNC or RealVNC; macOS Screen Sharing does not work, as it asks
+  only for a password, never a username. wayvnc encodes on the
   CPU and never touches GPU buffers, which is why it replaced Sunshine
   here.
 - `allowFrom` scopes the `sshd` ufw rule to one CIDR, normally the home

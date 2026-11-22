@@ -181,6 +181,7 @@ class WayvncTests(unittest.TestCase):
         self.assertIn("enable_auth=true", lines)
         self.assertIn("enable_pam=true", lines)
         self.assertIn(f"rsa_private_key_file={wayvnc.RSA_KEY_PATH}", lines)
+        self.assertNotIn("relax_encryption=true", lines)
 
     def test_pam_locks_out_after_three_failures_in_a_private_tally(self):
         faillock = [line for line in wayvnc.PAM.splitlines() if "pam_faillock.so" in line]
