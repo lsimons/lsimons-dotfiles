@@ -19,10 +19,17 @@ fi
 # to approve the read), it says so once per shell rather than leaving
 # the first signed commit to discover it.
 #
-# Skipped entirely over SSH ($SSH_CONNECTION set): `op read` cannot reach
-# the desktop app there and blocks until interrupted, which held the login
-# prompt hostage. The `timeout 5` bounds the same hang on local logins
-# when 1Password is locked (where GNU `timeout` is available).
+# Not attempted in remote sessions: over SSH ($SSH_CONNECTION) or in a Rex
+# terminal ($REX_SESSION, which Rex sets in every terminal it starts). The
+# 1Password approval dialog opens on the machine's own screen, where
+# nobody remote can see it; over SSH `op read` used to block the login
+# prompt outright. A remote session instead gets a one-line hint to run
+# `ssh-add-ai` and type the passphrase, copied from 1Password on the
+# device in front of you. The agent is a systemd user unit and lingering
+# keeps it up, so that is once per boot, not once per session.
+#
+# The `timeout 5` bounds the hang on local logins when 1Password is
+# locked (where GNU `timeout` is available).
 
 # shellcheck disable=SC2317
 # The finding is on the `|| true`, which is reachable only when this file is
@@ -35,33 +42,54 @@ case $- in
   *) return 0 2>/dev/null || true ;;
 esac
 
+# Load the AI key into ssh-agent by typing its passphrase. The way to
+# unlock it from a remote session, where the 1Password route below is
+# skipped. SSH_ASKPASS_REQUIRE=never keeps the prompt in this terminal
+# even when SSH_ASKPASS and DISPLAY are set.
+ssh-add-ai() {
+  local key
+  key=$(awk '/^IdentityFile /{print $2; exit}' "$HOME/.ssh/config.ai" 2>/dev/null)
+  if [ -z "$key" ] || [ ! -f "$key" ]; then
+    echo "ssh-add-ai: no AI key configured (see ~/.ssh/config.ai)" >&2
+    return 1
+  fi
+  SSH_ASKPASS_REQUIRE=never ssh-add "$key"
+}
+
 _dotfiles_ssh_askpass_ai="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/ssh-askpass-ai.sh"
 # The key is named after the machine's ssh.aiKey; ssh/install.py writes
 # that path into config.ai, so read it from there rather than guessing.
 _dotfiles_ai_key=$(awk '/^IdentityFile /{print $2; exit}' "$HOME/.ssh/config.ai" 2>/dev/null)
 
-if [ -z "${SSH_CONNECTION:-}" ] \
-  && [ -x "$_dotfiles_ssh_askpass_ai" ] \
-  && [ -f "$_dotfiles_ai_key" ] \
+_dotfiles_remote_session=""
+if [ -n "${SSH_CONNECTION:-}" ] || [ -n "${REX_SESSION:-}" ]; then
+  _dotfiles_remote_session=1
+fi
+
+if [ -f "$_dotfiles_ai_key" ] \
   && [ -n "${SSH_AUTH_SOCK:-}" ] \
-  && command -v op > /dev/null 2>&1 \
   && command -v ssh-add > /dev/null 2>&1 \
   && command -v ssh-keygen > /dev/null 2>&1; then
   _dotfiles_ai_fp=$(ssh-keygen -lf "$_dotfiles_ai_key" 2>/dev/null | awk '{print $2}')
-  # GNU coreutils only; macOS has no `timeout` unless coreutils is installed.
-  _dotfiles_timeout=""
-  if command -v timeout > /dev/null 2>&1; then
-    _dotfiles_timeout="timeout 5"
-  fi
   if [ -n "$_dotfiles_ai_fp" ] \
     && ! ssh-add -l 2>/dev/null | grep -q -- "$_dotfiles_ai_fp"; then
-    DISPLAY="${DISPLAY:-:0}" \
-      SSH_ASKPASS="$_dotfiles_ssh_askpass_ai" \
-      SSH_ASKPASS_REQUIRE=force \
-      $_dotfiles_timeout ssh-add "$_dotfiles_ai_key" </dev/null > /dev/null 2>&1 \
-      || echo "ssh: AI signing key not loaded (1Password unavailable or timed out); run: ssh-add $_dotfiles_ai_key" >&2
+    if [ -n "$_dotfiles_remote_session" ]; then
+      echo "ssh: AI signing key not loaded; run ssh-add-ai and paste its passphrase from 1Password" >&2
+    elif [ -x "$_dotfiles_ssh_askpass_ai" ] && command -v op > /dev/null 2>&1; then
+      # GNU coreutils only; macOS has no `timeout` unless coreutils is installed.
+      _dotfiles_timeout=""
+      if command -v timeout > /dev/null 2>&1; then
+        _dotfiles_timeout="timeout 5"
+      fi
+      DISPLAY="${DISPLAY:-:0}" \
+        SSH_ASKPASS="$_dotfiles_ssh_askpass_ai" \
+        SSH_ASKPASS_REQUIRE=force \
+        $_dotfiles_timeout ssh-add "$_dotfiles_ai_key" </dev/null > /dev/null 2>&1 \
+        || echo "ssh: AI signing key not loaded (1Password unavailable or timed out); run: ssh-add-ai" >&2
+      unset _dotfiles_timeout
+    fi
   fi
-  unset _dotfiles_ai_fp _dotfiles_timeout
+  unset _dotfiles_ai_fp
 fi
 
-unset _dotfiles_ssh_askpass_ai _dotfiles_ai_key
+unset _dotfiles_ssh_askpass_ai _dotfiles_ai_key _dotfiles_remote_session
