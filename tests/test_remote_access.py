@@ -139,6 +139,43 @@ class HardeningTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0][:3], ["sudo", "systemctl", "reload"])
 
 
+class MacosTests(unittest.TestCase):
+    """On macOS the topic authorizes keys and stops there: turning the
+    server on, the system sshd_config and the firewall are the user's."""
+
+    def run_main(self, remote_login):
+        with mock.patch.object(sshd, "parse_dry_run"), mock.patch.object(
+            sshd, "get_remote_access_config", return_value={"sshd": True}
+        ), mock.patch.object(sshd, "IS_MACOS", True), mock.patch.object(
+            sshd, "authorized_public_keys", return_value=[KEY_A]
+        ), mock.patch.object(
+            sshd, "install_authorized_keys", return_value=1
+        ) as keys, mock.patch.object(
+            sshd, "run_cmd", return_value=mock.Mock(returncode=0 if remote_login else 113)
+        ) as run, mock.patch.object(sshd, "install_server") as server, mock.patch.object(
+            sshd, "systemctl_enable"
+        ) as enable, mock.patch.object(sshd, "sudo_write_file") as write, mock.patch.object(
+            sshd, "ufw_allow"
+        ) as allow:
+            self.assertEqual(sshd.main(), 0)
+        keys.assert_called_once_with([KEY_A])
+        for untouched in (server, enable, write, allow):
+            untouched.assert_not_called()
+        return run
+
+    def test_only_authorizes_keys_and_reads_remote_login(self):
+        run = self.run_main(remote_login=True)
+        self.assertEqual(
+            [call.args[0] for call in run.call_args_list],
+            [["launchctl", "print", "system/com.openssh.sshd"]],
+        )
+
+    def test_remote_login_off_is_reported_not_changed(self):
+        run = self.run_main(remote_login=False)
+        self.assertEqual(len(run.call_args_list), 1)
+        self.assertEqual(run.call_args.args[0][:2], ["launchctl", "print"])
+
+
 class WayvncTests(unittest.TestCase):
     def test_unit_binds_to_the_tailscale_address_only(self):
         exec_start = next(

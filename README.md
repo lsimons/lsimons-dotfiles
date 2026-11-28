@@ -197,8 +197,8 @@ The installation script (`./script/install.py`) will:
 | `rust/` | Rust (via mise) + CARGO_HOME |
 | `secretive/` | [Secretive](https://github.com/maxgoedjen/secretive) (Secure Enclave SSH agent; cask, needs admin) and `age-plugin-se`. Key creation and GitHub registration stay manual; 1Password stays the default agent. **macOS only** |
 | `sh/` | Shared shell configuration (PATH, XDG, settings) |
-| `ssh/` | SSH configuration (post-quantum warning, 1Password agent), and on Linux an `ssh-agent` systemd user unit holding the AI signing key; `ssh-add-ai` loads it by passphrase from a remote (SSH or Rex) session |
-| `sshd/` | OpenSSH server: `authorized_keys` from the machine config, keys-only login, port 22 in ufw. **Opt-in per machine** via `remoteAccess.sshd`; Linux only |
+| `ssh/` | SSH configuration (post-quantum warning, 1Password agent, agent forwarding to my own SSH hosts), and on Linux an `ssh-agent` systemd user unit holding the AI signing key; `ssh-add-ai` loads it by passphrase from a remote (SSH or Rex) session |
+| `sshd/` | OpenSSH server: `authorized_keys` from the machine config, keys-only login, port 22 in ufw. On macOS it only writes `authorized_keys`; Remote Login stays a System Settings choice. **Opt-in per machine** via `remoteAccess.sshd` |
 | `swiftdialog/` | swiftDialog (via Homebrew cask; skipped if already present, e.g. via MDM). **macOS only** |
 | `tailscale/` | Tailscale (Homebrew cask on macOS, `tailscale` + `tailscaled` on Arch). Joining the tailnet stays manual |
 | `terminal/` | macOS Terminal.app "LSD Warm Light" profile (mirrors Ghostty). **macOS only** |
@@ -492,6 +492,16 @@ since each one lets another machine in:
 - `sshd` runs the `sshd/` topic: OpenSSH server enabled, `authorized_keys`
   generated from this machine's `ssh.keys` entries with `auth: true`,
   and password/root login disabled once at least one key is present.
+  On macOS it writes `authorized_keys` and nothing else: turning the
+  server on or off is Remote Login in System Settings (General >
+  Sharing), which the topic reports but never changes, and the system
+  `sshd_config` (so password login too) is left as macOS ships it.
+  Agent forwarding to such a Mac has two halves. `ssh/config.symlink`
+  sets `ForwardAgent yes` for the host by name on every machine, and on
+  macOS the generated `~/.ssh/config.agent` makes an SSH session that
+  arrived with a forwarded agent use it instead of the local 1Password
+  agent. Git commit signing in that session still goes through the local
+  `op-ssh-sign`, not the forwarded agent.
 - `wayvnc` runs the `wayvnc/` topic: wayvnc as a systemd user unit that
   starts with the Hyprland session and listens on this machine's
   Tailscale IPv4 address only, plus 5900/tcp in ufw for the tailnet range

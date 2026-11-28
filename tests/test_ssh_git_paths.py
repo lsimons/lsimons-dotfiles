@@ -24,6 +24,29 @@ ssh_installer = load_module("dotfiles_ssh_installer", REPO_ROOT / "ssh" / "insta
 git_installer = load_module("dotfiles_git_installer", REPO_ROOT / "git" / "install.py")
 
 
+class AgentConfigTests(unittest.TestCase):
+    """config.agent is included from the top of ~/.ssh/config, so a
+    conditional block must not swallow the directives that follow it."""
+
+    def test_plain_form_is_a_single_identity_agent_line(self):
+        content = ssh_installer.agent_ssh_config_content("/run/op.sock", prefer_forwarded=False)
+        self.assertIn('IdentityAgent "/run/op.sock"\n', content)
+        self.assertNotIn("Match", content)
+
+    def test_forwarded_agent_wins_only_inside_an_ssh_session(self):
+        content = ssh_installer.agent_ssh_config_content("/run/op.sock", prefer_forwarded=True)
+        blocks = [line for line in content.splitlines() if line and not line.startswith("#")]
+        self.assertEqual(
+            blocks,
+            [
+                'Match exec "test -n \\"$SSH_CONNECTION\\" && test -S \\"$SSH_AUTH_SOCK\\""',
+                "    IdentityAgent SSH_AUTH_SOCK",
+                "Match all",
+                '    IdentityAgent "/run/op.sock"',
+            ],
+        )
+
+
 class SshAgentUnitTests(unittest.TestCase):
     """The agent exists so AI sessions over SSH can sign commits; the
     costly mistakes are shadowing the distro's own unit and writing a

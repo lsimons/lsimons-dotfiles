@@ -35,5 +35,8 @@
         "sign": false
       }
     ]
+  },
+  "remoteAccess": {
+    "sshd": true
   }
 }

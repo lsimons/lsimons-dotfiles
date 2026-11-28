@@ -13,6 +13,11 @@ enabled machine it:
   off password and root logins — but only once `authorized_keys` has at
   least one key, because doing it earlier would lock the machine out;
 * opens port 22 in ufw, restricted to `remoteAccess.allowFrom` when set.
+
+On macOS only the first step runs. Whether the server is on is Remote
+Login in System Settings (General > Sharing), and that switch, the
+system sshd_config and the firewall are left alone: this topic reports
+the state of Remote Login and never changes it.
 """
 
 import sys
@@ -22,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
     IS_ARCH,
     IS_DEBIAN,
+    IS_MACOS,
     SSH_CONFIG_DIR,
     chmod,
     dry,
@@ -117,6 +123,28 @@ def harden(key_count):
     return True
 
 
+def remote_login_enabled():
+    """Whether macOS Remote Login is on. Read-only, needs no sudo."""
+    result = run_cmd(
+        ["launchctl", "print", "system/com.openssh.sshd"], check=False, capture_output=True
+    )
+    return result.returncode == 0
+
+
+def configure_macos():
+    """Authorize the machine-config keys; leave Remote Login to the user."""
+    info("Authorizing SSH keys (Remote Login itself stays a System Settings choice)...")
+    key_count = install_authorized_keys(authorized_public_keys())
+    if key_count == 0:
+        warn("No authorized_keys; mark a key `auth: true` in the machine config and re-run")
+    if remote_login_enabled():
+        success("Remote Login is on")
+    else:
+        warn("Remote Login is off, so the authorized keys are unused for now")
+        warn("Turn it on in System Settings > General > Sharing to accept SSH logins")
+    return 0
+
+
 def main():
     parse_dry_run()
 
@@ -124,6 +152,9 @@ def main():
     if not remote.get("sshd"):
         info("remoteAccess.sshd is not enabled for this machine; skipping the SSH server")
         return 0
+
+    if IS_MACOS:
+        return configure_macos()
 
     if not (IS_ARCH or IS_DEBIAN):
         error("The SSH server is only set up for Arch and Debian/Ubuntu here")
