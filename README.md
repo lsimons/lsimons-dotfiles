@@ -497,7 +497,8 @@ since each one lets another machine in:
   When the app is on this machine the real `zed` runs. This needs the
   host to accept SSH from the other machine (`sshd` below), Remote
   Control turned on in that Rex app (Settings > General), and its "Links
-  That Open Apps" setting not on "never". Only paths are passed on:
+  That Open Apps" setting not on "never". A Rex app too old to offer
+  `client.url.open` gets the URL printed as a link to click. Only paths are passed on:
   options such as `--wait` are refused, so keep a terminal editor as
   `$EDITOR`. A client counts as remote when it is connected over anything
   but the server's unix socket (in practice: Tailscale).

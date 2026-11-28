@@ -16,6 +16,9 @@ Which app: the one that opened this terminal (the block's owner), while
 it is still attached to the session. Otherwise the only remote app
 attached to the session; with several, it refuses rather than guess.
 "Remote" means connected over anything but the server's unix socket.
+
+A Rex app too old to offer `client.url.open` gets the URL printed as a
+terminal hyperlink to click instead.
 """
 
 import json
@@ -27,6 +30,7 @@ from urllib.parse import quote
 
 EXIT_LOCAL = 10
 EXIT_ERROR = 1
+OPEN_URL_ACTION = "client.url.open"
 
 
 class RexError(Exception):
@@ -81,6 +85,17 @@ def pick_client(clients, owner_id, session_id):
     return remote[0] if remote else None
 
 
+def offers_open_url(client_id):
+    """Whether that Rex app can be asked to open a URL. Older builds cannot."""
+    actions = rex_json("client", "inspect", client_id).get("actions", [])
+    return any(action.get("name") == OPEN_URL_ACTION for action in actions)
+
+
+def hyperlink(url):
+    """`url` as an OSC 8 terminal hyperlink, so it can be clicked."""
+    return f"\033]8;;{url}\033\\{url}\033]8;;\033\\"
+
+
 def zed_url(host, path, cwd):
     """`zed://ssh/<host>/<absolute path>`, the URL form of `zed ssh://...`."""
     absolute = os.path.normpath(os.path.join(cwd, path))
@@ -114,10 +129,26 @@ def main(argv):
 
     host = socket.gethostname().split(".")[0]
     cwd = os.getcwd()
-    for path in argv or ["."]:
-        url = zed_url(host, path, cwd)
+    urls = [zed_url(host, path, cwd) for path in argv or ["."]]
+
+    try:
+        can_open = offers_open_url(client["client_id"])
+    except RexError as exc:
+        print(f"zed: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+    if not can_open:
+        print(
+            f"zed: the Rex app on {client_label(client)} is too old to open links on request "
+            f"(no {OPEN_URL_ACTION}); update it, or click:",
+            file=sys.stderr,
+        )
+        for url in urls:
+            print(f"  {hyperlink(url)}", file=sys.stderr)
+        return 0
+
+    for url in urls:
         result = subprocess.run(
-            ["rex", "-C", client["client_id"], "do", "client.url.open", f"url={url}"],
+            ["rex", "-C", client["client_id"], "do", OPEN_URL_ACTION, f"url={url}"],
             check=False,
             capture_output=True,
             text=True,

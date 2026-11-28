@@ -5,7 +5,9 @@ sending a relative path that means something else on the other side, and
 swallowing the local `zed` when nothing remote is involved.
 """
 
+import contextlib
 import importlib.util
+import io
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -76,11 +78,15 @@ class ZedUrlTests(unittest.TestCase):
 
 
 class MainTests(unittest.TestCase):
-    def run_main(self, argv, clients, owner="remote", env=None):
+    def run_main(self, argv, clients, owner="remote", env=None, actions=("client.url.open",)):
         env = {"REX_SESSION": SESSION, "REX_BLOCK": "block:1"} if env is None else env
 
         def rex_json(*args):
-            return {"clients": clients} if args[0] == "client" else {"block": {"owner": owner}}
+            if args[:2] == ("client", "ls"):
+                return {"clients": clients}
+            if args[:2] == ("client", "inspect"):
+                return {"actions": [{"name": name} for name in actions]}
+            return {"block": {"owner": owner}}
 
         ok = mock.Mock(returncode=0, stderr="")
         with mock.patch.dict(zed_remote.os.environ, env, clear=True), mock.patch.object(
@@ -114,6 +120,14 @@ class MainTests(unittest.TestCase):
     def test_no_path_opens_the_current_directory(self):
         _, run = self.run_main([], [REMOTE])
         self.assertEqual(run.call_args.args[0][-1], "url=zed://ssh/host/work")
+
+    def test_an_app_without_the_action_gets_a_clickable_link_instead(self):
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            code, run = self.run_main(["a"], [REMOTE], actions=("client.find.open",))
+        self.assertEqual(code, 0)
+        run.assert_not_called()
+        self.assertIn("\033]8;;zed://ssh/host/work/a\033\\", stderr.getvalue())
 
     def test_options_are_refused_for_a_remote_app(self):
         code, run = self.run_main(["--wait", "a"], [REMOTE])
