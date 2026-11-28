@@ -35,5 +35,9 @@
         "sign": false
       }
     ]
+  },
+  "docker": {
+    "vmMemoryGB": 4,
+    "vmCPUs": 2
   }
 }

@@ -316,11 +316,12 @@ def validate_machine_data(data, source, *, require_git=False) -> list[str]:
             )
 
     if 'docker' in data and object_at(
-        data['docker'], '$.docker', {'vmMemoryGB', 'kubernetes'}
+        data['docker'], '$.docker', {'vmMemoryGB', 'vmCPUs', 'kubernetes'}
     ):
-        memory = data['docker'].get('vmMemoryGB')
-        if 'vmMemoryGB' in data['docker'] and (type(memory) is not int or memory <= 0):
-            _machine_error(errors, source, '$.docker.vmMemoryGB', 'must be a positive integer')
+        for key in ('vmMemoryGB', 'vmCPUs'):
+            value = data['docker'].get(key)
+            if key in data['docker'] and (type(value) is not int or value <= 0):
+                _machine_error(errors, source, f'$.docker.{key}', 'must be a positive integer')
         if 'kubernetes' in data['docker'] and type(data['docker']['kubernetes']) is not bool:
             _machine_error(errors, source, '$.docker.kubernetes', 'must be a boolean')
 

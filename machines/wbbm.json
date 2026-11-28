@@ -38,5 +38,9 @@
   },
   "remoteAccess": {
     "sshd": true
+  },
+  "docker": {
+    "vmMemoryGB": 6,
+    "vmCPUs": 2
   }
 }

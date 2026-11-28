@@ -379,9 +379,7 @@ mkdir -p ~/git/lsimons && cd ~/git/lsimons
 git clone https://github.com/lsimons/lsimons-dotfiles.git
 git clone https://github.com/lsimons/lsimons-skills.git
 cd lsimons-dotfiles
-./script/install.py
-open -a "Rancher Desktop"   # first start, then wait for it to be running
-./script/install.py         # applies the Rancher settings, builds the claude-docker image
+./script/install.py         # also starts Rancher Desktop and builds the claude-docker image
 gh auth login               # as lsimons-bot
 ```
 
@@ -422,17 +420,26 @@ refuses to run there without a store named.
 {
   "docker": {
     "vmMemoryGB": 4,
+    "vmCPUs": 2,
     "kubernetes": false
   }
 }
 ```
 
-On macOS the `docker/` topic applies these with `rdctl set`, and only the
-ones that differ from the current settings. It also pins the moby
-engine, since the docker CLI needs it. `rdctl` only reaches a running
-Rancher Desktop, so on a fresh machine start the app once and re-run the
-installer; until then the installer prints the command instead. Linux
-has no VM and ignores this key.
+On macOS the `docker/` topic sizes Rancher Desktop's VM from these and
+gives every Mac the same fixed settings: the moby engine (the docker CLI
+needs it), no autostart, manual PATH management and no updater (Homebrew
+and these dotfiles own both), no telemetry, and VZ with virtiofs.
+`kubernetes` defaults to `false`; memory and CPUs are left alone when
+unset. The whole `docker` key is optional.
+
+A Rancher Desktop that has never been opened is started once with
+`rdctl start --no-modal-dialogs --wait` and all of these settings, which
+skips its first-run dialog and creates `~/.rd/bin` with the docker CLI.
+After that the installer uses `rdctl set`, and only for settings that
+differ. `rdctl set` only reaches a running Rancher Desktop; a stopped one
+is left stopped and the installer prints the command instead. Linux has
+no VM and ignores this key.
 
 ### Provider credentials (`providers`)
 

@@ -7,10 +7,15 @@ there is no VM to install: it gets the docker engine plus the compose and
 buildx plugins, the socket enabled, and the invoking user added to the
 `docker` group.
 
-On macOS a machine can also set Rancher Desktop's VM memory and turn
-Kubernetes off through `docker` in machines/<hostname>.json. Those go
-through `rdctl set`, which only reaches a running Rancher Desktop, so on
-a fresh machine: start the app once, then re-run the installer.
+On macOS every machine gets the same Rancher Desktop preferences (moby
+engine, no Kubernetes, no autostart, no PATH or update management since
+Homebrew and these dotfiles own those, no telemetry, VZ with virtiofs),
+and a machine can size the VM through `docker` in
+machines/<hostname>.json. A Rancher Desktop that has never been opened is
+started once with all of those settings, which skips its first-run dialog
+and creates ~/.rd/bin (including the docker CLI). After that, settings go
+through `rdctl set`, which only reaches a running Rancher Desktop: a
+stopped one is left stopped and the installer prints the command instead.
 """
 
 import getpass
@@ -44,27 +49,42 @@ LINUX_PACKAGES = [
 ]
 
 
-# Rancher Desktop links its CLIs here; docker/path.sh puts it on PATH for
-# shells, but this installer may run before that has been sourced.
-RDCTL = HOME / ".rd" / "bin" / "rdctl"
+# Rancher Desktop links its CLIs into ~/.rd/bin on first start; before that
+# rdctl only exists inside the app bundle. docker/path.sh puts ~/.rd/bin on
+# PATH for shells.
+RDCTL = Path("/Applications/Rancher Desktop.app/Contents/Resources/resources/darwin/bin/rdctl")
+# Written by Rancher Desktop on its first start; absent means never opened.
+RANCHER_SETTINGS = HOME / "Library" / "Preferences" / "rancher-desktop" / "settings.json"
+
+# (settings path, rdctl flag, value) applied on every Mac. The moby engine
+# is not a preference: this topic exists to provide the docker CLI, which
+# only works with moby.
+RANCHER_FIXED_SETTINGS = [
+    (("containerEngine", "name"), "container-engine.name", "moby"),
+    (("application", "autoStart"), "application.auto-start", False),
+    (("application", "pathManagementStrategy"), "application.path-management-strategy", "manual"),
+    (("application", "updater", "enabled"), "application.updater.enabled", False),
+    (("application", "telemetry", "enabled"), "application.telemetry.enabled", False),
+    (("virtualMachine", "type"), "virtual-machine.type", "vz"),
+    (("virtualMachine", "mount", "type"), "virtual-machine.mount.type", "virtiofs"),
+]
 
 
 def rancher_wanted_settings(docker_config):
-    """Map the machine's `docker` config to (settings path, rdctl flag, value).
-
-    The container engine is not a machine choice: this topic exists to
-    provide the docker CLI, which only works with the moby engine, so it is
-    pinned whenever a machine configures Rancher at all.
-    """
-    wanted = [(("containerEngine", "name"), "container-engine.name", "moby")]
+    """Map the machine's `docker` config to (settings path, rdctl flag, value)."""
+    wanted = list(RANCHER_FIXED_SETTINGS)
+    wanted.append(
+        (("kubernetes", "enabled"), "kubernetes.enabled", docker_config.get("kubernetes", False))
+    )
     if "vmMemoryGB" in docker_config:
         wanted.append(
             (("virtualMachine", "memoryInGB"), "virtual-machine.memory-in-gb",
              docker_config["vmMemoryGB"])
         )
-    if "kubernetes" in docker_config:
+    if "vmCPUs" in docker_config:
         wanted.append(
-            (("kubernetes", "enabled"), "kubernetes.enabled", docker_config["kubernetes"])
+            (("virtualMachine", "numberCPUs"), "virtual-machine.number-cpus",
+             docker_config["vmCPUs"])
         )
     return wanted
 
@@ -75,21 +95,26 @@ def rdctl_flag(flag, value):
     return f"--{flag}={value}"
 
 
-def configure_rancher():
-    """Apply the machine's Rancher Desktop settings through rdctl."""
-    config, hostname = get_machine_config()
-    docker_config = config.get("docker")
-    if not docker_config:
-        return True
+def setting_at(settings, path):
+    for key in path:
+        if not isinstance(settings, dict):
+            return None
+        settings = settings.get(key)
+    return settings
 
-    wanted = rancher_wanted_settings(docker_config)
-    set_all = [str(RDCTL), "set", *(rdctl_flag(flag, value) for _, flag, value in wanted)]
+
+def configure_rancher():
+    """Apply the Rancher Desktop settings, starting it if it was never opened."""
+    config, hostname = get_machine_config()
+    wanted = rancher_wanted_settings(config.get("docker", {}))
+    all_flags = [rdctl_flag(flag, value) for _, flag, value in wanted]
+    set_all = [str(RDCTL), "set", *all_flags]
+
+    if not RANCHER_SETTINGS.exists():
+        return first_start_rancher(all_flags)
 
     if is_dry_run():
         dry(f"would run (for settings that differ): {' '.join(set_all)}")
-        return True
-    if not RDCTL.exists():
-        warn(f"{RDCTL} not found; start Rancher Desktop once, then re-run the installer")
         return True
 
     current = run_cmd([str(RDCTL), "list-settings"], check=False, capture_output=True)
@@ -101,10 +126,11 @@ def configure_rancher():
         return True
     settings = json.loads(current.stdout)
 
-    flags = []
-    for (section, key), flag, value in wanted:
-        if settings.get(section, {}).get(key) != value:
-            flags.append(rdctl_flag(flag, value))
+    flags = [
+        rdctl_flag(flag, value)
+        for path, flag, value in wanted
+        if setting_at(settings, path) != value
+    ]
     if not flags:
         success(f"Rancher Desktop settings already match {hostname}")
         return True
@@ -115,6 +141,25 @@ def configure_rancher():
         error(f"rdctl set failed: {(result.stderr or '').strip()}")
         return False
     success("Rancher Desktop settings updated (it restarts its VM to apply them)")
+    return True
+
+
+def first_start_rancher(flags):
+    """Start a never-opened Rancher Desktop with its settings and wait for it."""
+    start = [str(RDCTL), "start", "--no-modal-dialogs", "--wait", *flags]
+    if is_dry_run():
+        dry(f"would run: {' '.join(start)}")
+        return True
+    if not RDCTL.exists():
+        error(f"{RDCTL} not found; is Rancher Desktop installed?")
+        return False
+
+    info("Starting Rancher Desktop for the first time (this takes a few minutes)...")
+    result = run_cmd(start, check=False, capture_output=True)
+    if result.returncode != 0:
+        error(f"rdctl start failed: {(result.stderr or result.stdout or '').strip()}")
+        return False
+    success("Rancher Desktop started; the docker CLI is in ~/.rd/bin")
     return True
 
 

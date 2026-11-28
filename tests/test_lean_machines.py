@@ -116,10 +116,11 @@ class LeanMachineValidationTests(unittest.TestCase):
 
     def test_rejects_bad_docker_settings(self):
         errors = check.validate_machine_data(
-            {"docker": {"vmMemoryGB": 0, "kubernetes": "off", "cpus": 2}},
+            {"docker": {"vmMemoryGB": 0, "vmCPUs": "2", "kubernetes": "off", "cpus": 2}},
             "machine.json",
         )
         self.assertIn("machine.json:$.docker.vmMemoryGB: must be a positive integer", errors)
+        self.assertIn("machine.json:$.docker.vmCPUs: must be a positive integer", errors)
         self.assertIn("machine.json:$.docker.kubernetes: must be a boolean", errors)
         self.assertIn("machine.json:$.docker.cpus: unknown key", errors)
 
@@ -154,20 +155,26 @@ class GitSignTests(unittest.TestCase):
 
 
 class RancherSettingsTests(unittest.TestCase):
+    DONE = subprocess.CompletedProcess([], 0, stdout="", stderr="")
+
     def setUp(self):
         helpers.set_dry_run(False)
-        self.machine = {"docker": {"vmMemoryGB": 4, "kubernetes": False}}
+        self.machine = {"docker": {"vmMemoryGB": 4, "vmCPUs": 2}}
 
-    def configure(self, machine, rdctl_results, rdctl_exists=True):
+    def configure(self, machine, rdctl_results, opened_before=True, rdctl_exists=True):
         with tempfile.TemporaryDirectory() as tmp:
             rdctl = Path(tmp) / "rdctl"
             if rdctl_exists:
                 rdctl.write_text("")
+            settings_file = Path(tmp) / "settings.json"
+            if opened_before:
+                settings_file.write_text("{}")
             with (
                 mock.patch.object(
                     docker_installer, "get_machine_config", return_value=(machine, "lab")
                 ),
                 mock.patch.object(docker_installer, "RDCTL", rdctl),
+                mock.patch.object(docker_installer, "RANCHER_SETTINGS", settings_file),
                 mock.patch.object(
                     docker_installer, "run_cmd", side_effect=rdctl_results
                 ) as run,
@@ -176,15 +183,26 @@ class RancherSettingsTests(unittest.TestCase):
             return result, [call.args[0][1:] for call in run.call_args_list]
 
     @staticmethod
-    def settings(memory, kubernetes, engine="moby"):
+    def settings(memory=4, cpus=2, kubernetes=False, engine="moby", telemetry=False):
         return subprocess.CompletedProcess(
             [],
             0,
             stdout=json.dumps(
                 {
                     "version": 19,
+                    "application": {
+                        "autoStart": False,
+                        "pathManagementStrategy": "manual",
+                        "updater": {"enabled": False},
+                        "telemetry": {"enabled": telemetry},
+                    },
                     "containerEngine": {"name": engine},
-                    "virtualMachine": {"memoryInGB": memory},
+                    "virtualMachine": {
+                        "memoryInGB": memory,
+                        "numberCPUs": cpus,
+                        "type": "vz",
+                        "mount": {"type": "virtiofs"},
+                    },
                     "kubernetes": {"enabled": kubernetes},
                 }
             ),
@@ -192,25 +210,26 @@ class RancherSettingsTests(unittest.TestCase):
         )
 
     def test_sets_only_the_settings_that_differ(self):
-        done = subprocess.CompletedProcess([], 0, stdout="", stderr="")
-        result, calls = self.configure(self.machine, [self.settings(6, False), done])
+        result, calls = self.configure(self.machine, [self.settings(memory=6, cpus=4), self.DONE])
 
         self.assertTrue(result)
         self.assertEqual(
             calls,
-            [["list-settings"], ["set", "--virtual-machine.memory-in-gb=4"]],
+            [
+                ["list-settings"],
+                ["set", "--virtual-machine.memory-in-gb=4", "--virtual-machine.number-cpus=2"],
+            ],
         )
 
     def test_matching_settings_are_left_alone(self):
-        result, calls = self.configure(self.machine, [self.settings(4, False)])
+        result, calls = self.configure(self.machine, [self.settings()])
 
         self.assertTrue(result)
         self.assertEqual(calls, [["list-settings"]])
 
-    def test_pins_moby_engine_and_kubernetes_flag_format(self):
-        done = subprocess.CompletedProcess([], 0, stdout="", stderr="")
+    def test_pins_moby_engine_and_kubernetes_off_by_default(self):
         result, calls = self.configure(
-            self.machine, [self.settings(4, True, engine="containerd"), done]
+            self.machine, [self.settings(kubernetes=True, engine="containerd"), self.DONE]
         )
 
         self.assertTrue(result)
@@ -219,6 +238,20 @@ class RancherSettingsTests(unittest.TestCase):
             ["set", "--container-engine.name=moby", "--kubernetes.enabled=false"],
         )
 
+    def test_machine_can_enable_kubernetes(self):
+        result, calls = self.configure(
+            {"docker": {"kubernetes": True}}, [self.settings(kubernetes=False), self.DONE]
+        )
+
+        self.assertTrue(result)
+        self.assertEqual(calls[1], ["set", "--kubernetes.enabled=true"])
+
+    def test_machine_without_docker_settings_still_gets_fixed_settings(self):
+        result, calls = self.configure({}, [self.settings(telemetry=True), self.DONE])
+
+        self.assertTrue(result)
+        self.assertEqual(calls[1], ["set", "--application.telemetry.enabled=false"])
+
     def test_not_running_is_a_warning_not_a_failure(self):
         down = subprocess.CompletedProcess([], 1, stdout="", stderr="connection refused")
         result, calls = self.configure(self.machine, [down])
@@ -226,17 +259,47 @@ class RancherSettingsTests(unittest.TestCase):
         self.assertTrue(result)
         self.assertEqual(calls, [["list-settings"]])
 
-    def test_machine_without_docker_settings_does_nothing(self):
-        result, calls = self.configure({}, [])
-
-        self.assertTrue(result)
-        self.assertEqual(calls, [])
-
     def test_failed_set_fails_the_topic(self):
         failed = subprocess.CompletedProcess([], 1, stdout="", stderr="boom")
-        result, _ = self.configure(self.machine, [self.settings(6, False), failed])
+        result, _ = self.configure(self.machine, [self.settings(memory=6), failed])
 
         self.assertFalse(result)
+
+    def test_never_opened_is_started_with_every_setting(self):
+        result, calls = self.configure(self.machine, [self.DONE], opened_before=False)
+
+        self.assertTrue(result)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][:3], ["start", "--no-modal-dialogs", "--wait"])
+        self.assertEqual(
+            set(calls[0][3:]),
+            {
+                "--container-engine.name=moby",
+                "--application.auto-start=false",
+                "--application.path-management-strategy=manual",
+                "--application.updater.enabled=false",
+                "--application.telemetry.enabled=false",
+                "--virtual-machine.type=vz",
+                "--virtual-machine.mount.type=virtiofs",
+                "--kubernetes.enabled=false",
+                "--virtual-machine.memory-in-gb=4",
+                "--virtual-machine.number-cpus=2",
+            },
+        )
+
+    def test_failed_first_start_fails_the_topic(self):
+        failed = subprocess.CompletedProcess([], 1, stdout="", stderr="boom")
+        result, _ = self.configure(self.machine, [failed], opened_before=False)
+
+        self.assertFalse(result)
+
+    def test_never_opened_without_rdctl_fails_the_topic(self):
+        result, calls = self.configure(
+            self.machine, [], opened_before=False, rdctl_exists=False
+        )
+
+        self.assertFalse(result)
+        self.assertEqual(calls, [])
 
 
 if __name__ == "__main__":
