@@ -192,7 +192,7 @@ The installation script (`./script/install.py`) will:
 | `postgres/` | PostgreSQL 16 client, keg-only and **not linked** (a project puts `/opt/homebrew/opt/postgresql@16/bin` on its own PATH). **macOS only** |
 | `python/` | Python (via mise) + XDG config |
 | `quarto/` | Quarto (Homebrew cask; `quarto-cli-bin` from the AUR) |
-| `rex/` | [Rex](https://superlogical.com) personal server on Omarchy: the signed `[rex]` pacman repo, `rex.socket` + `rex.service` as user units, lingering on. Serving it on the tailnet is **opt-in per machine** via `remoteAccess.rex`. macOS GUI not set up yet |
+| `rex/` | [Rex](https://superlogical.com) personal server on Omarchy: the signed `[rex]` pacman repo, `rex.socket` + `rex.service` as user units, lingering on. Serving it on the tailnet is **opt-in per machine** via `remoteAccess.rex`. macOS GUI not set up yet. In any Rex terminal used from another machine, `zed PATH` opens Zed on that machine over SSH (see Remote access) |
 | `ruby/` | Ruby (via mise) |
 | `rust/` | Rust (via mise) + CARGO_HOME |
 | `secretive/` | [Secretive](https://github.com/maxgoedjen/secretive) (Secure Enclave SSH agent; cask, needs admin) and `age-plugin-se`. Key creation and GitHub registration stay manual; 1Password stays the default agent. **macOS only** |
@@ -489,6 +489,18 @@ since each one lets another machine in:
   when a restart is needed. In a Rex terminal `ssh/rc.sh` does not ask
   1Password for the AI key's passphrase (the dialog would open on the
   machine's screen); run `ssh-add-ai` and paste it, once per boot.
+  Also in a Rex terminal, `zed` is a shell function (`rex/rc.sh`, on
+  every machine, no opt-in). When the Rex app that opened the terminal is
+  on another machine, `zed PATH...` asks that app to open
+  `zed://ssh/<this host>/<absolute path>`, so Zed starts in front of you
+  and edits here over SSH; with no path it opens the current directory.
+  When the app is on this machine the real `zed` runs. This needs the
+  host to accept SSH from the other machine (`sshd` below), Remote
+  Control turned on in that Rex app (Settings > General), and its "Links
+  That Open Apps" setting not on "never". Only paths are passed on:
+  options such as `--wait` are refused, so keep a terminal editor as
+  `$EDITOR`. A client counts as remote when it is connected over anything
+  but the server's unix socket (in practice: Tailscale).
 - `sshd` runs the `sshd/` topic: OpenSSH server enabled, `authorized_keys`
   generated from this machine's `ssh.keys` entries with `auth: true`,
   and password/root login disabled once at least one key is present.
