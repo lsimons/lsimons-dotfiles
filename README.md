@@ -192,7 +192,7 @@ The installation script (`./script/install.py`) will:
 | `postgres/` | PostgreSQL 16 client, keg-only and **not linked** (a project puts `/opt/homebrew/opt/postgresql@16/bin` on its own PATH). **macOS only** |
 | `python/` | Python (via mise) + XDG config |
 | `quarto/` | Quarto (Homebrew cask; `quarto-cli-bin` from the AUR) |
-| `rex/` | [Rex](https://superlogical.com) personal server on Omarchy: the signed `[rex]` pacman repo, `rex.socket` + `rex.service` as user units, lingering on. Serving it on the tailnet is **opt-in per machine** via `remoteAccess.rex`. macOS GUI not set up yet. In any Rex terminal used from another machine, `zed PATH` opens Zed on that machine over SSH (see Remote access) |
+| `rex/` | [Rex](https://superlogical.com) personal server on Omarchy: the signed `[rex]` pacman repo, `rex.socket` + `rex.service` as user units, lingering on. Serving it on the tailnet is **opt-in per machine** via `remoteAccess.rex`. macOS GUI not set up yet. In any Rex terminal or SSH session used from another machine, `zed PATH` opens Zed on that machine over SSH (see Remote access) |
 | `ruby/` | Ruby (via mise) |
 | `rust/` | Rust (via mise) + CARGO_HOME |
 | `secretive/` | [Secretive](https://github.com/maxgoedjen/secretive) (Secure Enclave SSH agent; cask, needs admin) and `age-plugin-se`. Key creation and GitHub registration stay manual; 1Password stays the default agent. **macOS only** |
@@ -505,7 +505,10 @@ since each one lets another machine in:
   host to accept SSH from the other machine (`sshd` below), Remote
   Control turned on in that Rex app (Settings > General), and its "Links
   That Open Apps" setting not on "never". A Rex app too old to offer
-  `client.url.open` gets the URL printed as a link to click. Only paths are passed on:
+  `client.url.open` gets the URL printed as a link to click. The same
+  goes for a plain SSH session (`SSH_CONNECTION` set, outside Rex): `zed`
+  prints the links, and clicking one in the terminal on the other machine
+  opens Zed there. Only paths are passed on:
   options such as `--wait` are refused, so keep a terminal editor as
   `$EDITOR`. A client counts as remote when it is connected over anything
   but the server's unix socket (in practice: Tailscale).

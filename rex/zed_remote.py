@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open paths in Zed on the machine a Rex terminal is being used from.
+"""Open paths in Zed on the machine a Rex terminal or SSH session is used from.
 
 `rex/rc.sh` wraps `zed` with this in every Rex terminal. When the Rex app
 that opened the terminal is on another machine, each path is turned into
@@ -8,9 +8,13 @@ open it (its `client.url.open` action), so Zed starts there and reaches
 back here over SSH. That needs this host to accept SSH from the other
 machine; see the `sshd/` topic.
 
-Exits with EXIT_LOCAL when there is nothing remote to do: not a Rex
-terminal, or the app is on this machine. The wrapper then runs the real
-`zed`.
+In an SSH session (SSH_CONNECTION set) outside Rex there is no app to
+ask, so the URLs are printed as terminal hyperlinks to click; the
+terminal on the other machine opens them there.
+
+Exits with EXIT_LOCAL when there is nothing remote to do: neither a Rex
+terminal nor an SSH session, or the Rex app is on this machine. The
+wrapper then runs the real `zed`.
 
 Which app: the one that opened this terminal (the block's owner), while
 it is still attached to the session. Otherwise the only remote app
@@ -96,6 +100,18 @@ def hyperlink(url):
     return f"\033]8;;{url}\033\\{url}\033]8;;\033\\"
 
 
+def print_links(message, urls):
+    print(message, file=sys.stderr)
+    for url in urls:
+        print(f"  {hyperlink(url)}", file=sys.stderr)
+
+
+def ssh_client_address():
+    """The address an SSH session comes from, or None outside SSH."""
+    fields = os.environ.get("SSH_CONNECTION", "").split()
+    return fields[0] if fields else None
+
+
 def zed_url(host, path, cwd):
     """`zed://ssh/<host>/<absolute path>`, the URL form of `zed ssh://...`."""
     absolute = os.path.normpath(os.path.join(cwd, path))
@@ -105,23 +121,28 @@ def zed_url(host, path, cwd):
 def main(argv):
     session_id = os.environ.get("REX_SESSION")
     block_id = os.environ.get("REX_BLOCK")
-    if not session_id or not block_id:
-        return EXIT_LOCAL
-
-    try:
-        clients = rex_json("client", "ls").get("clients", [])
-        owner_id = rex_json("block", "inspect", block_id).get("block", {}).get("owner")
-        client = pick_client(clients, owner_id, session_id)
-    except RexError as exc:
-        print(f"zed: {exc}", file=sys.stderr)
-        return EXIT_ERROR
-    if client is None:
+    ssh_from = ssh_client_address()
+    if session_id and block_id:
+        try:
+            clients = rex_json("client", "ls").get("clients", [])
+            owner_id = rex_json("block", "inspect", block_id).get("block", {}).get("owner")
+            client = pick_client(clients, owner_id, session_id)
+        except RexError as exc:
+            print(f"zed: {exc}", file=sys.stderr)
+            return EXIT_ERROR
+        if client is None:
+            return EXIT_LOCAL
+        target = client_label(client)
+    elif ssh_from:
+        client = None
+        target = ssh_from
+    else:
         return EXIT_LOCAL
 
     options = [arg for arg in argv if arg.startswith("-")]
     if options:
         print(
-            f"zed: {' '.join(options)}: only paths can be sent to Zed on {client_label(client)}; "
+            f"zed: {' '.join(options)}: only paths can be sent to Zed on {target}; "
             "use `command zed` for the Zed on this machine",
             file=sys.stderr,
         )
@@ -131,19 +152,21 @@ def main(argv):
     cwd = os.getcwd()
     urls = [zed_url(host, path, cwd) for path in argv or ["."]]
 
+    if client is None:
+        print_links(f"zed: this is an SSH session from {target}; click to open Zed there:", urls)
+        return 0
+
     try:
         can_open = offers_open_url(client["client_id"])
     except RexError as exc:
         print(f"zed: {exc}", file=sys.stderr)
         return EXIT_ERROR
     if not can_open:
-        print(
-            f"zed: the Rex app on {client_label(client)} is too old to open links on request "
+        print_links(
+            f"zed: the Rex app on {target} is too old to open links on request "
             f"(no {OPEN_URL_ACTION}); update it, or click:",
-            file=sys.stderr,
+            urls,
         )
-        for url in urls:
-            print(f"  {hyperlink(url)}", file=sys.stderr)
         return 0
 
     for url in urls:

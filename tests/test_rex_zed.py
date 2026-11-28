@@ -134,6 +134,27 @@ class MainTests(unittest.TestCase):
         self.assertEqual(code, zed_remote.EXIT_ERROR)
         run.assert_not_called()
 
+    def test_ssh_session_gets_clickable_links_without_asking_rex(self):
+        stderr = io.StringIO()
+        env = {"SSH_CONNECTION": "192.0.2.10 51000 192.0.2.20 22"}
+        with contextlib.redirect_stderr(stderr):
+            code, run = self.run_main(["a"], [], env=env)
+        self.assertEqual(code, 0)
+        run.assert_not_called()
+        self.assertIn("192.0.2.10", stderr.getvalue())
+        self.assertIn("\033]8;;zed://ssh/host/work/a\033\\", stderr.getvalue())
+
+    def test_options_are_refused_in_an_ssh_session(self):
+        env = {"SSH_CONNECTION": "192.0.2.10 51000 192.0.2.20 22"}
+        code, run = self.run_main(["--wait", "a"], [], env=env)
+        self.assertEqual(code, zed_remote.EXIT_ERROR)
+        run.assert_not_called()
+
+    def test_a_local_rex_app_wins_over_an_inherited_ssh_session(self):
+        env = {"REX_SESSION": SESSION, "REX_BLOCK": "block:1", "SSH_CONNECTION": "192.0.2.10 51000 192.0.2.20 22"}
+        code, _ = self.run_main(["a"], [LOCAL], owner="local", env=env)
+        self.assertEqual(code, zed_remote.EXIT_LOCAL)
+
 
 if __name__ == "__main__":
     unittest.main()
