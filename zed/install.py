@@ -6,14 +6,23 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'script'))
 from helpers import (
+    HOME,
     XDG_CONFIG_HOME,
+    command_exists,
     ensure_package,
     info,
     install_symlinks,
+    link_file,
     link_or_merge_json,
     parse_dry_run,
     private_overlay,
 )
+
+# Linux only has `zeditor`; this makes `zed` work there too, including the
+# `command zed` that rex/rc.sh falls back to. In bin/, not the topic root:
+# the shell rc files only source fixed names from a topic root.
+COMMAND_LINK = HOME / '.local' / 'bin' / 'zed'
+WRAPPER = Path(__file__).resolve().parent / 'bin' / 'zed.sh'
 
 
 def main():
@@ -44,6 +53,11 @@ def main():
         optional=True,
     ):
         return 1
+
+    # Keyed on the binary rather than the platform: macOS has a real
+    # `zed`, and a Linux without a Zed build gets no dangling `zed`.
+    if command_exists('zeditor'):
+        link_file(WRAPPER, COMMAND_LINK)
     return 0
 
 

@@ -211,7 +211,7 @@ The installation script (`./script/install.py`) will:
 | `vivaldi/` | Vivaldi Browser (no aarch64 Linux build) |
 | `wayvnc/` | wayvnc remote desktop for a Hyprland session, bound to the machine's Tailscale address, with a PAM login and lockout, as a systemd user unit plus a tailnet-only ufw rule. **Opt-in per machine** via `remoteAccess.wayvnc`; Linux desktop only |
 | `wordpress/` | WordPress shell environment |
-| `zed/` | Zed editor (`zeditor` on Linux; no aarch64 build — config only there) |
+| `zed/` | Zed editor (`zeditor` on Linux, plus `~/.local/bin/zed` running it so `zed` works there too; no aarch64 build — config only there) |
 | `zsh/` | ZSH itself (Arch has no zsh by default) and its directories |
 
 ## For AI Agents
