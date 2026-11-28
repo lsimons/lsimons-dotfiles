@@ -11,9 +11,9 @@ WarnWeakCrypto no-pq-kex
 # Local overrides: ~/.ssh/config.local
 Include config.local
 
-# Forward the agent to wbbm, so a session there can use this machine's
-# 1Password keys (see config.agent on macOS). Only for a machine of mine
-# that authorizes these keys (remoteAccess.sshd): whoever is root on the
+# Forward the agent to my own SSH hosts, so a session there can use this
+# machine's 1Password keys (see config.agent). Only for machines of mine
+# that authorize these keys (remoteAccess.sshd): whoever is root on the
 # far end can use a forwarded agent for as long as the session lasts.
-Host wbbm wbbm.*
+Host snow snow.* wbbm wbbm.*
     ForwardAgent yes

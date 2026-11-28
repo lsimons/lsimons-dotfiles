@@ -28,18 +28,16 @@ class AgentConfigTests(unittest.TestCase):
     """config.agent is included from the top of ~/.ssh/config, so a
     conditional block must not swallow the directives that follow it."""
 
-    def test_plain_form_is_a_single_identity_agent_line(self):
-        content = ssh_installer.agent_ssh_config_content("/run/op.sock", prefer_forwarded=False)
-        self.assertIn('IdentityAgent "/run/op.sock"\n', content)
-        self.assertNotIn("Match", content)
-
     def test_forwarded_agent_wins_only_inside_an_ssh_session(self):
-        content = ssh_installer.agent_ssh_config_content("/run/op.sock", prefer_forwarded=True)
+        content = ssh_installer.agent_ssh_config_content("/run/op.sock")
         blocks = [line for line in content.splitlines() if line and not line.startswith("#")]
         self.assertEqual(
             blocks,
             [
-                'Match exec "test -n \\"$SSH_CONNECTION\\" && test -S \\"$SSH_AUTH_SOCK\\""',
+                (
+                    'Match exec "test -n \\"$SSH_CONNECTION\\" && test -S \\"$SSH_AUTH_SOCK\\"'
+                    ' && test \\"${SSH_AUTH_SOCK##*/}\\" != ssh-agent.socket"'
+                ),
                 "    IdentityAgent SSH_AUTH_SOCK",
                 "Match all",
                 '    IdentityAgent "/run/op.sock"',

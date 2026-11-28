@@ -14,10 +14,10 @@ enabled machine it:
   least one key, because doing it earlier would lock the machine out;
 * opens port 22 in ufw, restricted to `remoteAccess.allowFrom` when set.
 
-On macOS only the first step runs. Whether the server is on is Remote
-Login in System Settings (General > Sharing), and that switch, the
-system sshd_config and the firewall are left alone: this topic reports
-the state of Remote Login and never changes it.
+On macOS only the authorized_keys and hardening steps run. Whether the
+server is on is Remote Login in System Settings (General > Sharing):
+this topic reports that switch and never changes it, and it leaves the
+macOS firewall alone.
 """
 
 import sys
@@ -114,6 +114,13 @@ def harden(key_count):
         warn("Mark a key `auth: true` in the machine config, or add one by hand, and re-run")
         return True
     changed = sudo_write_file(HARDENING_PATH, HARDENING)
+    if not HARDENING_PATH.exists() and not is_dry_run():
+        error(f"{HARDENING_PATH} was not written; password login is still enabled")
+        return False
+    if IS_MACOS:
+        # launchd starts one sshd per connection, so there is no daemon
+        # to reload: the next login reads the new snippet.
+        return True
     if changed and not is_dry_run():
         result = run_cmd(["sudo", "systemctl", "reload", UNIT], check=False, capture_output=True)
         if result.returncode != 0:
@@ -132,11 +139,14 @@ def remote_login_enabled():
 
 
 def configure_macos():
-    """Authorize the machine-config keys; leave Remote Login to the user."""
+    """Authorize the machine-config keys and turn off password login.
+
+    Remote Login itself is left to the user.
+    """
     info("Authorizing SSH keys (Remote Login itself stays a System Settings choice)...")
     key_count = install_authorized_keys(authorized_public_keys())
-    if key_count == 0:
-        warn("No authorized_keys; mark a key `auth: true` in the machine config and re-run")
+    if not harden(key_count):
+        return 1
     if remote_login_enabled():
         success("Remote Login is on")
     else:

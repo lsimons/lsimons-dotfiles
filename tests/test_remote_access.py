@@ -120,6 +120,17 @@ class AuthorizedKeysTests(unittest.TestCase):
 
 
 class HardeningTests(unittest.TestCase):
+    def setUp(self):
+        # The Linux path: a snippet that exists, and a daemon to reload.
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        snippet = Path(tmp.name) / "10-lsimons-dotfiles.conf"
+        snippet.write_text(sshd.HARDENING)
+        patcher = mock.patch.multiple(sshd, IS_MACOS=False, HARDENING_PATH=snippet)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        helpers.set_dry_run(False)
+
     def test_password_login_stays_on_without_a_key(self):
         with mock.patch.object(sshd, "sudo_write_file") as write:
             self.assertTrue(sshd.harden(0))
@@ -154,14 +165,40 @@ class MacosTests(unittest.TestCase):
             sshd, "run_cmd", return_value=mock.Mock(returncode=0 if remote_login else 113)
         ) as run, mock.patch.object(sshd, "install_server") as server, mock.patch.object(
             sshd, "systemctl_enable"
-        ) as enable, mock.patch.object(sshd, "sudo_write_file") as write, mock.patch.object(
+        ) as enable, mock.patch.object(sshd, "harden", return_value=True) as harden, mock.patch.object(
             sshd, "ufw_allow"
         ) as allow:
             self.assertEqual(sshd.main(), 0)
         keys.assert_called_once_with([KEY_A])
-        for untouched in (server, enable, write, allow):
+        harden.assert_called_once_with(1)
+        for untouched in (server, enable, allow):
             untouched.assert_not_called()
         return run
+
+    def test_hardening_writes_the_snippet_and_reloads_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            snippet = Path(tmp) / "10-lsimons-dotfiles.conf"
+
+            def write(path, content):
+                snippet.write_text(content)
+                return True
+
+            with mock.patch.object(sshd, "IS_MACOS", True), mock.patch.object(
+                sshd, "HARDENING_PATH", snippet
+            ), mock.patch.object(sshd, "sudo_write_file", side_effect=write), mock.patch.object(
+                sshd, "run_cmd"
+            ) as run:
+                self.assertTrue(sshd.harden(1))
+            self.assertIn("PasswordAuthentication no", snippet.read_text())
+        run.assert_not_called()
+
+    def test_hardening_fails_when_the_snippet_could_not_be_written(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            sshd, "IS_MACOS", True
+        ), mock.patch.object(sshd, "HARDENING_PATH", Path(tmp) / "missing.conf"), mock.patch.object(
+            sshd, "sudo_write_file", return_value=False
+        ):
+            self.assertFalse(sshd.harden(1))
 
     def test_only_authorizes_keys_and_reads_remote_login(self):
         run = self.run_main(remote_login=True)
